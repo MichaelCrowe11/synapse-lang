@@ -1,0 +1,57 @@
+{
+  "name": "synapse-language",
+  "displayName": "Synapse Language Support",
+  "description": "Syntax highlighting and language support for Synapse - a language for scientific reasoning and parallel thought processing",
+  "version": "0.1.0",
+  "publisher": "synapse-lang",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Themes"
+  ],
+  "keywords": [
+    "synapse",
+    "scientific",
+    "parallel",
+    "reasoning",
+    "uncertainty"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "synapse",
+        "aliases": ["Synapse", "synapse"],
+        "extensions": [".syn", ".synapse"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "synapse",
+        "scopeName": "source.synapse",
+        "path": "./syntaxes/synapse.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "synapse",
+        "path": "./snippets/synapse.json"
+      }
+    ],
+    "themes": [
+      {
+        "label": "Synapse Dark",
+        "uiTheme": "vs-dark",
+        "path": "./themes/synapse-dark.json"
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MichaelCrowe11/synapse-lang"
+  }
+}

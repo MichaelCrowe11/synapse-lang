@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""
+Synapse Language CLI
+Main entry point for running Synapse programs
+"""
+
+import sys
+import argparse
+from pathlib import Path
+
+# Add parent directory to path
+sys.path.insert(0, str(Path(__file__).parent))
+
+from synapse_repl import SynapseREPL
+from synapse_interpreter import SynapseInterpreter
+from synapse_scientific import integrate_scientific_functions
+from synapse_parser import parse
+from synapse_ast import ASTPrinter
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Synapse - Scientific Reasoning & Parallel Thought Processing Language'
+    )
+    
+    parser.add_argument('file', nargs='?', help='Synapse file to execute (.syn)')
+    parser.add_argument('-i', '--interactive', action='store_true', 
+                       help='Start interactive REPL after executing file')
+    parser.add_argument('-p', '--parse', action='store_true',
+                       help='Parse and display AST without executing')
+    parser.add_argument('-t', '--tokens', action='store_true',
+                       help='Display tokens during execution')
+    parser.add_argument('-s', '--scientific', action='store_true',
+                       help='Enable scientific computing features', default=True)
+    
+    args = parser.parse_args()
+    
+    if args.file:
+        # Execute file
+        file_path = Path(args.file)
+        if not file_path.exists():
+            print(f"Error: File '{args.file}' not found")
+            sys.exit(1)
+        
+        with open(file_path, 'r') as f:
+            source = f.read()
+        
+        if args.parse:
+            # Just parse and display AST
+            ast = parse(source)
+            printer = ASTPrinter()
+            print(printer.visit(ast))
+        else:
+            # Execute the program
+            interpreter = SynapseInterpreter()
+            
+            if args.scientific:
+                integrate_scientific_functions(interpreter)
+            
+            try:
+                results = interpreter.execute(source)
+                for result in results:
+                    if result is not None:
+                        print(result)
+            except Exception as e:
+                print(f"Error: {e}")
+                sys.exit(1)
+        
+        if args.interactive:
+            # Start REPL after file execution
+            repl = SynapseREPL()
+            repl.interpreter = interpreter  # Use same interpreter context
+            repl.run()
+    else:
+        # Start REPL
+        repl = SynapseREPL()
+        if args.scientific:
+            integrate_scientific_functions(repl.interpreter)
+        repl.run()
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,137 @@
+{
+  "Hypothesis": {
+    "prefix": "hyp",
+    "body": [
+      "hypothesis ${1:HypothesisName} {",
+      "\tassume: ${2:assumption}",
+      "\tpredict: ${3:prediction}",
+      "\tvalidate: ${4:validation}",
+      "}"
+    ],
+    "description": "Create a hypothesis block"
+  },
+  "Experiment": {
+    "prefix": "exp",
+    "body": [
+      "experiment ${1:ExperimentName} {",
+      "\tsetup: ${2:initialize_conditions()}",
+      "\tparallel {",
+      "\t\tbranch A: ${3:test_condition_1}",
+      "\t\tbranch B: ${4:test_condition_2}",
+      "\t}",
+      "\tsynthesize: ${5:analyze_results}",
+      "}"
+    ],
+    "description": "Create an experiment block"
+  },
+  "Parallel": {
+    "prefix": "par",
+    "body": [
+      "parallel {",
+      "\tbranch ${1:A}: ${2:computation_1}",
+      "\tbranch ${3:B}: ${4:computation_2}",
+      "\tbranch ${5:C}: ${6:computation_3}",
+      "}"
+    ],
+    "description": "Create a parallel execution block"
+  },
+  "Uncertain Value": {
+    "prefix": "unc",
+    "body": [
+      "uncertain ${1:variable} = ${2:value} ± ${3:uncertainty}"
+    ],
+    "description": "Declare an uncertain value"
+  },
+  "Reasoning Chain": {
+    "prefix": "reason",
+    "body": [
+      "reason chain ${1:ChainName} {",
+      "\tpremise P1: \"${2:premise_1}\"",
+      "\tpremise P2: \"${3:premise_2}\"",
+      "\t",
+      "\tderive D1 from P1: \"${4:derivation_1}\"",
+      "\tderive D2 from P2: \"${5:derivation_2}\"",
+      "\t",
+      "\tconclude: D1 && D2 => \"${6:conclusion}\"",
+      "}"
+    ],
+    "description": "Create a reasoning chain"
+  },
+  "Pipeline": {
+    "prefix": "pipe",
+    "body": [
+      "pipeline ${1:PipelineName} {",
+      "\tstage ${2:Stage1} parallel(${3:8}) {",
+      "\t\t${4:// processing}",
+      "\t}",
+      "\t",
+      "\tstage ${5:Stage2} {",
+      "\t\tfork {",
+      "\t\t\tpath ${6:path1}: ${7:process_1}",
+      "\t\t\tpath ${8:path2}: ${9:process_2}",
+      "\t\t}",
+      "\t}",
+      "\t",
+      "\tstage ${10:Stage3} {",
+      "\t\tmerge: ${11:combine_results}",
+      "\t}",
+      "}"
+    ],
+    "description": "Create a processing pipeline"
+  },
+  "Stream": {
+    "prefix": "stream",
+    "body": [
+      "stream ${1:StreamName}: {",
+      "\t${2:// stream processing}",
+      "}"
+    ],
+    "description": "Create a thought stream"
+  },
+  "Explore": {
+    "prefix": "explore",
+    "body": [
+      "explore ${1:solution_space} {",
+      "\ttry ${2:path1}: ${3:approach_1}",
+      "\tfallback ${4:path2}: ${5:approach_2}",
+      "\tfallback ${6:path3}: ${7:approach_3}",
+      "\t",
+      "\taccept when: ${8:success_condition}",
+      "\treject when: ${9:failure_condition}",
+      "}"
+    ],
+    "description": "Create an exploration block with backtracking"
+  },
+  "Symbolic": {
+    "prefix": "sym",
+    "body": [
+      "symbolic {",
+      "\tlet ${1:f}(${2:x}) = ${3:expression}",
+      "\tlet ${4:g}(${2:x}) = differentiate(${1:f}, ${2:x})",
+      "\t",
+      "\tsolve: ${5:equation} for ${6:variable}",
+      "\tprove: ${7:theorem}",
+      "}"
+    ],
+    "description": "Create a symbolic mathematics block"
+  },
+  "Propagate Uncertainty": {
+    "prefix": "prop",
+    "body": [
+      "propagate uncertainty through {",
+      "\t${1:result} = ${2:calculation}",
+      "}"
+    ],
+    "description": "Propagate uncertainty through calculations"
+  },
+  "Tensor": {
+    "prefix": "tensor",
+    "body": [
+      "tensor ${1:T}[${2:3,3,3}] = ${3:initialize()}",
+      "parallel map ${1:T} {",
+      "\telement => ${4:transform(element)}",
+      "} into ${5:T_transformed}"
+    ],
+    "description": "Create and transform a tensor"
+  }
+}
