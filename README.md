@@ -1,5 +1,7 @@
 # Synapse Programming Language
 
+**Created by Michael Benjamin Crowe**
+
 A proprietary programming language designed for deep scientific reasoning and enhanced parallel thought processing pipelines.
 
 ## Overview
