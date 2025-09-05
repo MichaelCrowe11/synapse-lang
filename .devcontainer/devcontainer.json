@@ -1,0 +1,48 @@
+{
+  "name": "Synapse Development Environment",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter",
+        "ms-azuretools.vscode-docker",
+        "ms-vscode.makefile-tools",
+        "editorconfig.editorconfig"
+      ],
+      "settings": {
+        "python.testing.pytestEnabled": true,
+        "python.testing.unittestEnabled": false,
+        "python.formatting.provider": "black",
+        "editor.formatOnSave": true,
+        "python.analysis.typeCheckingMode": "basic",
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true,
+        "files.associations": {
+          "*.syn": "synapse",
+          "*.synapse": "synapse"
+        },
+        "[synapse]": {
+          "editor.tabSize": 4,
+          "editor.insertSpaces": true
+        }
+      }
+    }
+  },
+  "postCreateCommand": "bash -lc 'python -m pip install --upgrade pip setuptools wheel && pip install -e . || true && if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi && pre-commit install || true'",
+  "forwardPorts": [8000, 8888, 5000],
+  "remoteUser": "vscode",
+  "mounts": [],
+  "runArgs": ["--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined"],
+  "containerEnv": {
+    "PYTHONPATH": "/workspaces/synapse-lang"
+  },
+  "postStartCommand": "echo '🚀 Synapse Development Environment Ready! Run \"synapse\" to start the REPL.'"
+}
