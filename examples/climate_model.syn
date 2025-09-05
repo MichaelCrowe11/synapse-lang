@@ -1,0 +1,128 @@
+// Climate Modeling with Parallel Reasoning
+// Demonstrates complex system analysis with uncertainty propagation
+
+structure ClimateSystem {
+    temperature: Tensor[lat, lon, height, time]
+    pressure: Tensor[lat, lon, height, time]
+    humidity: Real ± uncertainty
+    carbon_ppm: Real ± uncertainty
+    
+    invariant: energy_balance == conserved
+}
+
+experiment GlobalWarmingProjection {
+    // Initial conditions with uncertainties
+    uncertain current_temp = 14.8 ± 0.1  // Global average °C
+    uncertain co2_level = 421.0 ± 2.0    // ppm
+    uncertain sensitivity = 3.0 ± 1.5     // Climate sensitivity
+    
+    // Parallel scenario modeling
+    parallel {
+        branch RCP2.6: model_pathway(emissions="low", mitigation="strong")
+        branch RCP4.5: model_pathway(emissions="moderate", mitigation="moderate")
+        branch RCP6.0: model_pathway(emissions="moderate-high", mitigation="limited")
+        branch RCP8.5: model_pathway(emissions="high", mitigation="none")
+    }
+    
+    // Propagate uncertainties through model
+    propagate uncertainty through {
+        delta_T = sensitivity * log2(co2_level / 280.0)
+        future_temp = current_temp + delta_T
+        
+        // Feedback loops
+        ice_albedo_feedback = compute_albedo_change(delta_T)
+        water_vapor_feedback = compute_humidity_change(delta_T)
+        cloud_feedback = compute_cloud_response(delta_T)
+        
+        total_feedback = ice_albedo_feedback + water_vapor_feedback + cloud_feedback
+    }
+}
+
+// Multi-model ensemble reasoning
+pipeline ClimateEnsemble {
+    stage ModelInitialization parallel(32) {
+        models: ["CESM2", "GFDL-CM4", "HadGEM3", "MIROC6", "MPI-ESM"]
+        perturb: initial_conditions
+        configure: physics_parameters
+    }
+    
+    stage SimulationRun parallel(auto) {
+        fork {
+            path atmosphere: solve_navier_stokes
+            path ocean: solve_circulation
+            path land: compute_carbon_cycle
+            path cryosphere: model_ice_dynamics
+        }
+        
+        couple: exchange_fluxes_between_components
+    }
+    
+    stage Analysis {
+        merge: combine_ensemble_members
+        statistics: compute_mean_std_percentiles
+        validate: compare_with_observations
+    }
+}
+
+// Reasoning about tipping points
+explore TippingPointAnalysis {
+    try linear_response: {
+        assume: system_near_equilibrium
+        method: small_perturbation_theory
+        stability: eigenvalue_analysis
+    }
+    
+    fallback nonlinear_dynamics: {
+        assume: far_from_equilibrium
+        method: bifurcation_analysis
+        identify: critical_transitions
+    }
+    
+    fallback stochastic_resonance: {
+        assume: noise_driven_transitions
+        method: fokker_planck_equation
+        compute: transition_probabilities
+    }
+    
+    accept when: early_warning_signals_detected
+    reject when: false_positive_rate > threshold
+}
+
+// Symbolic analysis of feedback loops
+symbolic {
+    let T(t) = T0 + ΔT * (1 - exp(-t/τ))
+    let feedback(T) = λ * T + β * T^2
+    
+    solve: dT/dt + feedback(T) == forcing(t) for T(t)
+    prove: stability_condition => λ < 1
+}
+
+// Hypothesis testing framework
+hypothesis ArcticAmplification {
+    assume: polar_warming > global_average * 2
+    predict: sea_ice_loss && permafrost_thaw
+    validate: satellite_observations && ground_measurements
+}
+
+// Uncertainty quantification in projections
+uncertain sea_level_rise = {
+    thermal_expansion: 0.43 ± 0.08  // meters by 2100
+    glacier_melt: 0.21 ± 0.05
+    greenland_ice: 0.18 ± 0.10
+    antarctic_ice: 0.24 ± 0.15
+    
+    total: propagate sum with correlation_matrix
+}
+
+// Reasoning chain for climate sensitivity
+reason chain ClimateSensitivityEstimate {
+    premise P1: "Radiative forcing from CO2 is logarithmic"
+    premise P2: "Feedbacks amplify initial warming"
+    premise P3: "Paleoclimate provides constraints"
+    
+    derive D1 from P1: "Doubling CO2 adds ~3.7 W/m²"
+    derive D2 from P2: "Total response = forcing / (1 - Σfeedbacks)"
+    derive D3 from P3: "Historical sensitivity: 2.5-4.0°C"
+    
+    conclude: D1 && D2 && D3 => "ECS likely 2.5-4.0°C per CO2 doubling"
+}
