@@ -1,0 +1,274 @@
+# Quantum Internet Infrastructure Example
+# Demonstrates distributed quantum computing across multiple nodes
+
+network QuantumInternet {
+    topology: mesh
+    
+    # Define quantum nodes
+    node Alice {
+        type: endpoint
+        qubits: 10
+        memory: 5
+        position: (0, 0, 0)
+        capabilities: {
+            coherence_time: 10.0,
+            gate_fidelity: 0.99
+        }
+    }
+    
+    node Bob {
+        type: endpoint
+        qubits: 10
+        memory: 5
+        position: (100, 0, 0)
+        capabilities: {
+            coherence_time: 10.0,
+            gate_fidelity: 0.99
+        }
+    }
+    
+    node Charlie {
+        type: endpoint
+        qubits: 10
+        memory: 5
+        position: (50, 50, 0)
+        capabilities: {
+            coherence_time: 10.0,
+            gate_fidelity: 0.99
+        }
+    }
+    
+    node QuantumRepeater1 {
+        type: repeater
+        qubits: 20
+        memory: 10
+        position: (25, 0, 0)
+        capabilities: {
+            coherence_time: 5.0,
+            swap_fidelity: 0.95
+        }
+    }
+    
+    node QuantumRepeater2 {
+        type: repeater
+        qubits: 20
+        memory: 10
+        position: (75, 0, 0)
+        capabilities: {
+            coherence_time: 5.0,
+            swap_fidelity: 0.95
+        }
+    }
+    
+    # Define quantum links
+    link Alice -> QuantumRepeater1 {
+        type: fiber
+        distance: 25.0
+        loss_rate: 0.01
+        
+        channel quantum_ch1 {
+            type: quantum
+            capacity: 1000
+            fidelity: 0.98
+            bandwidth: 1e9
+        }
+        
+        channel classical_ch1 {
+            type: classical
+            capacity: 10000
+            fidelity: 1.0
+            bandwidth: 10e9
+        }
+    }
+    
+    link QuantumRepeater1 -> QuantumRepeater2 {
+        type: fiber
+        distance: 50.0
+        loss_rate: 0.02
+        
+        channel quantum_ch2 {
+            type: quantum
+            capacity: 1000
+            fidelity: 0.96
+        }
+    }
+    
+    link QuantumRepeater2 -> Bob {
+        type: fiber
+        distance: 25.0
+        loss_rate: 0.01
+        
+        channel quantum_ch3 {
+            type: quantum
+            capacity: 1000
+            fidelity: 0.98
+        }
+    }
+    
+    link Alice -> Charlie {
+        type: freespace
+        distance: 70.7
+        loss_rate: 0.03
+        
+        channel quantum_direct {
+            type: quantum
+            capacity: 500
+            fidelity: 0.94
+        }
+    }
+    
+    link Charlie -> Bob {
+        type: freespace
+        distance: 70.7
+        loss_rate: 0.03
+        
+        channel quantum_direct2 {
+            type: quantum
+            capacity: 500
+            fidelity: 0.94
+        }
+    }
+}
+
+# Quantum Key Distribution Protocol
+protocol SecureKeyDistribution {
+    type: qkd
+    
+    # BB84 between Alice and Bob through repeaters
+    qkd BB84 {
+        alice: Alice
+        bob: Bob
+        key_length: 256
+        security_parameter: 0.05
+        authenticate: "SHA256"
+    }
+    
+    # Verify key establishment
+    if key_established:
+        send confirmation -> Bob
+        establish secure_channel
+    else:
+        retry protocol with purification
+    end
+}
+
+# Distributed Quantum Computation
+protocol DistributedVQE {
+    type: computation
+    
+    # Allocate resources across nodes
+    allocate qubits: 5 at Alice priority: high
+    allocate qubits: 5 at Bob priority: high
+    allocate qubits: 5 at Charlie priority: high
+    
+    # Create GHZ state across all nodes
+    entangle nodes: [Alice, Bob, Charlie] {
+        type: ghz
+        fidelity_threshold: 0.90
+        purification: true
+    }
+    
+    # Distribute computation
+    parallel {
+        at Alice:
+            apply_ansatz(theta1)
+            measure local_qubits
+        
+        at Bob:
+            apply_ansatz(theta2)
+            measure local_qubits
+        
+        at Charlie:
+            apply_ansatz(theta3)
+            measure local_qubits
+    }
+    
+    # Collect and combine results
+    await all_measurements
+    compute expectation_value
+    
+    # Release resources
+    release qubits at Alice
+    release qubits at Bob
+    release qubits at Charlie
+}
+
+# Quantum Teleportation Chain
+protocol TeleportationChain {
+    type: communication
+    
+    # Create entanglement chain
+    for node in [Alice, QuantumRepeater1, QuantumRepeater2, Bob]:
+        if not last_node:
+            entangle node -> next_node {
+                type: bell
+                fidelity_threshold: 0.95
+            }
+        end
+    end
+    
+    # Teleport quantum state from Alice to Bob
+    teleport {
+        source: Alice
+        target: Bob
+        qubit: Alice_q0
+        
+        # Use entanglement swapping at repeaters
+        swap at QuantumRepeater1
+        swap at QuantumRepeater2
+    }
+    
+    # Verify teleportation fidelity
+    measure fidelity
+    if fidelity < 0.90:
+        purify entanglement
+        retry teleportation
+    end
+}
+
+# Network Routing Protocol
+protocol QuantumRouting {
+    type: routing
+    
+    # Define routing strategy
+    route AliceToBob {
+        strategy: highest_fidelity
+        constraints: {
+            max_hops: 4,
+            min_fidelity: 0.85,
+            max_latency: 100ms
+        }
+    }
+    
+    # Dynamic path selection
+    if link_failure:
+        failover to alternate_path
+        broadcast route_update
+    end
+    
+    # Monitor network health
+    for link in all_links:
+        detect errors
+        if error_rate > threshold:
+            correct errors using redundant
+        end
+    end
+}
+
+# Execute protocols
+execute SecureKeyDistribution
+execute DistributedVQE with parameters: {
+    theta1: 0.5,
+    theta2: 1.0,
+    theta3: 1.5
+}
+execute TeleportationChain
+execute QuantumRouting
+
+# Monitor network performance
+monitor {
+    latency: all_links
+    fidelity: all_channels
+    throughput: quantum_channels
+    error_rates: all_nodes
+}
