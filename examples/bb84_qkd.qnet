@@ -1,0 +1,211 @@
+# BB84 Quantum Key Distribution Protocol
+# Demonstrates secure key generation between Alice and Bob
+
+network QKDNetwork {
+    topology: star
+    
+    node Alice {
+        type: endpoint
+        qubits: 1000
+        memory: 100
+        capabilities: {
+            coherence_time: 10.0,
+            state_prep_fidelity: 0.99
+        }
+    }
+    
+    node Bob {
+        type: endpoint
+        qubits: 1000
+        memory: 100
+        capabilities: {
+            coherence_time: 10.0,
+            measurement_fidelity: 0.99
+        }
+    }
+    
+    link Alice -> Bob {
+        type: fiber
+        distance: 50.0
+        loss_rate: 0.02
+        
+        channel quantum_channel {
+            type: quantum
+            capacity: 10000
+            fidelity: 0.98
+            bandwidth: 1e9
+        }
+        
+        channel classical_channel {
+            type: classical
+            capacity: 100000
+            fidelity: 1.0
+            bandwidth: 10e9
+        }
+    }
+}
+
+protocol BB84_KeyGen {
+    parameters: {
+        key_length: 256,
+        raw_bits: 4096,
+        security_parameter: 0.05,
+        privacy_amplification: true
+    }
+    
+    # Step 1: Alice prepares and sends qubits
+    on Alice {
+        # Generate random bits and bases
+        bits = generate_random_bits(raw_bits)
+        bases = generate_random_bases(raw_bits)
+        
+        # Prepare qubits according to bits and bases
+        for i in range(raw_bits):
+            if bases[i] == "Z":
+                if bits[i] == 0:
+                    prepare |0⟩
+                else:
+                    prepare |1⟩
+            else:  # X basis
+                if bits[i] == 0:
+                    prepare |+⟩
+                else:
+                    prepare |−⟩
+            end
+            
+            send qubit -> Bob via quantum_channel
+        end
+        
+        # Wait for Bob to measure
+        await sync
+        
+        # Send bases over classical channel
+        send bases -> Bob via classical_channel
+    }
+    
+    # Step 2: Bob measures received qubits
+    on Bob {
+        # Generate random measurement bases
+        bases_bob = generate_random_bases(raw_bits)
+        measurements = []
+        
+        # Measure each received qubit
+        for i in range(raw_bits):
+            receive qubit from Alice
+            
+            if bases_bob[i] == "Z":
+                result = measure_computational_basis(qubit)
+            else:  # X basis
+                result = measure_hadamard_basis(qubit)
+            end
+            
+            measurements.append(result)
+        end
+        
+        # Signal completion
+        sync
+        
+        # Receive Alice's bases
+        receive bases_alice from Alice
+        
+        # Basis reconciliation
+        matching_indices = []
+        for i in range(raw_bits):
+            if bases_alice[i] == bases_bob[i]:
+                matching_indices.append(i)
+            end
+        end
+        
+        # Send matching indices
+        send matching_indices -> Alice via classical_channel
+    }
+    
+    # Step 3: Key sifting and error estimation
+    on Alice {
+        receive matching_indices from Bob
+        
+        # Extract sifted key
+        sifted_key = []
+        for i in matching_indices:
+            sifted_key.append(bits[i])
+        end
+        
+        # Sample subset for error estimation
+        sample_size = len(sifted_key) / 10
+        sample_indices = random_sample(matching_indices, sample_size)
+        
+        send sample_indices -> Bob via classical_channel
+        send [bits[i] for i in sample_indices] -> Bob via classical_channel
+    }
+    
+    on Bob {
+        receive sample_indices from Alice
+        receive sample_bits from Alice
+        
+        # Calculate QBER (Quantum Bit Error Rate)
+        errors = 0
+        for i, idx in enumerate(sample_indices):
+            if sample_bits[i] != measurements[idx]:
+                errors += 1
+            end
+        end
+        
+        qber = errors / len(sample_indices)
+        send qber -> Alice via classical_channel
+        
+        # Remove sample bits from key
+        final_key = []
+        for i in matching_indices:
+            if i not in sample_indices:
+                final_key.append(measurements[i])
+            end
+        end
+    }
+    
+    # Step 4: Privacy amplification and key finalization
+    on Alice {
+        receive qber from Bob
+        
+        # Check if QBER is below threshold
+        if qber < security_parameter:
+            # Remove sample bits from key
+            final_key = []
+            for i in matching_indices:
+                if i not in sample_indices:
+                    final_key.append(bits[i])
+                end
+            end
+            
+            # Privacy amplification (compress key)
+            if privacy_amplification:
+                secure_key = hash_function(final_key, key_length)
+            else:
+                secure_key = final_key[:key_length]
+            end
+            
+            export key = secure_key
+            export success = true
+        else:
+            # QBER too high, abort protocol
+            export success = false
+            retry protocol
+        end
+    }
+    
+    validate {
+        qber < 0.11  # Standard BB84 security threshold
+        len(key) == key_length
+        entropy(key) > 0.95
+    }
+}
+
+# Execute BB84 protocol
+execute BB84_KeyGen with parameters
+
+# Monitor and report
+monitor {
+    qber: quantum_channel
+    key_rate: bits_per_second
+    success_rate: percentage
+    channel_capacity: utilization
+}

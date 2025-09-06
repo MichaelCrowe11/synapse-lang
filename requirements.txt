@@ -1,20 +1,25 @@
-# requirements.txt - Modern Profile (Python 3.11+)
-numpy==2.1.*
-numba==0.61.*
-scipy>=1.11
-sympy>=1.12
-matplotlib>=3.8
-colorama>=0.4.6
+# requirements.txt - Synapse-Lang + Qubit-Flow Dependencies
+# Core scientific computing
+numpy>=1.20.0
+scipy>=1.7.0
+sympy>=1.9
+matplotlib>=3.4.0
 
-# Quantum SDKs (Modern)
-qiskit==2.0.*
-pennylane==0.42.*
-cirq==1.4.*
+# Quantum computing frameworks
+qiskit>=0.34.0
+pennylane>=0.20.0
+cirq>=0.13.0
 
-# Tooling
-networkx>=3.2
-pandas>=2.2
-pytest>=8
-black>=24
-mypy>=1.8
-flake8>=7
+# Scientific computing and networking
+networkx>=2.6
+pandas>=1.3.0
+
+# Development and testing
+pytest>=6.2.0
+black>=21.6b0
+mypy>=0.910
+flake8>=3.9.0
+
+# Optional performance enhancements
+numba>=0.56.0
+colorama>=0.4.4
