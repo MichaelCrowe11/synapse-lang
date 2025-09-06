@@ -1,0 +1,15 @@
+network Backbone {
+  nodes {
+    A: node(type = "ion",   mem = {T1: 5s, T2: 1s});
+    R: node(type = "repeater", mem = {T1: 8s, T2: 2s});
+    B: node(type = "superc", mem = {T1: 3s, T2: 0.7s});
+  }
+  qlinks {
+    A <-> R: fiber(length_km=50, loss_db_km=0.2, dark=50Hz);
+    R <-> B: fiber(length_km=50, loss_db_km=0.2);
+  }
+  clinks {
+    A <-> R: classical(latency_ms=0.6);
+    R <-> B: classical(latency_ms=0.6);
+  }
+}

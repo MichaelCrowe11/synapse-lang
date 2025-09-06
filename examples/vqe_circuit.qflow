@@ -1,0 +1,37 @@
+# Variational Quantum Eigensolver (VQE) Circuit
+# Finds ground state energy of molecular Hamiltonians
+
+circuit VQE {
+    # Parameters from classical optimizer
+    parameter theta = 0.0
+    parameter phi = 0.0
+    
+    # Initialize qubits for H2 molecule simulation
+    qubit q0 = |0⟩
+    qubit q1 = |0⟩
+    
+    # Prepare ansatz state
+    hadamard q0
+    cnot q0 -> q1
+    
+    # Parameterized rotation gates
+    rotation q0: Ry(theta)
+    rotation q1: Rz(phi)
+    
+    # Entangling layer
+    cnot q0 -> q1
+    
+    # Measurement in computational basis
+    measure q0 -> m0
+    measure q1 -> m1
+    
+    # Calculate expectation value
+    expectation = compute_expectation(m0, m1)
+}
+
+# Optimization loop (handled by classical optimizer)
+optimize VQE with {
+    method: "COBYLA",
+    max_iterations: 100,
+    tolerance: 1e-6
+}

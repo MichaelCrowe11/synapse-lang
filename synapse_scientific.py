@@ -12,6 +12,16 @@ import matplotlib.pyplot as plt
 from dataclasses import dataclass
 import warnings
 
+# Import quantum ML capabilities
+from synapse_quantum_ml import (
+    QuantumNeuralNetwork, 
+    QuantumEnsemble, 
+    ContinuousQuantumLearner,
+    create_quantum_neural_network,
+    start_continuous_learning,
+    quantum_ensemble_predict
+)
+
 @dataclass
 class SynapseArray:
     """Synapse wrapper for NumPy arrays with uncertainty support"""
@@ -98,6 +108,39 @@ class ScientificFunctions:
     def convolve(signal1, signal2, mode='same'):
         """Convolution of two signals"""
         return signal.convolve(signal1, signal2, mode=mode)
+    
+    @staticmethod
+    def create_quantum_neural_network(input_size: int, hidden_size: int, output_size: int):
+        """Create a quantum neural network for advanced machine learning"""
+        return create_quantum_neural_network(input_size, hidden_size, output_size)
+    
+    @staticmethod
+    def start_continuous_quantum_learning(data_generator: Callable, max_iterations: int = 100):
+        """Start continuous quantum learning with auto-adjustment"""
+        return start_continuous_learning(data_generator, max_iterations)
+    
+    @staticmethod
+    def quantum_ensemble_predict(ensemble: QuantumEnsemble, X: np.ndarray):
+        """Make predictions using a quantum ensemble"""
+        return quantum_ensemble_predict(ensemble, X)
+    
+    @staticmethod
+    def create_quantum_ensemble(num_models: int = 5):
+        """Create an ensemble of quantum models"""
+        return QuantumEnsemble(num_models)
+    
+    @staticmethod
+    def quantum_state_preparation(num_qubits: int):
+        """Prepare a quantum state for computation"""
+        from synapse_quantum_ml import QuantumState
+        return QuantumState(num_qubits)
+    
+    @staticmethod
+    def quantum_circuit_optimization(target_function: Callable, initial_circuit):
+        """Optimize quantum circuits automatically"""
+        from synapse_quantum_ml import AutoQuantumOptimizer
+        optimizer = AutoQuantumOptimizer()
+        return optimizer.optimize_circuit(target_function, initial_circuit)
     
     @staticmethod
     def correlate(signal1, signal2, mode='same'):

@@ -1,0 +1,16 @@
+[project]
+name = "qnet"
+version = "0.0.1"
+description = "Quantum-Net: A language for distributed quantum computing."
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "Michael Crowe", email = "your.email@example.com"},
+]
+dependencies = [
+    "numpy",
+]
+
+[project.scripts]
+qnet = "qnet_cli:main"

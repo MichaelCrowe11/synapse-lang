@@ -1,0 +1,39 @@
+# Quantum Teleportation Protocol - Qubit-Flow Example
+# Demonstrates quantum entanglement and teleportation
+
+circuit QTeleportation {
+    # Initialize 3 qubits
+    qubit alice = |0⟩
+    qubit bob = |0⟩  
+    qubit charlie = |0⟩
+    
+    # Create the state to teleport on Alice's qubit
+    rotation alice: Ry(π/4)
+    
+    # Create Bell pair between Bob and Charlie
+    hadamard bob
+    cnot bob -> charlie
+    
+    # Bell measurement on Alice and Bob
+    cnot alice -> bob
+    hadamard alice
+    
+    # Measure Alice and Bob
+    measure alice -> m1
+    measure bob -> m2
+    
+    # Apply corrections to Charlie based on measurements
+    if m2 == 1:
+        pauli_x charlie
+    end
+    
+    if m1 == 1:
+        pauli_z charlie
+    end
+    
+    # Charlie now has Alice's original state
+    measure charlie -> result
+}
+
+# Execute the teleportation
+execute QTeleportation with shots=1000

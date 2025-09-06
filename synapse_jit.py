@@ -7,13 +7,14 @@ import ast as py_ast
 import types
 import dis
 from typing import Any, Dict, Optional
+import numpy as np
 import numba
 from numba import jit, njit, prange
 import inspect
 from synapse_ast import *
 from synapse_parser import parse
 
-class SynapseToP PythonTranspiler(ASTVisitor):
+class SynapseToPythonTranspiler(ASTVisitor):
     """Transpile Synapse AST to Python AST for JIT compilation"""
     
     def __init__(self):

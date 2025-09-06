@@ -1,0 +1,2 @@
+protocol BB84(n:int=10_000){ on A{ bits a=randbits(n); bases ba=randbits(n); send(A->B,prepare(a,ba)); send(A->B,ba); }
+  on B{ bases bb=randbits(n); meas=measure(bb); sift= sift_keys(ba,bb,a,meas); export key=sift.key; report QBER=sift.qber; } }

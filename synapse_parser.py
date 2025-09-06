@@ -4,7 +4,7 @@ Converts tokens to Abstract Syntax Tree (AST)
 """
 
 from typing import List, Optional, Union
-from synapse_interpreter import Token, TokenType, Lexer
+from synapse_lexer import Token, TokenType, Lexer
 from synapse_ast import *
 
 class ParseError(Exception):
@@ -102,6 +102,10 @@ class Parser:
         if self.check(TokenType.EXPLORE):
             return self.parse_explore()
         
+        # Quantum circuit
+        if self.check(TokenType.QUANTUM):
+            return self.parse_quantum()
+        
         # Symbolic block
         if self.check(TokenType.SYMBOLIC):
             return self.parse_symbolic()
@@ -122,6 +126,10 @@ class Parser:
         if self.check(TokenType.PROPAGATE):
             return self.parse_propagate()
         
+        # Prove statement
+        if self.check(TokenType.PROVE):
+            return self.parse_prove()
+        
         # Regular assignment or expression
         if self.check(TokenType.IDENTIFIER):
             # Look ahead for assignment
@@ -136,39 +144,45 @@ class Parser:
         """Parse hypothesis block"""
         token = self.advance()  # consume 'hypothesis'
         name = self.consume(TokenType.IDENTIFIER, "Expected hypothesis name").value
-        
+
+        # Shorthand form: hypothesis H1: expression
+        if self.check(TokenType.COLON):
+            self.advance()
+            prediction_expr = self.parse_expression()
+            return HypothesisNode(name, [], [prediction_expr], [], token.line, token.column)
+
         self.consume(TokenType.LEFT_BRACE, "Expected '{' after hypothesis name")
         self.skip_newlines()
-        
+
         assumptions = []
         predictions = []
         validations = []
-        
+
         while not self.check(TokenType.RIGHT_BRACE):
             self.skip_newlines()
-            
+
             if self.check(TokenType.IDENTIFIER):
                 field_name = self.peek().value
-                
+
                 if field_name == "assume":
                     self.advance()
                     self.consume(TokenType.COLON, "Expected ':' after 'assume'")
                     assumptions.append(self.parse_expression())
-                    
+
                 elif field_name == "predict":
                     self.advance()
                     self.consume(TokenType.COLON, "Expected ':' after 'predict'")
                     predictions.append(self.parse_expression())
-                    
+
                 elif field_name == "validate":
                     self.advance()
                     self.consume(TokenType.COLON, "Expected ':' after 'validate'")
                     validations.append(self.parse_expression())
-            
+
             self.skip_newlines()
-        
+
         self.consume(TokenType.RIGHT_BRACE, "Expected '}' to close hypothesis")
-        
+
         return HypothesisNode(name, assumptions, predictions, validations, token.line, token.column)
     
     def parse_experiment(self) -> ExperimentNode:
@@ -422,6 +436,258 @@ class Parser:
         
         return PropagateNode("uncertainty", body, token.line, token.column)
     
+    def parse_prove(self) -> ASTNode:
+        """Parse prove statement"""
+        token = self.advance()  # consume 'prove'
+        
+        # Parse the statement to prove
+        statement = self.parse_expression()
+        
+        # Optional proof method
+        method = None
+        if self.check(TokenType.USING):
+            self.advance()  # consume 'using'
+            method = self.parse_expression()
+        
+        from synapse_ast import ProveNode
+        return ProveNode(statement, method, token.line, token.column)
+    
+    def parse_quantum(self) -> ASTNode:
+        """Parse quantum constructs"""
+        token = self.advance()  # consume 'quantum'
+        
+        if self.check(TokenType.CIRCUIT):
+            return self.parse_quantum_circuit()
+        elif self.check(TokenType.ALGORITHM):
+            return self.parse_quantum_algorithm()
+        elif self.check(TokenType.BACKEND):
+            return self.parse_quantum_backend()
+        else:
+            # Quantum block
+            return self.parse_quantum_block()
+    
+    def parse_quantum_circuit(self) -> 'QuantumCircuitNode':
+        """Parse quantum circuit definition"""
+        circuit_token = self.advance()  # consume 'circuit'
+        name = self.consume(TokenType.IDENTIFIER, "Expected circuit name").value
+        
+        # Optional qubit count
+        qubits = 1
+        if self.check(TokenType.LEFT_PAREN):
+            self.advance()
+            if self.check(TokenType.NUMBER):
+                qubits = int(self.advance().value)
+            self.consume(TokenType.RIGHT_PAREN, "Expected ')' after qubit count")
+        
+        self.consume(TokenType.LEFT_BRACE, "Expected '{' after circuit name")
+        self.skip_newlines()
+        
+        gates = []
+        measurements = []
+        
+        while not self.check(TokenType.RIGHT_BRACE):
+            self.skip_newlines()
+            
+            if self.check_quantum_gate():
+                gates.append(self.parse_quantum_gate())
+            elif self.check(TokenType.MEASURE):
+                measurements.append(self.parse_quantum_measure())
+            else:
+                # Skip unrecognized tokens
+                self.advance()
+            
+            self.skip_newlines()
+        
+        self.consume(TokenType.RIGHT_BRACE, "Expected '}' to close circuit")
+        
+        from synapse_ast import QuantumCircuitNode
+        return QuantumCircuitNode(name, qubits, gates, measurements, circuit_token.line, circuit_token.column)
+    
+    def check_quantum_gate(self) -> bool:
+        """Check if current token is a quantum gate"""
+        return self.check(TokenType.HADAMARD) or self.check(TokenType.CNOT) or \
+               self.check(TokenType.PAULI_X) or self.check(TokenType.PAULI_Y) or \
+               self.check(TokenType.PAULI_Z) or self.check(TokenType.ROTATION_X) or \
+               self.check(TokenType.ROTATION_Y) or self.check(TokenType.ROTATION_Z) or \
+               self.check(TokenType.IDENTIFIER)
+    
+    def parse_quantum_gate(self) -> 'QuantumGateNode':
+        """Parse quantum gate operation"""
+        gate_token = self.advance()
+        gate_type = gate_token.value
+        
+        # Handle both keyword tokens and identifier tokens for gates
+        if gate_token.type == TokenType.IDENTIFIER:
+            # Common quantum gate names as identifiers
+            if gate_type not in ['h', 'hadamard', 'cnot', 'cx', 'x', 'y', 'z', 'rx', 'ry', 'rz']:
+                # Not a quantum gate, return None or handle error
+                raise SyntaxError(f"Unknown quantum gate: {gate_type}")
+        
+        self.consume(TokenType.LEFT_PAREN, f"Expected '(' after {gate_type}")
+        
+        qubits = []
+        parameters = []
+        
+        # Parse qubits and parameters
+        if not self.check(TokenType.RIGHT_PAREN):
+            qubits.append(self.parse_expression())
+            
+            while self.check(TokenType.COMMA):
+                self.advance()
+                arg = self.parse_expression()
+                
+                # Distinguish between qubits and parameters based on gate type
+                if gate_type in ['rx', 'ry', 'rz'] and len(qubits) == 1:
+                    parameters.append(arg)  # Rotation angle
+                else:
+                    qubits.append(arg)  # Additional qubit
+        
+        self.consume(TokenType.RIGHT_PAREN, f"Expected ')' after {gate_type} arguments")
+        
+        from synapse_ast import QuantumGateNode
+        return QuantumGateNode(gate_type, qubits, parameters, gate_token.line, gate_token.column)
+    
+    def parse_quantum_measure(self) -> 'QuantumMeasureNode':
+        """Parse quantum measurement"""
+        token = self.advance()  # consume 'measure'
+        
+        self.consume(TokenType.LEFT_PAREN, "Expected '(' after measure")
+        
+        qubits = []
+        classical_bits = []
+        
+        if not self.check(TokenType.RIGHT_PAREN):
+            qubits.append(self.parse_expression())
+            
+            while self.check(TokenType.COMMA):
+                self.advance()
+                qubits.append(self.parse_expression())
+        
+        self.consume(TokenType.RIGHT_PAREN, "Expected ')' after measure arguments")
+        
+        from synapse_ast import QuantumMeasureNode
+        return QuantumMeasureNode(qubits, classical_bits, token.line, token.column)
+    
+    def parse_quantum_algorithm(self) -> 'QuantumAlgorithmNode':
+        """Parse quantum algorithm definition"""
+        algorithm_token = self.advance()  # consume 'algorithm'
+        name = self.consume(TokenType.IDENTIFIER, "Expected algorithm name").value
+        
+        self.consume(TokenType.LEFT_BRACE, "Expected '{' after algorithm name")
+        self.skip_newlines()
+        
+        parameters: List[ASTNode] = []
+        ansatz = None
+        cost_function = None
+        optimizer = None
+        
+        while not self.check(TokenType.RIGHT_BRACE):
+            self.skip_newlines()
+            
+            if self.check(TokenType.IDENTIFIER):
+                field_name = self.peek().value
+                
+                if field_name == "parameters":
+                    self.advance()
+                    self.consume(TokenType.COLON, "Expected ':' after 'parameters'")
+                    # Parse parameter list: [theta1, theta2, ...]
+                    if self.check(TokenType.LEFT_BRACKET):
+                        self.advance()
+                        if not self.check(TokenType.RIGHT_BRACKET):
+                            # At least one identifier
+                            ident_token = self.consume(TokenType.IDENTIFIER, "Expected parameter identifier")
+                            from synapse_ast import IdentifierNode
+                            parameters.append(IdentifierNode(ident_token.value, ident_token.line, ident_token.column))
+                            while self.check(TokenType.COMMA):
+                                self.advance()
+                                ident_token = self.consume(TokenType.IDENTIFIER, "Expected parameter identifier")
+                                parameters.append(IdentifierNode(ident_token.value, ident_token.line, ident_token.column))
+                        self.consume(TokenType.RIGHT_BRACKET, "Expected ']' after parameter list")
+                    
+                elif field_name == "ansatz":
+                    self.advance()
+                    self.consume(TokenType.COLON, "Expected ':' after 'ansatz'")
+                    # Ansatz can be identifier or string literal for now
+                    if self.check(TokenType.IDENTIFIER):
+                        ident_tok = self.advance()
+                        from synapse_ast import QuantumAnsatzNode
+                        ansatz = QuantumAnsatzNode(ident_tok.value, [], ident_tok.line, ident_tok.column)
+                    elif self.check(TokenType.STRING):
+                        str_tok = self.advance()
+                        from synapse_ast import QuantumAnsatzNode
+                        ansatz = QuantumAnsatzNode(str_tok.value, [], str_tok.line, str_tok.column)
+                    else:
+                        # Fallback to default
+                        from synapse_ast import QuantumAnsatzNode
+                        ansatz = QuantumAnsatzNode("default", [], algorithm_token.line, algorithm_token.column)
+                    
+                elif field_name == "cost_function":
+                    self.advance()
+                    self.consume(TokenType.COLON, "Expected ':' after 'cost_function'")
+                    cost_function = self.parse_expression()
+                    
+                elif field_name == "optimize":
+                    self.advance()
+                    self.consume(TokenType.COLON, "Expected ':' after 'optimize'")
+                    optimizer = self.parse_expression()
+                else:
+                    # Unknown field - consume identifier and its value to avoid infinite loop
+                    self.advance()  # consume the field name
+                    if self.check(TokenType.COLON):
+                        self.advance()  # consume the colon
+                        # Skip the value - could be expression, list, etc.
+                        self.parse_expression()
+            
+            self.skip_newlines()
+            
+            # Add safety check to prevent infinite loop
+            if self.check(TokenType.EOF):
+                break
+        
+        self.consume(TokenType.RIGHT_BRACE, "Expected '}' to close algorithm")
+        
+        from synapse_ast import QuantumAlgorithmNode, QuantumAnsatzNode
+        if ansatz is None:
+            ansatz = QuantumAnsatzNode("default", [], algorithm_token.line, algorithm_token.column)
+        
+        return QuantumAlgorithmNode(name, parameters, ansatz, cost_function, optimizer, algorithm_token.line, algorithm_token.column)
+    
+    def parse_quantum_backend(self) -> 'QuantumBackendNode':
+        """Parse quantum backend configuration"""
+        backend_token = self.advance()  # consume 'backend'
+        name = self.consume(TokenType.IDENTIFIER, "Expected backend name").value
+        
+        config = {}
+        
+        if self.check(TokenType.LEFT_BRACE):
+            self.advance()
+            self.skip_newlines()
+            
+            while not self.check(TokenType.RIGHT_BRACE):
+                self.skip_newlines()
+                
+                if self.check(TokenType.IDENTIFIER):
+                    key = self.advance().value
+                    self.consume(TokenType.COLON, f"Expected ':' after {key}")
+                    # Special handling for simple numeric literals without expression complexity
+                    if self.check(TokenType.NUMBER):
+                        value_token = self.advance()
+                        from synapse_ast import NumberNode
+                        config[key] = NumberNode(value_token.value, value_token.line, value_token.column)
+                    else:
+                        config[key] = self.parse_expression()
+                
+                self.skip_newlines()
+            
+            self.consume(TokenType.RIGHT_BRACE, "Expected '}' to close backend config")
+        
+        from synapse_ast import QuantumBackendNode
+        return QuantumBackendNode(name, config, backend_token.line, backend_token.column)
+    
+    def parse_quantum_block(self) -> 'BlockNode':
+        """Parse quantum execution block"""
+        return self.parse_block()
+    
     def parse_uncertain_assignment(self) -> AssignmentNode:
         """Parse uncertain variable assignment"""
         token = self.advance()  # consume 'uncertain'
@@ -566,6 +832,12 @@ class Parser:
             right = self.parse_addition()
             left = BinaryOpNode(token.value, left, right, token.line, token.column)
         
+        # Handle arrow operator separately
+        if self.check(TokenType.ARROW):
+            token = self.advance()
+            right = self.parse_addition()
+            left = BinaryOpNode("=>", left, right, token.line, token.column)
+        
         return left
     
     def parse_addition(self) -> ASTNode:
@@ -656,6 +928,31 @@ class Parser:
             expr = self.parse_expression()
             self.consume(TokenType.RIGHT_PAREN, "Expected ')' after expression")
             return expr
+
+        # List literal: [a, b, c] or Matrix literal: [[a,b], [c,d]]
+        if self.check(TokenType.LEFT_BRACKET):
+            start = self.advance()
+            elements = []
+            
+            if not self.check(TokenType.RIGHT_BRACKET):
+                first_elem = self.parse_expression()
+                elements.append(first_elem)
+                
+                while self.check(TokenType.COMMA):
+                    self.advance()
+                    elements.append(self.parse_expression())
+            
+            self.consume(TokenType.RIGHT_BRACKET, "Expected ']' after literal")
+            
+            # Check if this is a matrix (all elements are lists of same length)
+            from synapse_ast import ListNode, MatrixNode
+            if elements and all(isinstance(e, ListNode) for e in elements):
+                if len(set(len(e.elements) for e in elements)) == 1:  # Same row length
+                    rows = [e.elements for e in elements]
+                    return MatrixNode(rows, start.line, start.column)
+            
+            # Regular list
+            return ListNode(elements, start.line, start.column)
         
         # Block expression
         if self.check(TokenType.LEFT_BRACE):

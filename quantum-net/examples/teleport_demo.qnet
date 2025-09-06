@@ -1,0 +1,4 @@
+network SmallLine { nodes{A:node(); R:node(); B:node();}
+  qlinks{ A<->R:fiber(length_km=30,loss_db_km=0.2); R<->B:fiber(length_km=30,loss_db_km=0.2);} clinks{A<->R:classical();R<->B:classical();} }
+protocol Teleport(psi: qubit at A,target=B){ epr AB=entangle(A,B) using {repeater:R, attempts:50}; on A{ let (m1,m2)=bell_measure(psi,AB.A); send(A->B,m1,m2);} on B{ let b=recv(A->B); apply_corrections(AB.B,b); export out=AB.B;} validate{ fidelity(out,psi)>0.9 } }
+app Demo{ use SmallLine; use Teleport; run 200 trials seed 7; report{ mean_fidelity, pairs_per_sec } }

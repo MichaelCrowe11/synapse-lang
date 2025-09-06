@@ -133,5 +133,51 @@
       "} into ${5:T_transformed}"
     ],
     "description": "Create and transform a tensor"
+  },
+  "Quantum Circuit": {
+    "prefix": "qcirc",
+    "body": [
+      "quantum circuit ${1:bell}(2) {",
+      "\th(0)",
+      "\tcnot(0,1)",
+      "\tmeasure(0,1)",
+      "}"
+    ],
+    "description": "Basic Bell state quantum circuit"
+  },
+  "Quantum GHZ": {
+    "prefix": "qghz",
+    "body": [
+      "quantum circuit ${1:ghz}(${2:3}) {",
+      "\th(0)",
+      "\tcnot(0,1)",
+      "\tcnot(1,2)",
+      "\tmeasure(0,1,2)",
+      "}"
+    ],
+    "description": "Generate an n-qubit GHZ state"
+  },
+  "Quantum Algorithm": {
+    "prefix": "qalg",
+    "body": [
+      "quantum algorithm ${1:vqe} {",
+      "\tparameters: [theta1, theta2, theta3]",
+      "\tansatz: hardware_efficient",
+      "\tcost_function: energy_expectation(H)",
+      "\toptimize: gradient_descent(theta1, theta2, theta3)",
+      "}"
+    ],
+    "description": "Define a quantum algorithm skeleton"
+  },
+  "Quantum Backend": {
+    "prefix": "qbackend",
+    "body": [
+      "quantum backend ${1:simulator} {",
+      "\tshots: 1024",
+      "\tnoise_model: ideal",
+      "\toptimization_level: 2",
+      "}"
+    ],
+    "description": "Configure a quantum backend"
   }
 }

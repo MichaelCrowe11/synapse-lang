@@ -4,9 +4,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
-venv/
-ENV/
 build/
 develop-eggs/
 dist/
@@ -19,27 +16,80 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
-# IDE
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# OS
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-
 # Project specific
-*.syn.cache
-*.syn.out
-.synapse/
+*.log
+*.tmp
+temp/
+tmp/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# Quantum simulation data
+quantum_states/
+circuit_diagrams/
+measurement_data/
+
+# Windows
+desktop.ini
+
+# Synapse-Lang specific
+*.syn.compiled
+*.qflow.compiled
+synapse_cache/
+qubit_cache/
+bridge_logs/
+
+# Backup files
+*.backup
+*.bak
+*~

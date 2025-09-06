@@ -4,7 +4,7 @@ Defines all node types for the parse tree
 """
 
 from dataclasses import dataclass
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional, Union, Dict
 from enum import Enum
 
 class NodeType(Enum):
@@ -20,6 +20,9 @@ class NodeType(Enum):
     ASSIGNMENT = "ASSIGNMENT"
     FUNCTION_CALL = "FUNCTION_CALL"
     TENSOR_ACCESS = "TENSOR_ACCESS"
+    LIST = "LIST"
+    MATRIX = "MATRIX"
+    TENSOR = "TENSOR"
     
     # Statements  
     HYPOTHESIS = "HYPOTHESIS"
@@ -47,6 +50,14 @@ class NodeType(Enum):
     EVOLVE = "EVOLVE"
     OBSERVE = "OBSERVE"
     SYNTHESIZE = "SYNTHESIZE"
+    
+    # Quantum computing nodes
+    QUANTUM_CIRCUIT = "QUANTUM_CIRCUIT"
+    QUANTUM_GATE = "QUANTUM_GATE"
+    QUANTUM_MEASURE = "QUANTUM_MEASURE"
+    QUANTUM_BACKEND = "QUANTUM_BACKEND"
+    QUANTUM_ALGORITHM = "QUANTUM_ALGORITHM"
+    QUANTUM_ANSATZ = "QUANTUM_ANSATZ"
     
     # Control flow
     IF = "IF"
@@ -104,6 +115,114 @@ class UncertainNode(ASTNode):
         super().__init__(NodeType.UNCERTAIN, line, column)
         self.value = value
         self.uncertainty = uncertainty
+
+@dataclass
+class ListNode(ASTNode):
+    """List literal (1-D tensor)"""
+    elements: List[ASTNode]
+    def __init__(self, elements: List[ASTNode], line: int, column: int):
+        super().__init__(NodeType.LIST, line, column)
+        self.elements = elements
+
+@dataclass
+class MatrixNode(ASTNode):
+    """Matrix literal (2-D tensor)"""
+    rows: List[List[ASTNode]]
+    def __init__(self, rows: List[List[ASTNode]], line: int, column: int):
+        super().__init__(NodeType.MATRIX, line, column)
+        self.rows = rows
+
+@dataclass
+class TensorNode(ASTNode):
+    """N-D Tensor literal"""
+    dimensions: List[int]
+    values: List[ASTNode]
+    def __init__(self, dimensions: List[int], values: List[ASTNode], line: int, column: int):
+        super().__init__(NodeType.TENSOR, line, column)
+        self.dimensions = dimensions
+        self.values = values
+
+@dataclass
+class QuantumCircuitNode(ASTNode):
+    """Quantum circuit definition"""
+    name: str
+    qubits: int
+    gates: List['QuantumGateNode']
+    measurements: List['QuantumMeasureNode']
+    
+    def __init__(self, name: str, qubits: int, gates: List['QuantumGateNode'], 
+                 measurements: List['QuantumMeasureNode'], line: int, column: int):
+        super().__init__(NodeType.QUANTUM_CIRCUIT, line, column)
+        self.name = name
+        self.qubits = qubits
+        self.gates = gates
+        self.measurements = measurements
+
+@dataclass
+class QuantumGateNode(ASTNode):
+    """Quantum gate operation"""
+    gate_type: str
+    qubits: List[ASTNode]
+    parameters: List[ASTNode]
+    
+    def __init__(self, gate_type: str, qubits: List[ASTNode], parameters: List[ASTNode], 
+                 line: int, column: int):
+        super().__init__(NodeType.QUANTUM_GATE, line, column)
+        self.gate_type = gate_type
+        self.qubits = qubits
+        self.parameters = parameters
+
+@dataclass
+class QuantumMeasureNode(ASTNode):
+    """Quantum measurement operation"""
+    qubits: List[ASTNode]
+    classical_bits: List[ASTNode]
+    
+    def __init__(self, qubits: List[ASTNode], classical_bits: List[ASTNode], 
+                 line: int, column: int):
+        super().__init__(NodeType.QUANTUM_MEASURE, line, column)
+        self.qubits = qubits
+        self.classical_bits = classical_bits
+
+@dataclass
+class QuantumBackendNode(ASTNode):
+    """Quantum backend configuration"""
+    name: str
+    config: Dict[str, ASTNode]
+    
+    def __init__(self, name: str, config: Dict[str, ASTNode], line: int, column: int):
+        super().__init__(NodeType.QUANTUM_BACKEND, line, column)
+        self.name = name
+        self.config = config
+
+@dataclass
+class QuantumAlgorithmNode(ASTNode):
+    """Quantum algorithm definition"""
+    name: str
+    parameters: List[ASTNode]
+    ansatz: 'QuantumAnsatzNode'
+    cost_function: ASTNode
+    optimizer: ASTNode
+    
+    def __init__(self, name: str, parameters: List[ASTNode], ansatz: 'QuantumAnsatzNode',
+                 cost_function: ASTNode, optimizer: ASTNode, line: int, column: int):
+        super().__init__(NodeType.QUANTUM_ALGORITHM, line, column)
+        self.name = name
+        self.parameters = parameters
+        self.ansatz = ansatz
+        self.cost_function = cost_function
+        self.optimizer = optimizer
+
+@dataclass
+class QuantumAnsatzNode(ASTNode):
+    """Quantum ansatz (parameterized circuit)"""
+    name: str
+    layers: List[ASTNode]
+    
+    def __init__(self, name: str, layers: List[ASTNode], line: int, column: int):
+        super().__init__(NodeType.QUANTUM_ANSATZ, line, column)
+        self.name = name
+        self.layers = layers
 
 @dataclass
 class BinaryOpNode(ASTNode):
@@ -371,6 +490,17 @@ class PropagateNode(ASTNode):
         self.through_body = through_body
 
 @dataclass
+class ProveNode(ASTNode):
+    """Proof statement"""
+    statement: ASTNode
+    method: Optional[ASTNode]
+    
+    def __init__(self, statement: ASTNode, method: Optional[ASTNode], line: int, column: int):
+        super().__init__(NodeType.PROVE, line, column)
+        self.statement = statement
+        self.method = method
+
+@dataclass
 class BlockNode(ASTNode):
     """Block of statements"""
     statements: List[ASTNode]
@@ -427,6 +557,29 @@ class ASTPrinter(ASTVisitor):
     
     def visit_uncertain(self, node: UncertainNode) -> str:
         return f"{self.indent()}Uncertain({node.value} ± {node.uncertainty})"
+
+    def visit_list(self, node: ListNode) -> str:
+        self.indent_level += 1
+        elems = [self.visit(e) for e in node.elements]
+        self.indent_level -= 1
+        return f"{self.indent()}List[\n" + "\n".join(elems) + f"\n{self.indent()}]"
+
+    def visit_matrix(self, node: MatrixNode) -> str:
+        self.indent_level += 1
+        row_strs = []
+        for row in node.rows:
+            self.indent_level += 1
+            elems = [self.visit(e) for e in row]
+            self.indent_level -= 1
+            row_strs.append(f"{self.indent()}Row(\n" + "\n".join(elems) + f"\n{self.indent()})")
+        self.indent_level -= 1
+        return f"{self.indent()}Matrix[\n" + "\n".join(row_strs) + f"\n{self.indent()}]"
+
+    def visit_tensor(self, node: TensorNode) -> str:
+        self.indent_level += 1
+        vals = [self.visit(v) for v in node.values]
+        self.indent_level -= 1
+        return f"{self.indent()}Tensor(dims={node.dimensions})[\n" + "\n".join(vals) + f"\n{self.indent()}]"
     
     def visit_binary_op(self, node: BinaryOpNode) -> str:
         self.indent_level += 1
