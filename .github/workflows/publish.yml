@@ -1,4 +1,4 @@
-name: Publish to PyPI (Trusted Publisher)
+name: Publish to PyPI
 
 on:
   push:
@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   test:
