@@ -8,8 +8,16 @@ import types
 import dis
 from typing import Any, Dict, Optional
 import numpy as np
-import numba
-from numba import jit, njit, prange
+
+try:
+    import numba
+    from numba import jit, njit, prange
+except ImportError as e:
+    raise ImportError(
+        "The 'numba' package is required for JIT compilation but was not found. "
+        "Please install it with 'pip install numba'."
+    ) from e
+
 import inspect
 from synapse_ast import *
 from synapse_parser import parse
@@ -333,17 +341,35 @@ class ParallelExecutor:
     def __init__(self, n_workers=None):
         import multiprocessing
         self.n_workers = n_workers or multiprocessing.cpu_count()
+        try:
+            from numba import njit, prange
+            self.njit = njit
+            self.prange = prange
+        except ImportError as e:
+            raise ImportError(
+                "The 'numba' package is required for parallel execution but was not found. "
+                "Please install it with 'pip install numba'."
+            ) from e
     
     @staticmethod
-    @njit(parallel=True)
     def parallel_map_numba(func, data):
         """Parallel map using Numba"""
+        try:
+            from numba import njit, prange
+        except ImportError as e:
+            raise ImportError(
+                "The 'numba' package is required for parallel execution but was not found. "
+                "Please install it with 'pip install numba'."
+            ) from e
         n = len(data)
         results = np.empty(n, dtype=data.dtype)
-        for i in prange(n):
-            results[i] = func(data[i])
+        @njit(parallel=True)
+        def _map(func, data, results):
+            for i in prange(n):
+                results[i] = func(data[i])
+        _map(func, data, results)
         return results
-    
+
     @staticmethod
     def parallel_reduce(func, data, initial=0):
         """Parallel reduction operation"""

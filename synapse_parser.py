@@ -1,11 +1,5 @@
-"""
-Parser for Synapse Language
-Converts tokens to Abstract Syntax Tree (AST)
-"""
-
-from typing import List, Optional, Union
-from synapse_lexer import Token, TokenType, Lexer
-from synapse_ast import *
+"""Deprecated root parser wrapper. Use synapse_lang.synapse_parser instead."""
+from synapse_lang.synapse_parser import *  # type: ignore
 
 class ParseError(Exception):
     """Parse error exception"""
@@ -960,9 +954,6 @@ class Parser:
         
         raise ParseError(f"Unexpected token: {token.type}", token)
 
-def parse(source: str) -> ProgramNode:
-    """Parse Synapse source code into AST"""
-    lexer = Lexer(source)
-    tokens = lexer.tokenize()
-    parser = Parser(tokens)
-    return parser.parse()
+def parse(source: str):  # backward compatibility
+    from synapse_lang.synapse_parser import parse as _p
+    return _p(source)

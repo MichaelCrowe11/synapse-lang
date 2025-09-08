@@ -1,51 +1,32 @@
-import re
-import ast
-import numpy as np
-from typing import Any, Dict, List, Optional, Tuple, Union
+"""Deprecated root interpreter wrapper. Use synapse_lang.synapse_interpreter."""
+from synapse_lang.synapse_interpreter import *  # type: ignore
 from dataclasses import dataclass
-from enum import Enum
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
-from collections import defaultdict
-from synapse_parser import parse
-from synapse_ast import *
-from synapse_lexer import Token, TokenType, Lexer
-try:
-    from synapse_quantum_ml import QuantumNeuralNetwork, QuantumEnsemble, ContinuousQuantumLearner
-    QUANTUM_ML_AVAILABLE = True
-except ImportError:
-    QUANTUM_ML_AVAILABLE = False
+from concurrent.futures import ThreadPoolExecutor
 
+# Quantum ML availability flag (set to False by default)
+QUANTUM_ML_AVAILABLE = False
+
+# Import TokenType if available, otherwise define a minimal placeholder for safety
 try:
-    from synapse_quantum_core import QuantumCircuitBuilder, SimulatorBackend
-    QUANTUM_CORE_AVAILABLE = True
+    from synapse_lang.tokens import TokenType
 except ImportError:
-    QUANTUM_CORE_AVAILABLE = False
+    class TokenType:
+        LEFT_BRACE = 'LEFT_BRACE'
+        RIGHT_BRACE = 'RIGHT_BRACE'
+        EOF = 'EOF'
+        NEWLINE = 'NEWLINE'
+        PARALLEL = 'PARALLEL'
+        UNCERTAIN = 'UNCERTAIN'
+        IDENTIFIER = 'IDENTIFIER'
+        ASSIGN = 'ASSIGN'
+        BRANCH = 'BRANCH'
+        NUMBER = 'NUMBER'
+        STRING = 'STRING'
+        UNCERTAINTY = 'UNCERTAINTY'
 
 @dataclass
-class UncertainValue:
-    value: float
-    uncertainty: float
-    
-    def __repr__(self):
-        return f"{self.value} ± {self.uncertainty}"
-    
-    def __add__(self, other):
-        if isinstance(other, UncertainValue):
-            return UncertainValue(
-                self.value + other.value,
-                (self.uncertainty**2 + other.uncertainty**2)**0.5
-            )
-        return UncertainValue(self.value + other, self.uncertainty)
-    
-    def __mul__(self, other):
-        if isinstance(other, UncertainValue):
-            return UncertainValue(
-                self.value * other.value,
-                self.value * other.value * ((self.uncertainty/self.value)**2 + 
-                                           (other.uncertainty/other.value)**2)**0.5
-            )
-        return UncertainValue(self.value * other, abs(self.uncertainty * other))
+class UncertainValue: ...  # kept for compatibility shadowing
 
 class ParallelStream:
     def __init__(self, name: str, function):
@@ -647,48 +628,4 @@ class SynapseInterpreter:
             return SimulatorBackend()
         return None
 
-def main():
-    interpreter = SynapseInterpreter()
-    
-    # Example 1: Uncertain values
-    code1 = """
-    uncertain measurement = 42.3 ± 0.5
-    uncertain temperature = 300 ± 10
-    """
-    
-    print("Example 1: Uncertain Values")
-    print("-" * 40)
-    results = interpreter.execute(code1)
-    for result in results:
-        print(result)
-    
-    # Example 2: Parallel execution
-    code2 = """
-    parallel {
-        branch A: test_condition_1
-        branch B: test_condition_2
-        branch C: test_condition_3
-    }
-    """
-    
-    print("\nExample 2: Parallel Execution")
-    print("-" * 40)
-    results = interpreter.execute(code2)
-    for result in results:
-        print(result)
-    
-    # Example 3: Variable assignment
-    code3 = """
-    x = 10
-    y = 20
-    name = "Synapse"
-    """
-    
-    print("\nExample 3: Variable Assignment")
-    print("-" * 40)
-    results = interpreter.execute(code3)
-    for result in results:
-        print(result)
-
-if __name__ == "__main__":
-    main()
+def main(): ...

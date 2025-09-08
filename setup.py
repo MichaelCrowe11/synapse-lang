@@ -31,23 +31,19 @@ else:
 
 setup(
     name="synapse-lang",
-    version="0.2.0",
+    version="0.2.1",  # minor bump for packaging restructure & quantum run
     author="Michael Benjamin Crowe",
     author_email="",
     description="A language for deep scientific reasoning and parallel thought processing",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/MichaelCrowe11/synapse-lang",
-    packages=find_packages(exclude=["tests*", "docs*", "examples*"]),
-    py_modules=[
-        "synapse_interpreter",
-        "synapse_parser",
-        "synapse_ast",
-        "synapse_repl",
-        "synapse_scientific",
-        "synapse_jit",
-        "synapse"
-    ],
+    packages=find_packages(include=[
+        "synapse_lang",
+        "synapse_lang.*",
+        "qubit_flow_lang",
+        "quantum_net_lang"
+    ]),
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
@@ -88,13 +84,15 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "synapse=synapse:main",
-            "synapse-repl=synapse_repl:main",
+            "synapse=synapse_lang.synapse_interpreter:main",
+            "qflow=qubit_flow_lang:placeholder",
+            "qnet=quantum_net_lang:placeholder",
         ],
     },
     include_package_data=True,
     package_data={
         "": ["*.syn", "*.md", "examples/*.syn", "vscode-extension/*"],
+        "synapse_lang": ["py.typed"],
     },
     project_urls={
         "Bug Reports": "https://github.com/MichaelCrowe11/synapse-lang/issues",
