@@ -70,6 +70,7 @@ setup(
             "pytest-cov>=3.0.0",
             "black>=22.0.0",
             "flake8>=4.0.0",
+            "ruff>=0.5.0",
             "mypy>=0.950",
             "pre-commit>=2.19.0",
         ],

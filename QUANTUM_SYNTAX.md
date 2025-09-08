@@ -52,16 +52,36 @@ quantum circuit ghz(3) {
 - [x] Backend config (shots)
 - [x] Algorithm skeleton parsing
 - [x] VS Code snippets
-- [ ] Additional gates (swap, cz, toffoli)
+- [x] Additional gates (swap, cz, toffoli, iswap, cswap)
+- [x] Semantic validation layer (error codes)
 - [ ] Parameter binding from algorithm to circuit
 - [ ] Measurement result variable binding
-- [ ] Noise model simulation
+- [ ] Noise model simulation (currently only structural + depolarizing schema)
 - [ ] Optimizer loop for VQE/QAOA
 
 ## Notes
 - Rotation gates require one angle parameter.
 - Non-numeric qubit indices are ignored with a warning.
 - Active backend currently always uses in-process state vector simulator.
+
+## Semantic Error Codes
+| Code   | Description |
+|--------|-------------|
+| E1001  | Unknown gate name |
+| E1002  | Qubit index out of circuit range |
+| E1003  | Duplicate qubit provided to gate requiring distinct qubits |
+| E1004  | Gate arity mismatch (wrong number of qubits) |
+| E1005  | Gate parameter count mismatch |
+| E1010  | Measurement index out of range |
+| E1011  | Duplicate measurement of same qubit |
+| E1101  | Non-integer qubit or measurement index |
+| E1200  | Malformed noise model object/type |
+| E1201  | Unknown or incomplete noise model specification |
+| E1202  | Noise model probability parameter outside [0,1] |
+| E1301  | Invalid backend shots value (must be positive int) |
+| E1302  | Invalid total circuit qubit count |
+
+These pre-execution semantic checks run before simulation to surface issues early.
 
 ## Example Output
 Executing a Bell circuit returns counts approximately: `{ "00": ~500, "11": ~500 }` for 1000 shots.

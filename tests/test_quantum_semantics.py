@@ -44,3 +44,18 @@ def test_backend_shots_invalid():
 def test_measurement_duplicate():
     with pytest.raises(QuantumSemanticError, match="E1011"):
         validate_circuit(n_qubits=2, ops=[], measurements=[[0],[0]])
+
+def test_noise_model_dict_valid():
+    backend = BackendConfig(shots=16, noise=NoiseConfig(kind="depolarizing", p1q=0.01, p2q=0.02, readout=0.03))
+    validate_circuit(n_qubits=2, ops=_ops([("h", [0], []), ("cx", [0,1], [])]), backend=backend)
+
+def test_noise_model_invalid_prob():
+    with pytest.raises(QuantumSemanticError, match="E1202"):
+        # construct manually to trip range check via direct validation of backend
+        bad_noise = NoiseConfig(kind="depolarizing", p1q=1.5, p2q=0.0, readout=0.0)
+        backend = BackendConfig(shots=10, noise=bad_noise)
+        validate_circuit(n_qubits=1, ops=_ops([("h", [0], [])]), backend=backend)
+
+def test_alias_gate_name():
+    # cnot alias maps to cx and should pass
+    validate_circuit(n_qubits=2, ops=_ops([("cnot", [0,1], [])]))

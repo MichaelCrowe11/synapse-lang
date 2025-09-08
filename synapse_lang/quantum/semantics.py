@@ -1,21 +1,23 @@
 """Quantum semantic validation: gate registry, backend + noise configuration.
 
-Implements error codes:
-E1001 Unknown gate
-E1002 Qubit index out of range
-E1003 Duplicate qubits for distinct-qubit gate
-E1004 Arity mismatch
-E1005 Parameter count mismatch
-E1010 Measurement qubit out of range
-E1011 Duplicate measurement of same qubit
-E1101 Non-integer qubit index
-E1200 Generic noise config error
-E1201 Unknown noise model
-E1202 Noise parameter out of bounds
-E1301 Invalid shots count
-E1302 Invalid circuit qubit count
+Error Codes Implemented:
+    E1001 unknown gate name
+    E1002 qubit index out of range
+    E1003 duplicate qubit where distinct required
+    E1004 gate arity mismatch
+    E1005 gate parameter count mismatch
+    E1010 measurement index out of range
+    E1011 duplicate measurement of same qubit
+    E1101 non-integer qubit/measurement index
+    E1200 malformed noise model / noise object
+    E1201 unknown / incomplete noise model spec
+    E1202 noise model probability outside [0,1]
+    E1301 invalid shots count in backend config
+    E1302 invalid total circuit qubit count
+
+NOTE: Keep this list in sync with `QUANTUM_SYNTAX.md` error code table.
 """
-from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple, Union
 

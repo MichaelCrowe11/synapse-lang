@@ -29,14 +29,33 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install .[dev]
-      - name: Lint
+      - name: Lint (Ruff + Flake8 fallback)
         run: |
+          if command -v ruff; then ruff check synapse_lang; fi
           if command -v flake8; then flake8 synapse_lang || exit 1; fi
       - name: Type check (mypy)
         run: |
           if command -v mypy; then mypy synapse_lang || true; fi
-      - name: Run tests
-        run: pytest -q
+      - name: Run tests with coverage
+        run: |
+          pytest --cov=synapse_lang --cov-report=term-missing --cov-report=xml -q
+      - name: Enforce minimum coverage
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET, sys
+          root = ET.parse('coverage.xml').getroot()
+          rate = float(root.get('line-rate', '0'))
+          threshold = 0.55  # initial modest threshold, raise over time
+          print(f"Line coverage: {rate*100:.2f}% (threshold {threshold*100:.0f}%)")
+          if rate < threshold:
+              print('Coverage below threshold', file=sys.stderr)
+              sys.exit(1)
+          PY
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.python-version }}
+          path: coverage.xml
 
   build:
     name: Build distributions
@@ -58,7 +77,14 @@ jobs:
           pip install build twine
       - name: Verify version matches tag
         run: |
-          FILE_VERSION=$(python -c "import re, pathlib; txt=pathlib.Path('setup.py').read_text(); m=re.search(r'version=\"([^\"]+)\"', txt); print(m.group(1))")
+          # Prefer pyproject.toml version; fallback to setup.py
+          if [ -f pyproject.toml ]; then
+            FILE_VERSION=$(grep -E '^version *= *"' pyproject.toml | head -1 | sed -E 's/version *= *"([^"]+)"/\1/')
+          fi
+          if [ -z "$FILE_VERSION" ] && [ -f setup.py ]; then
+            FILE_VERSION=$(python -c "import re, pathlib; txt=pathlib.Path('setup.py').read_text(); m=re.search(r'version=\\\"([^\\\"]+)\\\"', txt); print(m.group(1) if m else '0.0.0')")
+          fi
+          if [ -z "$FILE_VERSION" ]; then FILE_VERSION="0.0.0"; fi
           echo "File version: $FILE_VERSION";
           echo "Tag version: $TAG_VERSION";
           if [ "$FILE_VERSION" != "$TAG_VERSION" ]; then echo "Version mismatch"; exit 1; fi
