@@ -31,7 +31,7 @@ else:
 
 setup(
     name="synapse-lang",
-    version="0.2.2",  # bump: quantum semantics layer & namespace relocation
+    version="0.2.3",  # bump: quantum gates + integration tests
     author="Michael Benjamin Crowe",
     author_email="",
     description="A language for deep scientific reasoning and parallel thought processing",
