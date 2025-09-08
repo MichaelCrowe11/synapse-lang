@@ -101,12 +101,35 @@ class SimulatorBackend:
 
     # simplified gate applications
     def _apply(self, state, op: QuantumOperation, n: int):
-        if op.gate == QuantumGate.X: return self._x(state, op.qubits[0], n)
-        if op.gate == QuantumGate.H: return self._h(state, op.qubits[0], n)
-        if op.gate == QuantumGate.CNOT: return self._cnot(state, op.qubits[0], op.qubits[1], n)
-        if op.gate == QuantumGate.RX: return state  # placeholder
-        if op.gate == QuantumGate.RY: return state
-        if op.gate == QuantumGate.RZ: return state
+        # Dispatch on gate type
+        if op.gate == QuantumGate.X:
+            return self._x(state, op.qubits[0], n)
+        if op.gate == QuantumGate.Y:
+            return self._single_unitary(state, op.qubits[0], n, np.array([[0,-1j],[1j,0]]))
+        if op.gate == QuantumGate.Z:
+            return self._single_unitary(state, op.qubits[0], n, np.array([[1,0],[0,-1]]))
+        if op.gate == QuantumGate.H:
+            return self._h(state, op.qubits[0], n)
+        if op.gate == QuantumGate.S:
+            return self._single_unitary(state, op.qubits[0], n, np.array([[1,0],[0,1j]]))
+        if op.gate == QuantumGate.T:
+            return self._single_unitary(state, op.qubits[0], n, np.array([[1,0],[0,np.exp(1j*np.pi/4)]]))
+        if op.gate == QuantumGate.CNOT:
+            return self._cnot(state, op.qubits[0], op.qubits[1], n)
+        if op.gate == QuantumGate.CZ:
+            return self._cz(state, op.qubits[0], op.qubits[1], n)
+        if op.gate == QuantumGate.SWAP:
+            return self._swap(state, op.qubits[0], op.qubits[1], n)
+        if op.gate == QuantumGate.TOFFOLI:
+            return self._toffoli(state, op.qubits[0], op.qubits[1], op.qubits[2], n)
+        if op.gate == QuantumGate.FREDKIN:
+            return self._fredkin(state, op.qubits[0], op.qubits[1], op.qubits[2], n)
+        if op.gate == QuantumGate.RX:
+            return self._rotation(state, op.qubits[0], n, axis='X', theta=op.parameters[0])
+        if op.gate == QuantumGate.RY:
+            return self._rotation(state, op.qubits[0], n, axis='Y', theta=op.parameters[0])
+        if op.gate == QuantumGate.RZ:
+            return self._rotation(state, op.qubits[0], n, axis='Z', theta=op.parameters[0])
         return state
     def _x(self, state, q, n):
         new = np.copy(state); mask = 1 << (n-1-q)
@@ -130,7 +153,60 @@ class SimulatorBackend:
         for i in range(len(state)):
             if i & cm:
                 j = i ^ tm
-                new[i] = state[j]
+                if j > i:  # swap only once per pair
+                    new[i], new[j] = state[j], state[i]
+        return new
+    def _single_unitary(self, state, q, n, U: np.ndarray):
+        new = np.copy(state); mask = 1 << (n-1-q)
+        for i in range(len(state)):
+            j = i ^ mask
+            if i & mask:
+                a = state[j]; b = state[i]
+                new[j] = U[0,0]*a + U[0,1]*b
+                new[i] = U[1,0]*a + U[1,1]*b
+        return new
+    def _rotation(self, state, q, n, axis: str, theta: float):
+        ct = np.cos(theta/2); st = np.sin(theta/2)
+        if axis=='X': U = np.array([[ct, -1j*st],[-1j*st, ct]])
+        elif axis=='Y': U = np.array([[ct, -st],[st, ct]])
+        else: # Z
+            U = np.array([[np.exp(-1j*theta/2),0],[0,np.exp(1j*theta/2)]])
+        return self._single_unitary(state, q, n, U)
+    def _cz(self, state, c, t, n):
+        new = np.copy(state); cm=1 << (n-1-c); tm=1 << (n-1-t)
+        for i in range(len(state)):
+            if (i & cm) and (i & tm):
+                new[i] = -state[i]
+        return new
+    def _swap(self, state, a, b, n):
+        if a==b: return state
+        new = np.copy(state); am=1 << (n-1-a); bm=1 << (n-1-b)
+        for i in range(len(state)):
+            has_a = i & am; has_b = i & bm
+            if (has_a and not has_b) or (has_b and not has_a):
+                j = i ^ (am | bm)
+                if j>i:
+                    new[i], new[j] = state[j], state[i]
+        return new
+    def _toffoli(self, state, a, b, t, n):
+        new = np.copy(state); am=1 << (n-1-a); bm=1 << (n-1-b); tm=1 << (n-1-t)
+        for i in range(len(state)):
+            if (i & am) and (i & bm):
+                j = i ^ tm
+                if j > i:
+                    new[i], new[j] = state[j], state[i]
+        return new
+    def _fredkin(self, state, c, a, b, n):
+        # controlled swap of a,b with control c
+        if a==b: return state
+        new = np.copy(state); cm=1 << (n-1-c); am=1 << (n-1-a); bm=1 << (n-1-b)
+        for i in range(len(state)):
+            if i & cm:
+                has_a = i & am; has_b = i & bm
+                if (has_a and not has_b) or (has_b and not has_a):
+                    j = i ^ (am | bm)
+                    if j>i:
+                        new[i], new[j] = state[j], state[i]
         return new
 
 class QuantumAlgorithms:

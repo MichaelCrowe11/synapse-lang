@@ -1,4 +1,5 @@
 """Deprecated root interpreter wrapper. Use synapse_lang.synapse_interpreter."""
+from __future__ import annotations
 from synapse_lang.synapse_interpreter import *  # type: ignore
 from dataclasses import dataclass
 import threading

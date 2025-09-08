@@ -1,11 +1,10 @@
-"""Synapse packaged core.
+"""Synapse packaged core minimal exports.
 
-Public surface:
-- parse: parse source to AST
-- SynapseInterpreter: execute code
-- run(source: str) helper
+Lazy imports keep heavy / optional deps (e.g. cryptography) from triggering
+when only parsing or basic interpretation is needed (like tests).
 """
-from .synapse_parser import parse
+from __future__ import annotations
+from .synapse_parser import parse  # direct safe import
 from .synapse_interpreter import SynapseInterpreter
 
 def run(source: str):
