@@ -1,0 +1,16 @@
+# PyPI configuration template
+# Copy this file to .pypirc and add your actual tokens
+# NEVER commit the actual .pypirc file with tokens!
+
+[distutils]
+index-servers =
+    pypi
+    testpypi
+
+[pypi]
+username = __token__
+password = # Add your PyPI token here (starts with pypi-)
+
+[testpypi]
+username = __token__
+password = # Add your Test PyPI token here (starts with pypi-)

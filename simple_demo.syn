@@ -1,0 +1,23 @@
+// Simple Synapse Demo
+
+// Basic arithmetic
+x = 10
+y = 20
+z = x + y
+
+// Experiment
+experiment SimpleTest {
+    setup: 100
+    synthesize: "Complete"
+}
+
+// Pipeline
+pipeline SimplePipeline {
+    stage Load {
+        data: 1000
+    }
+    
+    stage Process {
+        result: 2000
+    }
+}

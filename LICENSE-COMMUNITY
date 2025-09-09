@@ -1,0 +1,79 @@
+SYNAPSE PROGRAMMING LANGUAGE - COMMUNITY EDITION LICENSE
+
+Copyright (c) 2024 Michael Benjamin Crowe. All Rights Reserved.
+
+This software is dual-licensed:
+
+1. COMMUNITY EDITION (This License)
+   - Free for personal, educational, and non-commercial use
+   - Limited features (see below)
+   - Community support only
+
+2. COMMERCIAL EDITIONS
+   - Professional and Enterprise licenses available
+   - Full features and support
+   - See LICENSE-PROPRIETARY for details
+
+COMMUNITY EDITION TERMS AND CONDITIONS
+=======================================
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to use
+the Software for personal, educational, and non-commercial purposes only,
+subject to the following conditions:
+
+1. PERMITTED USES:
+   - Personal learning and experimentation
+   - Academic research (with attribution)
+   - Open-source projects (non-commercial)
+   - Educational instruction
+   - Hobby projects
+
+2. RESTRICTIONS:
+   - NO commercial use without a commercial license
+   - NO use in production environments
+   - NO redistribution of modified versions
+   - NO removal of license validation code
+   - NO use in competing products
+   - Limited to 4 CPU cores for parallel execution
+   - Limited to 1000 tensor elements
+   - No GPU acceleration
+   - No quantum computing modules
+   - No enterprise features
+
+3. ATTRIBUTION:
+   You must include the following attribution in any academic papers,
+   presentations, or derivative works:
+   
+   "Powered by Synapse Programming Language (https://synapse-lang.com)
+    Created by Michael Benjamin Crowe"
+
+4. TELEMETRY:
+   This software collects anonymous usage statistics to improve the product.
+   By using this software, you consent to this data collection.
+
+5. DISCLAIMER:
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+
+6. UPGRADE TO COMMERCIAL:
+   To remove restrictions and access full features, purchase a commercial license:
+   - Professional: $499/year - Individual commercial use
+   - Enterprise: $4,999/year - Organizational use with support
+   
+   Visit: https://synapse-lang.com/pricing
+
+7. TERMINATION:
+   This license automatically terminates if you violate any of these restrictions.
+   Upon termination, you must destroy all copies of the Software.
+
+8. GOVERNING LAW:
+   This Agreement shall be governed by the laws of the United States and the
+   State of California.
+
+For questions about licensing, contact: licensing@synapse-lang.com

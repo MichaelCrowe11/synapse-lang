@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  synapse:
+    build: .
+    image: synapselang/synapse:latest
+    container_name: synapse-lang
+    environment:
+      - SYNAPSE_LICENSE_KEY=${SYNAPSE_LICENSE_KEY}
+      - SYNAPSE_LICENSE_EMAIL=${SYNAPSE_LICENSE_EMAIL}
+    volumes:
+      - ./examples:/app/examples
+      - ./data:/app/data
+      - synapse-cache:/home/synapse/.synapse-lang
+    stdin_open: true
+    tty: true
+    networks:
+      - synapse-net
+
+  license-server:
+    build: .
+    image: synapselang/license-server:latest
+    container_name: synapse-license-server
+    command: python license_server.py
+    environment:
+      - API_KEY=${API_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - DATABASE_URL=/data/licenses.db
+    volumes:
+      - license-data:/data
+    ports:
+      - "8000:8000"
+    networks:
+      - synapse-net
+    restart: unless-stopped
+
+  jupyter:
+    build: .
+    image: synapselang/synapse-jupyter:latest
+    container_name: synapse-jupyter
+    command: jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+    environment:
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN:-synapse2024}
+    volumes:
+      - ./notebooks:/app/notebooks
+      - ./examples:/app/examples
+    ports:
+      - "8888:8888"
+    networks:
+      - synapse-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: synapse-redis
+    volumes:
+      - redis-data:/data
+    networks:
+      - synapse-net
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: synapse-postgres
+    environment:
+      - POSTGRES_DB=synapse
+      - POSTGRES_USER=${POSTGRES_USER:-synapse}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-synapse2024}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - synapse-net
+    restart: unless-stopped
+
+volumes:
+  synapse-cache:
+  license-data:
+  redis-data:
+  postgres-data:
+
+networks:
+  synapse-net:
+    driver: bridge

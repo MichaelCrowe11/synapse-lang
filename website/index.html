@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Synapse Language - Revolutionary scientific programming language with parallel execution, uncertainty quantification, and quantum computing support">
+    <meta name="keywords" content="programming language, scientific computing, parallel computing, quantum computing, uncertainty quantification">
+    <meta property="og:title" content="Synapse Language">
+    <meta property="og:description" content="Revolutionary scientific programming language">
+    <meta property="og:image" content="assets/synapse_logo.svg">
+    <title>Synapse Language - Scientific Programming Revolutionized</title>
+    <link rel="icon" type="image/svg+xml" href="assets/synapse_logo.svg">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <img src="assets/synapse_logo.svg" alt="Synapse" class="nav-logo">
+                <span class="nav-title">SYNAPSE</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="docs.html">Documentation</a></li>
+                <li><a href="https://github.com/synapse-lang/synapse" target="_blank">GitHub</a></li>
+                <li><a href="portal.html" class="btn-portal">Portal</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="quantum-bg"></div>
+        <div class="hero-content">
+            <h1 class="hero-title">Scientific Programming <span class="gradient-text">Revolutionized</span></h1>
+            <p class="hero-subtitle">Native parallel execution. Built-in uncertainty quantification. Quantum-ready.</p>
+            <div class="hero-actions">
+                <button class="btn-primary" onclick="showInstallModal()">
+                    <span class="btn-icon">⚡</span> Quick Install
+                </button>
+                <a href="#pricing" class="btn-secondary">
+                    <span class="btn-icon">💎</span> Get License
+                </a>
+            </div>
+            <div class="hero-code">
+                <pre><code class="language-synapse">pip install synapse-lang</code></pre>
+            </div>
+        </div>
+        <div class="hero-animation">
+            <canvas id="synapseCanvas"></canvas>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Revolutionary Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">⚛️</div>
+                    <h3>Quantum Computing</h3>
+                    <p>Native support for quantum algorithms and quantum circuit simulation</p>
+                    <pre><code>quantum circuit {
+    qubit q1, q2
+    hadamard q1
+    cnot q1, q2
+    measure all
+}</code></pre>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔀</div>
+                    <h3>Parallel Execution</h3>
+                    <p>Automatic parallelization with intelligent synchronization</p>
+                    <pre><code>parallel {
+    branch alpha: compute_heavy()
+    branch beta: analyze_data()
+    sync when ready
+}</code></pre>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Uncertainty Native</h3>
+                    <p>Built-in error propagation and uncertainty quantification</p>
+                    <pre><code>uncertain x = 10.0 ± 0.1
+uncertain y = 20.0 ± 0.2
+result = x * y  # 200.0 ± 2.83</code></pre>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🚀</div>
+                    <h3>GPU Acceleration</h3>
+                    <p>Automatic GPU offloading for tensor operations</p>
+                    <pre><code>tensor A[1000, 1000] on gpu
+tensor B[1000, 1000] on gpu
+C = A @ B  # Matrix multiply on GPU</code></pre>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>JIT Compilation</h3>
+                    <p>Just-in-time compilation for near-native performance</p>
+                    <pre><code>@jit
+function compute(n: int) {
+    # Compiled to machine code
+    return fibonacci(n)
+}</code></pre>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🧬</div>
+                    <h3>Scientific Chains</h3>
+                    <p>Express complex scientific reasoning naturally</p>
+                    <pre><code>reasoning chain genetics {
+    DNA → transcription → RNA
+    RNA → translation → Protein
+    Protein → folding → Structure
+}</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="pricing">
+        <div class="container">
+            <h2 class="section-title">Choose Your Edition</h2>
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3 class="pricing-tier">Community</h3>
+                    <div class="pricing-amount">
+                        <span class="price">Free</span>
+                        <span class="period">forever</span>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>✅ Personal/Educational use</li>
+                        <li>✅ Up to 4 CPU cores</li>
+                        <li>✅ Basic features</li>
+                        <li>❌ Commercial use</li>
+                        <li>❌ GPU acceleration</li>
+                        <li>❌ Quantum modules</li>
+                    </ul>
+                    <button class="btn-pricing" onclick="downloadCommunity()">Download Free</button>
+                </div>
+                <div class="pricing-card featured">
+                    <div class="pricing-badge">POPULAR</div>
+                    <h3 class="pricing-tier">Professional</h3>
+                    <div class="pricing-amount">
+                        <span class="price">$499</span>
+                        <span class="period">/year</span>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>✅ Commercial use</li>
+                        <li>✅ Up to 16 CPU cores</li>
+                        <li>✅ GPU acceleration</li>
+                        <li>✅ JIT compilation</li>
+                        <li>✅ Priority support</li>
+                        <li>❌ Quantum modules</li>
+                    </ul>
+                    <button class="btn-pricing featured" onclick="purchaseProfessional()">Get Professional</button>
+                </div>
+                <div class="pricing-card">
+                    <h3 class="pricing-tier">Enterprise</h3>
+                    <div class="pricing-amount">
+                        <span class="price">$4,999</span>
+                        <span class="period">/year</span>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>✅ Unlimited resources</li>
+                        <li>✅ All features unlocked</li>
+                        <li>✅ Quantum computing</li>
+                        <li>✅ Custom development</li>
+                        <li>✅ SLA support</li>
+                        <li>✅ Training included</li>
+                    </ul>
+                    <button class="btn-pricing" onclick="contactSales()">Contact Sales</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat">
+                    <div class="stat-number" data-target="10000">0</div>
+                    <div class="stat-label">Downloads</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" data-target="500">0</div>
+                    <div class="stat-label">Active Users</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" data-target="50">0</div>
+                    <div class="stat-label">Enterprise Clients</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" data-target="99">0</div>
+                    <div class="stat-label">% Uptime</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <h2>Ready to Revolutionize Your Scientific Computing?</h2>
+            <p>Join thousands of researchers and engineers using Synapse</p>
+            <div class="cta-actions">
+                <button class="btn-primary large" onclick="showInstallModal()">Get Started Now</button>
+                <a href="docs.html" class="btn-secondary large">Read Documentation</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <h4>Product</h4>
+                    <ul>
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#pricing">Pricing</a></li>
+                        <li><a href="docs.html">Documentation</a></li>
+                        <li><a href="changelog.html">Changelog</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="tutorials.html">Tutorials</a></li>
+                        <li><a href="examples.html">Examples</a></li>
+                        <li><a href="api.html">API Reference</a></li>
+                        <li><a href="support.html">Support</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Company</h4>
+                    <ul>
+                        <li><a href="about.html">About</a></li>
+                        <li><a href="blog.html">Blog</a></li>
+                        <li><a href="careers.html">Careers</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="privacy.html">Privacy Policy</a></li>
+                        <li><a href="terms.html">Terms of Service</a></li>
+                        <li><a href="license.html">License Agreement</a></li>
+                        <li><a href="security.html">Security</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Synapse Language. All rights reserved. Created by Michael Benjamin Crowe.</p>
+                <div class="social-links">
+                    <a href="https://github.com/synapse-lang" aria-label="GitHub">📦</a>
+                    <a href="https://twitter.com/synapselang" aria-label="Twitter">🐦</a>
+                    <a href="https://linkedin.com/company/synapse-lang" aria-label="LinkedIn">💼</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Install Modal -->
+    <div id="installModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeInstallModal()">&times;</span>
+            <h2>Install Synapse Language</h2>
+            <div class="install-options">
+                <div class="install-method">
+                    <h3>PyPI (Recommended)</h3>
+                    <pre><code>pip install synapse-lang</code></pre>
+                    <button onclick="copyToClipboard('pip install synapse-lang')">Copy</button>
+                </div>
+                <div class="install-method">
+                    <h3>With GPU Support</h3>
+                    <pre><code>pip install synapse-lang[gpu]</code></pre>
+                    <button onclick="copyToClipboard('pip install synapse-lang[gpu]')">Copy</button>
+                </div>
+                <div class="install-method">
+                    <h3>Development Version</h3>
+                    <pre><code>pip install git+https://github.com/synapse-lang/synapse.git</code></pre>
+                    <button onclick="copyToClipboard('pip install git+https://github.com/synapse-lang/synapse.git')">Copy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

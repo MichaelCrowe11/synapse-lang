@@ -1,0 +1,69 @@
+// Synapse Language Demo - Showcasing Core Features
+// Execute with: python synapse_interpreter_enhanced.py demo_synapse.syn
+
+// 1. Uncertain Values with Error Propagation
+uncertain temperature = 298.15 ± 0.5  // Kelvin
+uncertain pressure = 101.325 ± 0.1    // kPa
+uncertain volume = 22.4 ± 0.05         // Liters
+
+// Calculate with uncertainty propagation
+gas_constant = 8.314
+moles = (pressure * volume) / (gas_constant * temperature)
+
+// 2. Parallel Hypothesis Testing
+hypothesis ThermodynamicEquilibrium {
+    assume: temperature > 273
+    predict: "System is in liquid phase"
+    validate: 1
+}
+
+// 3. Experiment with Parallel Branches
+experiment QuantumInterference {
+    setup: 1000  // Number of particles
+    
+    parallel {
+        branch slit_A: 500
+        branch slit_B: 500
+    }
+    
+    synthesize: "Interference pattern observed"
+}
+
+// 4. Pipeline for Data Processing
+pipeline DataAnalysis {
+    stage Loading {
+        data: 1000000
+        format: "CSV"
+    }
+    
+    stage Processing parallel(4) {
+        cleaned: 950000
+        normalized: 1
+    }
+    
+    stage Analysis {
+        correlation: 0.87
+        significance: 0.001
+    }
+}
+
+// 5. Reasoning Chain
+reason chain ScientificMethod {
+    premise P1: 1
+    premise P2: 1
+    derive D1 from P1, P2: 1
+    conclude: 1
+}
+
+// 6. Exploration with Backtracking
+tolerance = 0.001
+iterations = 0
+
+explore OptimizationSearch {
+    try gradient_descent: 0.5
+    fallback newton_method: 0.001
+    fallback genetic_algorithm: 0.0009
+    
+    accept when: result < 0.01
+    reject when: iterations > 1000
+}

@@ -1,0 +1,56 @@
+# Include package data
+include README.md
+include LICENSE
+include LICENSE-DUAL.md
+include CHANGELOG.md
+include CONTRIBUTING.md
+include AUTHORS.md
+include requirements*.txt
+include pyproject.toml
+include setup.cfg
+
+# Include all Synapse source files
+recursive-include synapse_lang *.py
+recursive-include synapse_lang *.pyi
+recursive-include synapse_lang *.syn
+
+# Include examples
+recursive-include examples *.syn
+recursive-include examples *.qnet
+recursive-include examples *.md
+
+# Include test files
+recursive-include tests *.py
+recursive-include tests *.syn
+
+# Include documentation
+recursive-include docs *.rst
+recursive-include docs *.md
+recursive-include docs *.txt
+recursive-include docs Makefile
+prune docs/_build
+
+# Include configuration files
+include .editorconfig
+include .gitignore
+include tox.ini
+include .pre-commit-config.yaml
+
+# Include CI/CD configurations
+recursive-include .github *.yml
+recursive-include .github *.yaml
+
+# Exclude compiled and cache files
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude __pycache__
+global-exclude *.so
+global-exclude *.dylib
+global-exclude *.dll
+global-exclude .DS_Store
+global-exclude .coverage
+global-exclude .pytest_cache
+global-exclude .mypy_cache
+global-exclude .tox
+global-exclude .eggs
+global-exclude *.egg-info

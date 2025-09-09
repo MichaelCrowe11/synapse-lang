@@ -1,0 +1,11 @@
+# GPU acceleration requirements for Synapse Language (optional)
+# Choose ONE backend to install, or both.
+
+# Option 1: CuPy (NVIDIA GPUs)
+# - Pick the CUDA build that matches your driver/CUDA runtime.
+# cupy-cuda11x>=12.0
+# cupy-cuda12x>=12.0
+
+# Option 2: PyTorch (NVIDIA GPUs)
+# Install from the official index with CUDA wheels, e.g.:
+#   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Portal - Synapse Language</title>
+    <link rel="icon" type="image/svg+xml" href="assets/synapse_logo.svg">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/portal.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <img src="assets/synapse_logo.svg" alt="Synapse" class="nav-logo">
+                <span class="nav-title">SYNAPSE</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="docs.html">Documentation</a></li>
+                <li><a href="#" onclick="logout()">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Portal Container -->
+    <div class="portal-container">
+        <!-- Sidebar -->
+        <aside class="portal-sidebar">
+            <div class="user-info">
+                <div class="user-avatar">👤</div>
+                <h3 class="user-name">Welcome Back!</h3>
+                <p class="user-email">user@example.com</p>
+            </div>
+            <nav class="portal-nav">
+                <a href="#dashboard" class="nav-item active" onclick="showSection('dashboard')">
+                    <span class="nav-icon">📊</span> Dashboard
+                </a>
+                <a href="#licenses" class="nav-item" onclick="showSection('licenses')">
+                    <span class="nav-icon">🔑</span> Licenses
+                </a>
+                <a href="#downloads" class="nav-item" onclick="showSection('downloads')">
+                    <span class="nav-icon">📥</span> Downloads
+                </a>
+                <a href="#billing" class="nav-item" onclick="showSection('billing')">
+                    <span class="nav-icon">💳</span> Billing
+                </a>
+                <a href="#support" class="nav-item" onclick="showSection('support')">
+                    <span class="nav-icon">🆘</span> Support
+                </a>
+                <a href="#settings" class="nav-item" onclick="showSection('settings')">
+                    <span class="nav-icon">⚙️</span> Settings
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="portal-main">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="portal-section active">
+                <h1>Dashboard</h1>
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <h3>Active License</h3>
+                        <p class="license-type">Professional Edition</p>
+                        <p class="license-expiry">Expires: Dec 31, 2024</p>
+                        <button class="btn-renew">Renew License</button>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Usage Statistics</h3>
+                        <div class="usage-stat">
+                            <span>CPU Cores Used:</span>
+                            <span>8 / 16</span>
+                        </div>
+                        <div class="usage-stat">
+                            <span>GPU Enabled:</span>
+                            <span>✅ Active</span>
+                        </div>
+                        <div class="usage-stat">
+                            <span>API Calls:</span>
+                            <span>1,234</span>
+                        </div>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Quick Actions</h3>
+                        <button class="btn-action" onclick="generateNewKey()">Generate New Key</button>
+                        <button class="btn-action" onclick="downloadInvoice()">Download Invoice</button>
+                        <button class="btn-action" onclick="openSupport()">Get Support</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Licenses Section -->
+            <section id="licenses" class="portal-section">
+                <h1>License Management</h1>
+                <div class="license-container">
+                    <div class="license-card active-license">
+                        <div class="license-header">
+                            <h3>Professional Edition</h3>
+                            <span class="license-status active">Active</span>
+                        </div>
+                        <div class="license-details">
+                            <div class="detail-row">
+                                <span>License Key:</span>
+                                <code>PROF-12345678-ABCD1234-ANY00000-SIGNATURE</code>
+                                <button onclick="copyLicenseKey(this)">Copy</button>
+                            </div>
+                            <div class="detail-row">
+                                <span>Activation Date:</span>
+                                <span>January 1, 2024</span>
+                            </div>
+                            <div class="detail-row">
+                                <span>Expiration Date:</span>
+                                <span>December 31, 2024</span>
+                            </div>
+                            <div class="detail-row">
+                                <span>Machines:</span>
+                                <span>2 / 3 activated</span>
+                            </div>
+                        </div>
+                        <div class="license-actions">
+                            <button class="btn-primary">Renew License</button>
+                            <button class="btn-secondary">Manage Machines</button>
+                            <button class="btn-secondary">Download Certificate</button>
+                        </div>
+                    </div>
+                    
+                    <div class="license-features">
+                        <h3>Your Features</h3>
+                        <ul class="feature-list">
+                            <li class="enabled">✅ Commercial Use</li>
+                            <li class="enabled">✅ 16 CPU Cores</li>
+                            <li class="enabled">✅ GPU Acceleration</li>
+                            <li class="enabled">✅ JIT Compilation</li>
+                            <li class="enabled">✅ Priority Support</li>
+                            <li class="disabled">❌ Quantum Modules (Upgrade to Enterprise)</li>
+                        </ul>
+                        <button class="btn-upgrade" onclick="showUpgradeOptions()">Upgrade to Enterprise</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Downloads Section -->
+            <section id="downloads" class="portal-section">
+                <h1>Downloads</h1>
+                <div class="downloads-grid">
+                    <div class="download-card">
+                        <h3>Synapse Language v1.0.1</h3>
+                        <p>Latest stable release</p>
+                        <div class="download-options">
+                            <button class="btn-download" onclick="downloadVersion('1.0.1', 'windows')">
+                                Windows
+                            </button>
+                            <button class="btn-download" onclick="downloadVersion('1.0.1', 'macos')">
+                                macOS
+                            </button>
+                            <button class="btn-download" onclick="downloadVersion('1.0.1', 'linux')">
+                                Linux
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="download-card">
+                        <h3>Documentation</h3>
+                        <p>Complete offline documentation</p>
+                        <button class="btn-download" onclick="downloadDocs()">
+                            Download PDF
+                        </button>
+                    </div>
+                    
+                    <div class="download-card">
+                        <h3>Examples & Tutorials</h3>
+                        <p>Sample code and tutorials</p>
+                        <button class="btn-download" onclick="downloadExamples()">
+                            Download ZIP
+                        </button>
+                    </div>
+                </div>
+                
+                <h2>Previous Versions</h2>
+                <table class="version-table">
+                    <thead>
+                        <tr>
+                            <th>Version</th>
+                            <th>Release Date</th>
+                            <th>Notes</th>
+                            <th>Download</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>v1.0.0</td>
+                            <td>Sep 8, 2024</td>
+                            <td>Initial release</td>
+                            <td><button class="btn-small" onclick="downloadVersion('1.0.0')">Download</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Billing Section -->
+            <section id="billing" class="portal-section">
+                <h1>Billing & Payments</h1>
+                <div class="billing-container">
+                    <div class="billing-summary">
+                        <h3>Current Plan</h3>
+                        <div class="plan-info">
+                            <span class="plan-name">Professional Edition</span>
+                            <span class="plan-price">$499/year</span>
+                        </div>
+                        <div class="next-billing">
+                            <p>Next billing date: December 31, 2024</p>
+                            <p>Auto-renewal: <span class="status-on">Enabled</span></p>
+                        </div>
+                    </div>
+                    
+                    <div class="payment-methods">
+                        <h3>Payment Methods</h3>
+                        <div class="payment-card">
+                            <span class="card-type">💳 Visa</span>
+                            <span class="card-number">•••• 4242</span>
+                            <button class="btn-edit">Edit</button>
+                        </div>
+                        <button class="btn-add-payment">Add Payment Method</button>
+                    </div>
+                    
+                    <div class="invoice-history">
+                        <h3>Invoice History</h3>
+                        <table class="invoice-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Jan 1, 2024</td>
+                                    <td>Professional License</td>
+                                    <td>$499.00</td>
+                                    <td><span class="status-paid">Paid</span></td>
+                                    <td><button class="btn-small">Download</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Support Section -->
+            <section id="support" class="portal-section">
+                <h1>Support Center</h1>
+                <div class="support-options">
+                    <div class="support-card">
+                        <h3>📚 Documentation</h3>
+                        <p>Browse comprehensive guides and API references</p>
+                        <a href="docs.html" class="btn-support">View Docs</a>
+                    </div>
+                    <div class="support-card">
+                        <h3>🎫 Submit Ticket</h3>
+                        <p>Get help from our support team</p>
+                        <button class="btn-support" onclick="openTicketForm()">New Ticket</button>
+                    </div>
+                    <div class="support-card">
+                        <h3>💬 Community</h3>
+                        <p>Join discussions with other users</p>
+                        <a href="https://community.synapse-lang.com" class="btn-support">Visit Forum</a>
+                    </div>
+                </div>
+                
+                <div class="recent-tickets">
+                    <h3>Recent Support Tickets</h3>
+                    <div class="ticket-list">
+                        <div class="ticket-item">
+                            <span class="ticket-id">#1234</span>
+                            <span class="ticket-subject">GPU acceleration not working</span>
+                            <span class="ticket-status resolved">Resolved</span>
+                            <span class="ticket-date">Sep 5, 2024</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings" class="portal-section">
+                <h1>Account Settings</h1>
+                <div class="settings-container">
+                    <div class="settings-group">
+                        <h3>Profile Information</h3>
+                        <form class="settings-form">
+                            <div class="form-group">
+                                <label>Name</label>
+                                <input type="text" value="John Doe" />
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" value="user@example.com" />
+                            </div>
+                            <div class="form-group">
+                                <label>Company</label>
+                                <input type="text" value="Acme Corp" />
+                            </div>
+                            <button type="submit" class="btn-primary">Save Changes</button>
+                        </form>
+                    </div>
+                    
+                    <div class="settings-group">
+                        <h3>Preferences</h3>
+                        <div class="preference-item">
+                            <label>
+                                <input type="checkbox" checked />
+                                Email notifications for updates
+                            </label>
+                        </div>
+                        <div class="preference-item">
+                            <label>
+                                <input type="checkbox" checked />
+                                Auto-renew subscription
+                            </label>
+                        </div>
+                        <div class="preference-item">
+                            <label>
+                                <input type="checkbox" />
+                                Share usage analytics
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-group">
+                        <h3>Security</h3>
+                        <button class="btn-secondary">Change Password</button>
+                        <button class="btn-secondary">Enable 2FA</button>
+                        <button class="btn-secondary">Download Data</button>
+                        <button class="btn-danger">Delete Account</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/portal.js"></script>
+</body>
+</html>

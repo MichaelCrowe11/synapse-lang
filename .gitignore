@@ -93,3 +93,8 @@ bridge_logs/
 *.backup
 *.bak
 *~
+
+# PyPI credentials - NEVER commit these!
+.pypirc
+.pypirc.backup
+*.pypirc

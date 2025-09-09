@@ -1,105 +1,211 @@
 [build-system]
-requires = ["setuptools>=64", "wheel", "build"]
+requires = ["setuptools>=65", "wheel", "build"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "synapse-lang"
-version = "0.2.3"
-description = "A language for deep scientific reasoning and parallel thought processing"
+version = "1.0.2"
+description = "A revolutionary programming language for scientific computing with parallel execution and uncertainty quantification"
 readme = "README.md"
 requires-python = ">=3.8"
-license = { file = "LICENSE" }
-authors = [ { name = "Michael Benjamin Crowe" } ]
+license = {text = "Proprietary"}
+authors = [
+    {name = "Michael Benjamin Crowe", email = "michael@synapse-lang.com"},
+]
+maintainers = [
+    {name = "Michael Benjamin Crowe", email = "michael@synapse-lang.com"},
+]
 keywords = [
-  "scientific-computing",
-  "parallel-processing",
-  "uncertainty-quantification",
-  "programming-language",
-  "interpreter",
-  "scientific-reasoning",
-  "quantum-computing",
-  "climate-modeling",
-  "drug-discovery",
+    "programming-language",
+    "scientific-computing",
+    "parallel-computing",
+    "uncertainty-quantification",
+    "quantum-computing",
+    "tensor-operations",
+    "symbolic-mathematics",
+    "interpreter",
+    "jit-compilation",
+    "gpu-acceleration",
+    "climate-modeling",
+    "drug-discovery",
 ]
 classifiers = [
-  "Development Status :: 4 - Beta",
-  "Intended Audience :: Science/Research",
-  "Intended Audience :: Developers",
-  "Topic :: Scientific/Engineering",
-  "Topic :: Scientific/Engineering :: Physics",
-  "Topic :: Scientific/Engineering :: Chemistry",
-  "Topic :: Scientific/Engineering :: Bio-Informatics",
-  "Topic :: Software Development :: Compilers",
-  "Topic :: Software Development :: Interpreters",
-  "License :: OSI Approved :: MIT License",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Software Development :: Compilers",
+    "Topic :: Software Development :: Interpreters",
+    "License :: Other/Proprietary License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Natural Language :: English",
 ]
+
 dependencies = [
-  "numpy>=1.20.0",
-  "scipy>=1.7.0",
-  "sympy>=1.9",
-  "matplotlib>=3.4.0",
-  "qiskit>=0.34.0",
-  "pennylane>=0.20.0",
-  "cirq>=0.13.0",
-  "networkx>=2.6",
-  "pandas>=1.3.0",
-  "numba>=0.56.0",
-  "colorama>=0.4.4",
+    "numpy>=1.20.0",
+    "scipy>=1.7.0",
+    "sympy>=1.9",
+    "matplotlib>=3.4.0",
+    "colorama>=0.4.4",
+    "networkx>=2.6",
+    "pandas>=1.3.0",
 ]
 
 [project.optional-dependencies]
+gpu = [
+    # Users should install ONE of these manually:
+    # "cupy-cuda12x>=12.0",  # For CUDA 12.x
+    # "torch>=2.0.0",  # Install with --index-url for CUDA
+]
+jit = ["numba>=0.58"]
+quantum = [
+    "qiskit>=0.34.0",
+    "pennylane>=0.20.0",
+    "cirq>=0.13.0",
+]
 dev = [
-  "pytest>=7.0.0",
-  "pytest-cov>=3.0.0",
-  "black>=22.0.0",
-  "flake8>=4.0.0",
-  "ruff>=0.5.0",
-  "mypy>=0.950",
-  "pre-commit>=2.19.0",
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "pytest-asyncio>=0.21",
+    "black>=23.0",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "pre-commit>=3.0",
+    "tox>=4.0",
+    "flake8>=4.0.0",
 ]
 docs = [
-  "sphinx>=4.5.0",
-  "sphinx-rtd-theme>=1.0.0",
+    "sphinx>=6.0",
+    "sphinx-rtd-theme>=1.3",
+    "sphinx-autodoc-typehints>=1.23",
+    "myst-parser>=2.0",
 ]
 jupyter = [
-  "jupyterlab>=3.4.0",
-  "ipykernel>=6.15.0",
+    "jupyterlab>=3.4.0",
+    "ipykernel>=6.15.0",
+]
+all = [
+    "numba>=0.58",
+    "qiskit>=0.34.0",
+    "pennylane>=0.20.0",
+    "cirq>=0.13.0",
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "sphinx>=6.0",
 ]
 
 [project.urls]
 Homepage = "https://github.com/MichaelCrowe11/synapse-lang"
-Source = "https://github.com/MichaelCrowe11/synapse-lang"
-Issues = "https://github.com/MichaelCrowe11/synapse-lang/issues"
 Documentation = "https://github.com/MichaelCrowe11/synapse-lang/blob/master/LANGUAGE_SPEC.md"
+Repository = "https://github.com/MichaelCrowe11/synapse-lang"
+"Bug Tracker" = "https://github.com/MichaelCrowe11/synapse-lang/issues"
+Changelog = "https://github.com/MichaelCrowe11/synapse-lang/blob/main/CHANGELOG.md"
 
 [project.scripts]
-synapse = "synapse_lang.synapse_interpreter:main"
+synapse = "synapse_lang.cli:main"
+synapse-repl = "synapse_lang.repl:main"
+synapse-bench = "synapse_lang.benchmark:main"
 qflow = "qubit_flow_lang:placeholder"
 qnet = "quantum_net_lang:placeholder"
 
 [tool.setuptools.packages.find]
-include = ["synapse_lang", "synapse_lang.*", "qubit_flow_lang", "quantum_net_lang"]
+where = ["."]
+include = ["synapse_lang*", "qubit_flow_lang", "quantum_net_lang"]
+exclude = ["tests*", "docs*", "examples*", "benchmarks*"]
+
+[tool.setuptools.package-data]
+synapse_lang = ["*.syn", "examples/*.syn", "data/*.json"]
+
+[tool.black]
+line-length = 100
+target-version = ["py38", "py39", "py310", "py311", "py312"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py38"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "Q", "W"]
-ignore = ["E203", "E266", "E501"]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+    "Q",  # flake8-quotes
+]
+ignore = ["E501", "B008", "B904", "E203", "E266"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["B011"]
 
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = [
+    "tests/",
+    "docs/",
+    "build/",
+    "dist/",
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q --strict-markers"
+testpaths = ["tests"]
+pythonpath = ["."]
+
 [tool.coverage.run]
 source = ["synapse_lang"]
 branch = true
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+]
 
 [tool.coverage.report]
 show_missing = true
 skip_covered = true
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if __name__ == .__main__.:",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if False:",
+    "pass",
+]

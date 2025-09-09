@@ -31,10 +31,10 @@ else:
 
 setup(
     name="synapse-lang",
-    version="0.2.3",  # bump: quantum gates + integration tests
+    version="1.0.2",
     author="Michael Benjamin Crowe",
-    author_email="",
-    description="A language for deep scientific reasoning and parallel thought processing",
+    author_email="michael@synapse-lang.com",
+    description="A revolutionary programming language for scientific computing with parallel execution and uncertainty quantification",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/MichaelCrowe11/synapse-lang",
@@ -44,6 +44,15 @@ setup(
         "qubit_flow_lang",
         "quantum_net_lang"
     ]),
+    py_modules=[
+        "synapse_interpreter",
+        "synapse_parser",
+        "synapse_ast",
+        "synapse_repl",
+        "synapse_scientific",
+        "synapse_jit",
+        "synapse"
+    ],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
@@ -54,12 +63,13 @@ setup(
         "Topic :: Scientific/Engineering :: Bio-Informatics",
         "Topic :: Software Development :: Compilers",
         "Topic :: Software Development :: Interpreters",
-        "License :: OSI Approved :: MIT License",
+        "License :: Other/Proprietary License",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.8",
@@ -85,30 +95,15 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "synapse=synapse_lang.synapse_interpreter:main",
+            "synapse=synapse_lang.cli:main",
+            "synapse-repl=synapse_lang.repl:main",
             "qflow=qubit_flow_lang:placeholder",
             "qnet=quantum_net_lang:placeholder",
         ],
     },
     include_package_data=True,
     package_data={
-        "": ["*.syn", "*.md", "examples/*.syn", "vscode-extension/*"],
-        "synapse_lang": ["py.typed"],
+        "synapse_lang": ["*.syn", "examples/*.syn"],
     },
-    project_urls={
-        "Bug Reports": "https://github.com/MichaelCrowe11/synapse-lang/issues",
-        "Source": "https://github.com/MichaelCrowe11/synapse-lang",
-        "Documentation": "https://github.com/MichaelCrowe11/synapse-lang/blob/master/LANGUAGE_SPEC.md",
-    },
-    keywords=[
-        "scientific-computing",
-        "parallel-processing",
-        "uncertainty-quantification",
-        "programming-language",
-        "interpreter",
-        "scientific-reasoning",
-        "quantum-computing",
-        "climate-modeling",
-        "drug-discovery",
-    ],
+    zip_safe=False,
 )

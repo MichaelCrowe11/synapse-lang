@@ -1,0 +1,115 @@
+SYNAPSE PROGRAMMING LANGUAGE - PROPRIETARY SOFTWARE LICENSE AGREEMENT
+
+Copyright (c) 2024 Michael Benjamin Crowe. All Rights Reserved.
+
+IMPORTANT: READ CAREFULLY BEFORE USING THIS SOFTWARE
+
+This Proprietary Software License Agreement ("Agreement") is a legal agreement between you (either an individual or a single entity, "Licensee") and Michael Benjamin Crowe ("Licensor") for the Synapse Programming Language software, which includes computer software and may include associated media, printed materials, and "online" or electronic documentation ("Software").
+
+BY INSTALLING, COPYING, OR OTHERWISE USING THE SOFTWARE, YOU AGREE TO BE BOUND BY THE TERMS OF THIS AGREEMENT.
+
+1. GRANT OF LICENSE
+-------------------
+Subject to payment of applicable license fees and compliance with this Agreement:
+
+a) EVALUATION LICENSE (30-day trial):
+   - Free for evaluation purposes only
+   - Limited to 30 days from first installation
+   - Not for production or commercial use
+   - Limited to single-threaded execution
+   - Watermarked output in all results
+
+b) PERSONAL LICENSE ($99/year):
+   - For individual, non-commercial use
+   - Single user, up to 3 devices
+   - Access to community support
+   - Basic features only
+
+c) PROFESSIONAL LICENSE ($499/year):
+   - For individual commercial use
+   - Single user, unlimited devices
+   - Priority support
+   - All features except enterprise modules
+
+d) ENTERPRISE LICENSE ($4,999/year per seat):
+   - For organizational use
+   - Unlimited parallel execution
+   - GPU acceleration
+   - Quantum computing modules
+   - Priority support with SLA
+   - Custom feature development available
+
+e) ACADEMIC LICENSE (Free with verification):
+   - For educational institutions
+   - Teaching and research only
+   - Must provide academic credentials
+   - Annual renewal required
+
+2. RESTRICTIONS
+--------------
+You may NOT:
+- Reverse engineer, decompile, or disassemble the Software
+- Remove or alter any proprietary notices or labels
+- Distribute, sell, lease, rent, lend, or sublicense any portion of the Software
+- Use the Software to develop a competing product
+- Share license keys or authentication credentials
+- Bypass or attempt to bypass license validation
+- Use the Software after license expiration
+
+3. USAGE TRACKING AND TELEMETRY
+-------------------------------
+The Software includes telemetry that collects:
+- Usage statistics and performance metrics
+- Feature utilization data
+- Error reports and crash data
+- License compliance information
+
+This data is used for:
+- License compliance verification
+- Product improvement
+- Customer support
+- Usage-based billing (Enterprise)
+
+4. INTELLECTUAL PROPERTY
+------------------------
+The Software is protected by copyright laws and international copyright treaties, as well as other intellectual property laws and treaties. The Software is licensed, not sold. All rights not expressly granted are reserved by the Licensor.
+
+5. TERMINATION
+-------------
+This Agreement is effective until terminated. Your rights under this Agreement will terminate automatically without notice if you fail to comply with any term(s) of this Agreement. Upon termination, you shall cease all use of the Software and destroy all copies.
+
+6. LIMITED WARRANTY
+------------------
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.
+
+7. LIMITATION OF LIABILITY
+-------------------------
+IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY SPECIAL, INCIDENTAL, INDIRECT, OR CONSEQUENTIAL DAMAGES WHATSOEVER ARISING OUT OF THE USE OF OR INABILITY TO USE THE SOFTWARE, EVEN IF THE LICENSOR HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+8. GOVERNING LAW
+---------------
+This Agreement shall be governed by the laws of the United States and the State of California, without regard to conflicts of law principles.
+
+9. ENTIRE AGREEMENT
+------------------
+This Agreement constitutes the entire agreement between the parties and supersedes all prior or contemporaneous agreements or representations, written or oral, concerning the subject matter of this Agreement.
+
+10. CONTACT INFORMATION
+-----------------------
+For licensing inquiries:
+Email: licensing@synapse-lang.com
+Web: https://synapse-lang.com/licensing
+
+For support:
+Email: support@synapse-lang.com
+Web: https://synapse-lang.com/support
+
+11. THIRD-PARTY COMPONENTS
+-------------------------
+The Software may include third-party open-source components, which are subject to their respective licenses. See THIRD-PARTY-LICENSES.txt for details.
+
+12. EXPORT RESTRICTIONS
+----------------------
+You acknowledge that the Software may be subject to export laws and regulations. You agree to comply with all applicable international and national laws that apply to the Software.
+
+END OF LICENSE AGREEMENT

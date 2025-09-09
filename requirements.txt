@@ -5,6 +5,10 @@ scipy>=1.7.0
 sympy>=1.9
 matplotlib>=3.4.0
 
+# Security and networking
+cryptography>=3.4.8
+requests>=2.26.0
+
 # Quantum computing frameworks
 qiskit>=0.34.0
 pennylane>=0.20.0

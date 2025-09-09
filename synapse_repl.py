@@ -6,13 +6,23 @@ Interactive shell for scientific reasoning and parallel computation
 
 import sys
 import os
-import readline
 import atexit
 import traceback
 from pathlib import Path
 from typing import Optional
 import time
 from colorama import init, Fore, Style
+
+# Handle readline import for cross-platform compatibility
+try:
+    import readline
+except ImportError:
+    try:
+        # Windows alternative
+        import pyreadline3 as readline
+    except ImportError:
+        # Fallback if no readline available
+        readline = None
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -46,19 +56,32 @@ class SynapseREPL:
     
     def setup_readline(self):
         """Configure readline for history and tab completion"""
+        if readline is None:
+            # Readline not available, skip setup
+            return
+            
         # Enable tab completion
         readline.parse_and_bind('tab: complete')
         readline.set_completer(self.completer)
         
         # Load history if it exists
         if self.history_file.exists():
-            readline.read_history_file(str(self.history_file))
+            try:
+                readline and readline.read_history_file(str(self.history_file))
+            except Exception:
+                pass  # Ignore history file errors
         
         # Save history on exit
-        atexit.register(lambda: readline.write_history_file(str(self.history_file)))
+        def save_history():
+            if readline is not None:
+                try:
+                    readline.write_history_file(str(self.history_file))
+                except Exception:
+                    pass
+        atexit.register(save_history)
         
         # Set history length
-        readline.set_history_length(1000)
+        readline and readline.set_history_length(1000)
     
     def completer(self, text: str, state: int) -> Optional[str]:
         """Tab completion for variables and keywords"""
