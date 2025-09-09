@@ -69,4 +69,4 @@ pipeline DataAnalysis {
 }
 
 print("\n✨ Synapse demonstration complete!")
-print("Learn more at https://michaelcrowe11.github.io/synapse-lang/")
+print("Learn more at https://synapse-lang.com")
