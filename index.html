@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synapse Language - Revolutionary Scientific Programming</title>
+    <meta name="description" content="A programming language designed for deep scientific reasoning with parallel execution, uncertainty quantification, and quantum computing support.">
+    <meta property="og:title" content="Synapse Language">
+    <meta property="og:description" content="Revolutionary programming language for scientific computing">
+    <meta property="og:image" content="https://raw.githubusercontent.com/MichaelCrowe11/synapse-lang/master/synapse_logo.svg">
+    <meta property="og:url" content="https://michaelcrowe11.github.io/synapse-lang/">
+    <link rel="icon" type="image/svg+xml" href="synapse_logo.svg">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #7A5CFF;
+            --secondary: #43E5FF;
+            --dark: #0B0F14;
+            --light: #F8F9FA;
+            --gray: #6C757D;
+            --gradient: linear-gradient(135deg, var(--secondary), var(--primary));
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background: var(--light);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Header */
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+        
+        .nav-links a {
+            color: var(--dark);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+        
+        /* Hero Section */
+        .hero {
+            padding: 120px 0 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+        
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            animation: fadeInUp 0.8s;
+        }
+        
+        .hero .subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            animation: fadeInUp 0.8s 0.2s both;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            animation: fadeInUp 0.8s 0.4s both;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: white;
+            color: var(--primary);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        /* Code Example */
+        .code-demo {
+            padding: 60px 0;
+            background: white;
+        }
+        
+        .code-demo h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: var(--dark);
+        }
+        
+        .code-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .code-block {
+            background: var(--dark);
+            color: var(--light);
+            padding: 2rem;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        .code-block .keyword {
+            color: var(--secondary);
+        }
+        
+        .code-block .string {
+            color: #98C379;
+        }
+        
+        .code-block .number {
+            color: #D19A66;
+        }
+        
+        .code-block .comment {
+            color: #5C6370;
+            font-style: italic;
+        }
+        
+        .code-description h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+        
+        .code-description p {
+            margin-bottom: 1rem;
+            color: var(--gray);
+        }
+        
+        /* Features */
+        .features {
+            padding: 80px 0;
+            background: #F8F9FA;
+        }
+        
+        .features h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+        
+        /* Installation */
+        .installation {
+            padding: 80px 0;
+            background: white;
+            text-align: center;
+        }
+        
+        .installation h2 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .install-command {
+            background: var(--dark);
+            color: var(--light);
+            padding: 1.5rem 3rem;
+            border-radius: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.2rem;
+            display: inline-block;
+            margin: 1rem 0;
+        }
+        
+        .copy-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 1rem;
+        }
+        
+        /* Pricing */
+        .pricing {
+            padding: 80px 0;
+            background: #F8F9FA;
+        }
+        
+        .pricing h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+        }
+        
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .pricing-card {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        
+        .pricing-card.featured {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        
+        .pricing-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .price {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 1rem 0;
+        }
+        
+        .price-period {
+            font-size: 1rem;
+            color: var(--gray);
+        }
+        
+        .pricing-features {
+            list-style: none;
+            margin: 2rem 0;
+        }
+        
+        .pricing-features li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        /* Footer */
+        footer {
+            background: var(--dark);
+            color: var(--light);
+            padding: 40px 0;
+            text-align: center;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .footer-links a {
+            color: var(--light);
+            text-decoration: none;
+        }
+        
+        .footer-links a:hover {
+            color: var(--secondary);
+        }
+        
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .code-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <nav class="container">
+            <a href="#" class="logo">Synapse</a>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#demo">Demo</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="https://github.com/MichaelCrowe11/synapse-lang">GitHub</a></li>
+                <li><a href="https://pypi.org/project/synapse-lang/">PyPI</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1>Synapse Language</h1>
+            <p class="subtitle">Revolutionary Programming for Scientific Computing</p>
+            <p style="margin-bottom: 2rem; opacity: 0.9;">
+                Parallel execution • Uncertainty quantification • Quantum computing • GPU acceleration
+            </p>
+            <div class="cta-buttons">
+                <a href="#installation" class="btn btn-primary">Get Started</a>
+                <a href="https://github.com/MichaelCrowe11/synapse-lang" class="btn btn-secondary">View on GitHub</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Code Demo -->
+    <section class="code-demo" id="demo">
+        <div class="container">
+            <h2>Write Scientific Code Naturally</h2>
+            <div class="code-container">
+                <pre class="code-block"><span class="comment"># Parallel Monte Carlo with uncertainty</span>
+<span class="keyword">uncertain</span> measurement = <span class="number">42.3</span> ± <span class="number">0.5</span>
+<span class="keyword">uncertain</span> temperature = <span class="number">300</span> ± <span class="number">10</span>
+
+<span class="keyword">parallel</span> {
+    <span class="keyword">branch</span> A: simulate_pathway(<span class="string">"low"</span>)
+    <span class="keyword">branch</span> B: simulate_pathway(<span class="string">"high"</span>)
+    <span class="keyword">branch</span> C: control_experiment()
+}
+
+<span class="keyword">reason chain</span> Analysis {
+    <span class="keyword">premise</span> P1: <span class="string">"Observed phenomenon"</span>
+    <span class="keyword">derive</span> D1: <span class="string">"Form hypothesis"</span>
+    <span class="keyword">conclude</span>: validate(D1)
+}</pre>
+                <div class="code-description">
+                    <h3>Designed for Scientists</h3>
+                    <p>✨ <strong>Uncertainty-native:</strong> Propagate measurement errors automatically through calculations</p>
+                    <p>🚀 <strong>Parallel by design:</strong> Test multiple hypotheses simultaneously with parallel branches</p>
+                    <p>🧠 <strong>Reasoning chains:</strong> Build formal logical arguments directly in code</p>
+                    <p>⚛️ <strong>Quantum ready:</strong> Native support for quantum operations and simulations</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features" id="features">
+        <div class="container">
+            <h2>Powerful Features for Modern Science</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Parallel Execution</h3>
+                    <p>Run multiple experiments simultaneously with automatic synchronization and result synthesis.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Uncertainty Quantification</h3>
+                    <p>Built-in error propagation ensures your calculations always include confidence intervals.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌌</div>
+                    <h3>Quantum Computing</h3>
+                    <p>Write quantum algorithms naturally with superposition, entanglement, and measurement.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>GPU Acceleration</h3>
+                    <p>Automatic GPU offloading for tensor operations and parallel computations.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔬</div>
+                    <h3>Scientific Pipelines</h3>
+                    <p>Structure complex workflows with pipeline stages and automatic data flow.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🧮</div>
+                    <h3>Tensor Operations</h3>
+                    <p>Native support for high-dimensional arrays with NumPy-compatible operations.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Installation -->
+    <section class="installation" id="installation">
+        <div class="container">
+            <h2>Get Started in Seconds</h2>
+            <p style="font-size: 1.2rem; color: var(--gray); margin-bottom: 2rem;">
+                Install Synapse with pip and start writing scientific code immediately
+            </p>
+            <div class="install-command">
+                pip install synapse-lang
+                <button class="copy-btn" onclick="copyToClipboard('pip install synapse-lang')">📋 Copy</button>
+            </div>
+            <p style="margin-top: 2rem;">
+                <a href="https://github.com/MichaelCrowe11/synapse-lang#readme" class="btn btn-primary">
+                    View Documentation
+                </a>
+            </p>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <h2>Choose Your Edition</h2>
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3>Community</h3>
+                    <div class="price">Free</div>
+                    <div class="price-period">Forever</div>
+                    <ul class="pricing-features">
+                        <li>✅ Core language features</li>
+                        <li>✅ Up to 4 CPU cores</li>
+                        <li>✅ Basic tensor operations</li>
+                        <li>✅ Community support</li>
+                        <li>❌ GPU acceleration</li>
+                        <li>❌ Quantum modules</li>
+                    </ul>
+                    <a href="#installation" class="btn btn-secondary">Get Started</a>
+                </div>
+                
+                <div class="pricing-card featured">
+                    <h3>Professional</h3>
+                    <div class="price">$499</div>
+                    <div class="price-period">per year</div>
+                    <ul class="pricing-features">
+                        <li>✅ Everything in Community</li>
+                        <li>✅ Up to 16 CPU cores</li>
+                        <li>✅ GPU acceleration</li>
+                        <li>✅ Advanced tensor ops</li>
+                        <li>✅ Priority support</li>
+                        <li>✅ Commercial use</li>
+                    </ul>
+                    <a href="mailto:michael@synapse-lang.com" class="btn btn-primary">Contact Sales</a>
+                </div>
+                
+                <div class="pricing-card">
+                    <h3>Enterprise</h3>
+                    <div class="price">$4,999</div>
+                    <div class="price-period">per year</div>
+                    <ul class="pricing-features">
+                        <li>✅ Everything in Professional</li>
+                        <li>✅ Unlimited resources</li>
+                        <li>✅ All quantum modules</li>
+                        <li>✅ Custom development</li>
+                        <li>✅ SLA support</li>
+                        <li>✅ Training included</li>
+                    </ul>
+                    <a href="mailto:michael@synapse-lang.com" class="btn btn-secondary">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="https://github.com/MichaelCrowe11/synapse-lang">GitHub</a>
+                <a href="https://pypi.org/project/synapse-lang/">PyPI</a>
+                <a href="https://github.com/MichaelCrowe11/synapse-lang/issues">Issues</a>
+                <a href="https://github.com/MichaelCrowe11/synapse-lang/blob/master/LICENSE">License</a>
+            </div>
+            <p>© 2025 Synapse Language. Created by Michael Benjamin Crowe.</p>
+            <p style="margin-top: 1rem; opacity: 0.7;">
+                Revolutionary programming for the scientific mind.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Copy to clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Copied to clipboard!');
+            });
+        }
+        
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+        
+        // Add animation on scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animation = 'fadeInUp 0.8s';
+                }
+            });
+        });
+        
+        document.querySelectorAll('.feature-card, .pricing-card').forEach(el => {
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>
