@@ -1,0 +1,3 @@
+[console_scripts]
+synapse-qflow = qubit_flow_lang.cli:main
+synapse-qubit-flow = qubit_flow_lang.repl:main

@@ -1,0 +1,84 @@
+Metadata-Version: 2.4
+Name: synapse-quantum-net
+Version: 1.0.0
+Summary: Distributed quantum computing and networking language - part of the Quantum Trinity
+Home-page: https://github.com/MichaelCrowe11/synapse-lang
+Author: Michael Benjamin Crowe
+Author-email: michaelcrowe11@users.noreply.github.com
+Maintainer: Michael Benjamin Crowe
+License: Proprietary
+Project-URL: Homepage, https://synapse-lang.com
+Project-URL: Documentation, https://github.com/MichaelCrowe11/synapse-lang/blob/master/quantum-net/README.md
+Project-URL: Repository, https://github.com/MichaelCrowe11/synapse-lang
+Project-URL: Bug Tracker, https://github.com/MichaelCrowe11/synapse-lang/issues
+Keywords: quantum-computing,quantum-networks,distributed-computing,quantum-internet,programming-language,interpreter,quantum-communication,entanglement-routing,quantum-protocols
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Science/Research
+Classifier: Intended Audience :: Developers
+Classifier: Topic :: Scientific/Engineering
+Classifier: Topic :: Scientific/Engineering :: Physics
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Classifier: Topic :: System :: Networking
+Classifier: Topic :: System :: Distributed Computing
+Classifier: Topic :: Software Development :: Compilers
+Classifier: Topic :: Software Development :: Interpreters
+Classifier: License :: Other/Proprietary License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Operating System :: OS Independent
+Classifier: Natural Language :: English
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.20.0
+Requires-Dist: scipy>=1.7.0
+Requires-Dist: networkx>=2.6.0
+Requires-Dist: matplotlib>=3.4.0
+Provides-Extra: quantum
+Requires-Dist: qiskit>=0.34.0; extra == "quantum"
+Requires-Dist: pennylane>=0.20.0; extra == "quantum"
+Requires-Dist: cirq>=0.13.0; extra == "quantum"
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0; extra == "dev"
+Requires-Dist: black>=23.0; extra == "dev"
+Requires-Dist: ruff>=0.5; extra == "dev"
+Requires-Dist: mypy>=1.10; extra == "dev"
+Provides-Extra: visualization
+Requires-Dist: plotly>=5.0.0; extra == "visualization"
+Requires-Dist: dash>=2.0.0; extra == "visualization"
+Provides-Extra: all
+Requires-Dist: qiskit>=0.34.0; extra == "all"
+Requires-Dist: pennylane>=0.20.0; extra == "all"
+Requires-Dist: pytest>=7.0; extra == "all"
+Requires-Dist: black>=23.0; extra == "all"
+Requires-Dist: plotly>=5.0.0; extra == "all"
+Dynamic: author-email
+Dynamic: home-page
+Dynamic: requires-python
+
+1# Quantum-Net (QNet)
+
+A third language that complements **Synapse-Lang** (scientific reasoning/hypotheses) and **Qubit-Flow** (circuit construction/execution) by providing *network-level* abstractions for quantum links, routing, repeaters, and distributed algorithms. Essential for building next-generation quantum software spanning the *quantum internet*.
+
+This repository contains the language specification, simulator, and examples for QNet.
+
+## Getting Started
+
+1.  **Install dependencies:**
+    ```bash
+    pip install -e .
+    ```
+
+2.  **Run an example:**
+    ```bash
+    qnet run examples/teleport_demo.qnet
+    ```
+
+3.  **Run tests:**
+    ```bash
+    pytest
+    ```

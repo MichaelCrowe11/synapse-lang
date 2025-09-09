@@ -1,0 +1,7 @@
+quantum_net_lang
+qubit_flow_ast
+qubit_flow_interpreter
+qubit_flow_lang
+qubit_flow_lexer
+qubit_flow_parser
+synapse_lang

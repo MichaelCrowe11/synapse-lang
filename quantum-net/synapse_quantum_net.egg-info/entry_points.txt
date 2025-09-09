@@ -1,0 +1,3 @@
+[console_scripts]
+synapse-qnet = qnet_lang.cli:main
+synapse-quantum-net = qnet_lang.repl:main
