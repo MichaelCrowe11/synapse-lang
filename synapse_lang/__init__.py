@@ -10,7 +10,7 @@ from __future__ import annotations
 
 __version__ = "1.0.2"
 __author__ = "Michael Benjamin Crowe"
-__email__ = "michael@synapse-lang.com"
+__email__ = "michaelcrowe11@users.noreply.github.com"
 __license__ = "Proprietary (Dual License: Community/Commercial)"
 
 # Core imports - lazy loading for efficiency
@@ -27,7 +27,7 @@ try:
     
     print(f"Synapse Language v{__version__} - {_license_info['type'].title()} Edition")
     if _license_info['type'] == 'community':
-        print("ℹ️  For commercial use and full features, visit https://synapse-lang.com/pricing")
+        print("ℹ️  For commercial use and full features, visit https://github.com/MichaelCrowe11/synapse-lang")
     
     # Track initialization
     track_usage("init", {"version": __version__})

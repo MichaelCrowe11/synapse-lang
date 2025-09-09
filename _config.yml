@@ -1,0 +1,17 @@
+# GitHub Pages Configuration
+title: Synapse Language
+description: Revolutionary Programming for Scientific Computing
+theme: null
+plugins: []
+
+# Site settings
+url: https://michaelcrowe11.github.io
+baseurl: /synapse-lang
+
+# Build settings
+markdown: kramdown
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor

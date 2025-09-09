@@ -33,7 +33,7 @@ setup(
     name="synapse-lang",
     version="1.0.2",
     author="Michael Benjamin Crowe",
-    author_email="michael@synapse-lang.com",
+    author_email="michaelcrowe11@users.noreply.github.com",
     description="A revolutionary programming language for scientific computing with parallel execution and uncertainty quantification",
     long_description=long_description,
     long_description_content_type="text/markdown",
