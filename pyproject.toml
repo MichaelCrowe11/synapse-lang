@@ -10,10 +10,10 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "Proprietary"}
 authors = [
-    {name = "Michael Benjamin Crowe", email = "michael@synapse-lang.com"},
+    {name = "Michael Benjamin Crowe"},
 ]
 maintainers = [
-    {name = "Michael Benjamin Crowe", email = "michael@synapse-lang.com"},
+    {name = "Michael Benjamin Crowe"},
 ]
 keywords = [
     "programming-language",
