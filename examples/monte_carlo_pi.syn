@@ -1,0 +1,86 @@
+# Monte Carlo Pi Estimation with Uncertainty Quantification
+# Demonstrates parallel Monte Carlo simulation with statistical analysis
+
+import random
+import math
+
+# Configuration
+num_samples = 1_000_000
+num_parallel_runs = 8
+
+# Function to run single Monte Carlo simulation
+function monte_carlo_pi(n_points) {
+    inside_circle = 0
+    
+    for i in range(n_points) {
+        x = random.uniform(-1, 1)
+        y = random.uniform(-1, 1)
+        
+        if x*x + y*y <= 1 {
+            inside_circle += 1
+        }
+    }
+    
+    pi_estimate = 4 * inside_circle / n_points
+    return pi_estimate
+}
+
+print("🎲 Monte Carlo Pi Estimation with Synapse")
+print(f"Running {num_parallel_runs} parallel simulations...")
+print(f"Samples per run: {num_samples:,}")
+
+# Run parallel Monte Carlo simulations
+estimates = []
+parallel {
+    for run in range(num_parallel_runs) {
+        branch run_{run}: {
+            print(f"  Starting simulation {run+1}...")
+            estimate = monte_carlo_pi(num_samples)
+            estimates.append(estimate)
+            print(f"  Run {run+1} estimate: {estimate:.6f}")
+        }
+    }
+}
+
+# Statistical analysis with uncertainty
+mean_estimate = mean(estimates)
+std_estimate = std(estimates)
+uncertain pi_result = mean_estimate ± (2 * std_estimate)  # 95% confidence
+
+print("\n📊 Results:")
+print(f"Mean estimate: {mean_estimate:.6f}")
+print(f"Standard deviation: {std_estimate:.6f}")
+print(f"Pi estimate with uncertainty: {pi_result}")
+print(f"Actual π value: {math.pi:.6f}")
+print(f"Error: {abs(mean_estimate - math.pi):.6f}")
+
+# Reasoning about convergence
+reason chain ConvergenceAnalysis {
+    premise P1: f"Standard deviation is {std_estimate:.6f}"
+    premise P2: "Lower std indicates better convergence"
+    derive D1 from P1: std_estimate < 0.01 ? "Good convergence" : "Need more samples"
+    conclude: D1 => f"Recommendation: {D1}"
+}
+
+# Visualize convergence (conceptual)
+pipeline ConvergenceVisualization {
+    stage RunSimulations parallel(16) {
+        sample_sizes = [1000, 10000, 100000, 1000000]
+        for size in sample_sizes {
+            results[size] = monte_carlo_pi(size)
+        }
+    }
+    stage AnalyzeConvergence {
+        errors = {size: abs(results[size] - math.pi) for size in sample_sizes}
+        convergence_rate = calculate_convergence_rate(errors)
+    }
+    stage Report {
+        print(f"\n📈 Convergence Analysis:")
+        for size, error in errors.items() {
+            print(f"  N={size:8,}: error = {error:.6f}")
+        }
+        print(f"  Convergence rate: O(1/√N)")
+    }
+}
+
+print("\n✨ Monte Carlo simulation complete!")

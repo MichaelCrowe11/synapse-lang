@@ -1,0 +1,141 @@
+# Quantum Superposition and Entanglement Demo
+# Shows how Synapse handles quantum computing concepts
+
+# Quantum state representation with uncertainty
+quantum qubit_a = |0⟩
+quantum qubit_b = |0⟩
+
+print("🌌 Quantum Computing with Synapse")
+print("Initial state: |00⟩")
+
+# Apply Hadamard gate to create superposition
+experiment CreateSuperposition {
+    apply hadamard(qubit_a)
+    print("After Hadamard on qubit A: (|0⟩ + |1⟩)/√2")
+    
+    # Quantum state with measurement uncertainty
+    uncertain prob_zero = 0.5 ± 0.01  # Statistical uncertainty from finite measurements
+    uncertain prob_one = 0.5 ± 0.01
+    
+    print(f"P(|0⟩) = {prob_zero}")
+    print(f"P(|1⟩) = {prob_one}")
+}
+
+# Create entangled state (Bell state)
+experiment CreateEntanglement {
+    # CNOT gate creates entanglement
+    apply cnot(qubit_a, qubit_b)
+    print("\nAfter CNOT: Bell state |Φ+⟩ = (|00⟩ + |11⟩)/√2")
+    
+    # Parallel measurement scenarios
+    parallel {
+        branch measure_00: {
+            probability = 0.5
+            print(f"  Outcome |00⟩: probability = {probability}")
+        }
+        branch measure_11: {
+            probability = 0.5
+            print(f"  Outcome |11⟩: probability = {probability}")
+        }
+    }
+}
+
+# Quantum teleportation protocol
+pipeline QuantumTeleportation {
+    stage PrepareEntanglement {
+        # Create Bell pair between Alice and Bob
+        quantum alice_qubit = |0⟩
+        quantum bob_qubit = |0⟩
+        apply hadamard(alice_qubit)
+        apply cnot(alice_qubit, bob_qubit)
+        print("\n📡 Quantum Teleportation Protocol")
+        print("Bell pair created between Alice and Bob")
+    }
+    
+    stage AliceMeasurement {
+        # Alice's unknown quantum state to teleport
+        quantum message = α|0⟩ + β|1⟩
+        print(f"Alice's message state: α|0⟩ + β|1⟩")
+        
+        # Bell measurement
+        apply cnot(message, alice_qubit)
+        apply hadamard(message)
+        
+        # Measure both qubits
+        classical_bit_1 = measure(message)
+        classical_bit_2 = measure(alice_qubit)
+        print(f"Classical bits sent: {classical_bit_1}{classical_bit_2}")
+    }
+    
+    stage BobReconstruction {
+        # Bob applies corrections based on classical bits
+        fork {
+            path case_00: {
+                # No operation needed
+                print("Bob: No correction needed")
+            }
+            path case_01: {
+                apply pauli_x(bob_qubit)
+                print("Bob: Applied X gate")
+            }
+            path case_10: {
+                apply pauli_z(bob_qubit)
+                print("Bob: Applied Z gate")
+            }
+            path case_11: {
+                apply pauli_x(bob_qubit)
+                apply pauli_z(bob_qubit)
+                print("Bob: Applied X and Z gates")
+            }
+        }
+        print("✅ Teleportation complete! Bob has the quantum state.")
+    }
+}
+
+# Reasoning about quantum advantage
+reason chain QuantumAdvantage {
+    premise P1: "Quantum computers use superposition"
+    premise P2: "Classical computers process states sequentially"
+    derive D1 from P1: "Quantum can explore 2^n states simultaneously"
+    derive D2 from P2: "Classical requires O(2^n) operations"
+    conclude: D1, D2 => "Exponential speedup for certain problems"
+}
+
+# Simulate quantum error correction
+experiment ErrorCorrection {
+    print("\n🛡️ Quantum Error Correction")
+    
+    # Simulate bit flip error with uncertainty
+    uncertain error_rate = 0.001 ± 0.0001
+    print(f"Physical qubit error rate: {error_rate}")
+    
+    # Use 9-qubit Shor code
+    num_physical_qubits = 9
+    logical_error_rate = error_rate ** 3  # Simplified calculation
+    
+    uncertain corrected_error = logical_error_rate ± (logical_error_rate * 0.1)
+    print(f"Logical qubit error rate: {corrected_error}")
+    print(f"Improvement factor: {error_rate / logical_error_rate:.0f}x")
+}
+
+# Performance comparison
+parallel {
+    branch classical: {
+        print("\n💻 Classical Simulation:")
+        n_qubits = 20
+        states = 2 ** n_qubits
+        print(f"  Simulating {n_qubits} qubits")
+        print(f"  State vector size: {states:,} complex numbers")
+        print(f"  Memory required: {states * 16 / 1e9:.2f} GB")
+    }
+    branch quantum: {
+        print("\n⚛️ Quantum Hardware:")
+        n_qubits = 20
+        print(f"  Running on {n_qubits} physical qubits")
+        print(f"  State space: 2^{n_qubits} = {2**n_qubits:,}")
+        print(f"  Physical resources: {n_qubits} qubits")
+    }
+}
+
+print("\n✨ Quantum demonstration complete!")
+print("Synapse: Bringing quantum computing to scientific programming")

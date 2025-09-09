@@ -1,0 +1,72 @@
+# Synapse Language Demo - Hello World with Scientific Features
+# Demonstrates parallel execution, uncertainty, and reasoning chains
+
+# Basic Hello World
+print("Hello from Synapse! 🚀")
+
+# Demonstrate uncertainty-aware computing
+uncertain measurement = 42.3 ± 0.5
+uncertain temperature = 300 ± 10
+print(f"Measurement: {measurement}")
+print(f"Temperature: {temperature}K")
+
+# Calculate with uncertainty propagation
+uncertain energy = measurement * temperature
+print(f"Energy calculation: {energy}")
+
+# Parallel execution example
+parallel {
+    branch A: {
+        print("Branch A: Processing dataset 1...")
+        result_a = 100
+    }
+    branch B: {
+        print("Branch B: Processing dataset 2...")
+        result_b = 200
+    }
+    branch C: {
+        print("Branch C: Running control...")
+        result_c = 150
+    }
+}
+
+# Synthesize results
+total = result_a + result_b + result_c
+print(f"Total from parallel branches: {total}")
+
+# Scientific reasoning chain
+reason chain ScientificMethod {
+    premise P1: "We have observed phenomenon X"
+    premise P2: "Previous studies suggest mechanism Y"
+    derive D1 from P1, P2: "Hypothesis: X is caused by Y"
+    conclude: D1 => "Design experiment to test hypothesis"
+}
+
+# Tensor operations example
+tensor data = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+tensor weights = [[0.1, 0.2, 0.3]]
+result = data @ weights.T  # Matrix multiplication
+print(f"Tensor result shape: {result.shape}")
+
+# Pipeline example for data processing
+pipeline DataAnalysis {
+    stage LoadData {
+        data = load("dataset.csv")
+    }
+    stage Preprocess parallel(4) {
+        cleaned = clean(data)
+        normalized = normalize(cleaned)
+    }
+    stage Analyze {
+        fork {
+            path statistical: run_statistics(normalized)
+            path ml_model: train_model(normalized)
+        }
+    }
+    stage Report {
+        generate_report(statistical, ml_model)
+    }
+}
+
+print("\n✨ Synapse demonstration complete!")
+print("Learn more at https://synapse-lang.com")
