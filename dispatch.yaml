@@ -1,0 +1,21 @@
+# Dispatch configuration for routing in industrial-joy-456916-a2
+dispatch:
+  # CroweHub IDE routes
+  - url: "*/crowehub/*"
+    service: default
+  
+  # Playground routes  
+  - url: "*/playground/*"
+    service: default
+  
+  # API routes
+  - url: "*/api/*"
+    service: default
+  
+  # Stripe webhook routes
+  - url: "*/stripe/*"
+    service: default
+  
+  # Default service for main site
+  - url: "*/*"
+    service: default

@@ -2,11 +2,26 @@
   "name": "synapse-language",
   "displayName": "Synapse Language Support",
   "description": "Syntax highlighting and language support for Synapse - a language for scientific reasoning and parallel thought processing",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "synapse-lang",
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.74.0"
   },
+  "activationEvents": [
+    "onLanguage:synapse"
+  ],
+  "badges": [
+    {
+      "url": "https://img.shields.io/github/stars/MichaelCrowe11/synapse-lang?style=social",
+      "href": "https://github.com/MichaelCrowe11/synapse-lang",
+      "description": "Star on GitHub"
+    }
+  ],
   "categories": [
     "Programming Languages",
     "Snippets",
@@ -20,12 +35,67 @@
     "uncertainty"
   ],
   "main": "./extension.js",
+  "scripts": {
+    "vscode:prepublish": "echo 'Ready to publish'"
+  },
   "contributes": {
+    "commands": [
+      {
+        "command": "synapse.showInfo",
+        "title": "Synapse: Show Information"
+      },
+      {
+        "command": "synapse.format",
+        "title": "Synapse: Format Document"
+      },
+      {
+        "command": "synapse.run",
+        "title": "Synapse: Run Current File"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "synapse.run",
+        "key": "f5",
+        "when": "editorTextFocus && resourceExtname == .syn"
+      },
+      {
+        "command": "synapse.format",
+        "key": "shift+alt+f",
+        "when": "editorTextFocus && resourceExtname == .syn"
+      }
+    ],
+    "configuration": {
+      "title": "Synapse",
+      "properties": {
+        "synapse.enableDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable real-time error diagnostics"
+        },
+        "synapse.enableAutoCompletion": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable auto-completion"
+        },
+        "synapse.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Path to Python interpreter for running Synapse files"
+        }
+      }
+    },
     "languages": [
       {
         "id": "synapse",
-        "aliases": ["Synapse", "synapse"],
-        "extensions": [".syn", ".synapse"],
+        "aliases": [
+          "Synapse",
+          "synapse"
+        ],
+        "extensions": [
+          ".syn",
+          ".synapse"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -52,6 +122,25 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/MichaelCrowe11/synapse-lang"
+    "url": "git+https://github.com/MichaelCrowe11/synapse-lang.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MichaelCrowe11/synapse-lang/issues"
+  },
+  "homepage": "https://github.com/MichaelCrowe11/synapse-lang#readme",
+  "license": "SEE LICENSE IN LICENSE-DUAL.md",
+  "author": "",
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1",
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.12"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.1",
+    "@types/vscode": "^1.103.0",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.2",
+    "webpack": "^5.101.3",
+    "webpack-cli": "^6.0.1"
   }
 }

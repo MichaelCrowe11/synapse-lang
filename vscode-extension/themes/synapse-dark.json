@@ -1,0 +1,183 @@
+{
+    "name": "Synapse Dark",
+    "type": "dark",
+    "colors": {
+        "editor.background": "#1a1a1a",
+        "editor.foreground": "#e0e0e0",
+        "editor.lineHighlightBackground": "#252525",
+        "editorCursor.foreground": "#00ff88",
+        "editorIndentGuide.background": "#404040",
+        "editorIndentGuide.activeBackground": "#606060",
+        "editor.selectionBackground": "#3a3a3a",
+        "editor.selectionHighlightBackground": "#2a2a2a",
+        "editorBracketMatch.background": "#4a4a4a",
+        "editorBracketMatch.border": "#00ff88",
+        "activityBar.background": "#151515",
+        "sideBar.background": "#1a1a1a",
+        "statusBar.background": "#0a0a0a",
+        "statusBar.foreground": "#00ff88",
+        "terminal.background": "#0a0a0a",
+        "terminal.foreground": "#e0e0e0"
+    },
+    "tokenColors": [
+        {
+            "name": "Comments",
+            "scope": [
+                "comment",
+                "punctuation.definition.comment"
+            ],
+            "settings": {
+                "foreground": "#608B4E",
+                "fontStyle": "italic"
+            }
+        },
+        {
+            "name": "Synapse Keywords",
+            "scope": [
+                "keyword.control.synapse",
+                "keyword.control.flow.synapse"
+            ],
+            "settings": {
+                "foreground": "#C586C0",
+                "fontStyle": "bold"
+            }
+        },
+        {
+            "name": "Quantum Keywords",
+            "scope": [
+                "keyword.other.quantum.synapse"
+            ],
+            "settings": {
+                "foreground": "#00FFFF",
+                "fontStyle": "bold"
+            }
+        },
+        {
+            "name": "Uncertainty Operators",
+            "scope": [
+                "keyword.operator.uncertainty.synapse"
+            ],
+            "settings": {
+                "foreground": "#FFD700",
+                "fontStyle": "bold"
+            }
+        },
+        {
+            "name": "Strings",
+            "scope": [
+                "string",
+                "punctuation.definition.string"
+            ],
+            "settings": {
+                "foreground": "#CE9178"
+            }
+        },
+        {
+            "name": "Numbers",
+            "scope": [
+                "constant.numeric"
+            ],
+            "settings": {
+                "foreground": "#B5CEA8"
+            }
+        },
+        {
+            "name": "Functions",
+            "scope": [
+                "entity.name.function",
+                "support.function"
+            ],
+            "settings": {
+                "foreground": "#DCDCAA"
+            }
+        },
+        {
+            "name": "Variables",
+            "scope": [
+                "variable",
+                "variable.other"
+            ],
+            "settings": {
+                "foreground": "#9CDCFE"
+            }
+        },
+        {
+            "name": "Types",
+            "scope": [
+                "entity.name.type",
+                "support.type"
+            ],
+            "settings": {
+                "foreground": "#4EC9B0"
+            }
+        },
+        {
+            "name": "Operators",
+            "scope": [
+                "keyword.operator"
+            ],
+            "settings": {
+                "foreground": "#D4D4D4"
+            }
+        },
+        {
+            "name": "Parallel/Branch Keywords",
+            "scope": [
+                "keyword.control.parallel.synapse",
+                "keyword.control.branch.synapse"
+            ],
+            "settings": {
+                "foreground": "#FF6B6B",
+                "fontStyle": "bold"
+            }
+        },
+        {
+            "name": "Scientific Keywords",
+            "scope": [
+                "keyword.other.scientific.synapse"
+            ],
+            "settings": {
+                "foreground": "#66D9EF",
+                "fontStyle": "italic"
+            }
+        },
+        {
+            "name": "Tensor Operations",
+            "scope": [
+                "support.function.tensor.synapse"
+            ],
+            "settings": {
+                "foreground": "#A6E22E"
+            }
+        },
+        {
+            "name": "Symbolic Math",
+            "scope": [
+                "support.function.symbolic.synapse"
+            ],
+            "settings": {
+                "foreground": "#E6DB74"
+            }
+        },
+        {
+            "name": "Constants",
+            "scope": [
+                "constant.language"
+            ],
+            "settings": {
+                "foreground": "#569CD6"
+            }
+        },
+        {
+            "name": "Invalid/Illegal",
+            "scope": [
+                "invalid",
+                "invalid.illegal"
+            ],
+            "settings": {
+                "foreground": "#F44747",
+                "fontStyle": "underline"
+            }
+        }
+    ]
+}
