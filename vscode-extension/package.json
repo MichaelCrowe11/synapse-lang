@@ -1,8 +1,8 @@
 {
-  "name": "synapse-language",
-  "displayName": "Synapse Language Support",
-  "description": "Syntax highlighting and language support for Synapse - a language for scientific reasoning and parallel thought processing",
-  "version": "0.2.0",
+  "name": "synapse-lang",
+  "displayName": "SynapseLang",
+  "description": "Language support for SynapseLang - Drug Discovery DSL with molecular modeling, QSAR, and docking capabilities",
+  "version": "0.1.0",
   "publisher": "synapse-lang",
   "icon": "icon.png",
   "galleryBanner": {
@@ -25,34 +25,82 @@
   "categories": [
     "Programming Languages",
     "Snippets",
-    "Themes"
+    "Linters",
+    "Data Science"
   ],
   "keywords": [
-    "synapse",
-    "scientific",
-    "parallel",
-    "reasoning",
-    "uncertainty"
+    "drug-discovery",
+    "cheminformatics",
+    "molecular-modeling",
+    "qsar",
+    "docking",
+    "pharmaceutical",
+    "bioinformatics",
+    "synapse"
   ],
   "main": "./extension.js",
   "scripts": {
-    "vscode:prepublish": "echo 'Ready to publish'"
+    "vscode:prepublish": "npm run compile",
+    "compile": "webpack --mode production",
+    "watch": "webpack --mode development --watch",
+    "test": "node ./dist/test/runTest.js",
+    "package": "vsce package"
   },
+  "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "synapse.showInfo",
-        "title": "Synapse: Show Information"
+        "command": "synapse.runFile",
+        "title": "Run Synapse File",
+        "icon": "$(play)"
       },
       {
-        "command": "synapse.format",
-        "title": "Synapse: Format Document"
+        "command": "synapse.checkSyntax",
+        "title": "Check Syntax",
+        "icon": "$(check)"
       },
       {
-        "command": "synapse.run",
-        "title": "Synapse: Run Current File"
+        "command": "synapse.generateQSAR",
+        "title": "Generate QSAR Model",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "synapse.runDocking",
+        "title": "Run Molecular Docking",
+        "icon": "$(rocket)"
+      },
+      {
+        "command": "synapse.showHelp",
+        "title": "Show SynapseLang Help",
+        "icon": "$(question)"
       }
     ],
+    "menus": {
+      "editor/title": [
+        {
+          "when": "resourceExtname == .syn",
+          "command": "synapse.runFile",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceExtname == .syn",
+          "command": "synapse.checkSyntax",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "when": "resourceExtname == .syn",
+          "command": "synapse.generateQSAR",
+          "group": "synapse"
+        },
+        {
+          "when": "resourceExtname == .syn",
+          "command": "synapse.runDocking",
+          "group": "synapse"
+        }
+      ]
+    },
     "keybindings": [
       {
         "command": "synapse.run",
@@ -68,20 +116,40 @@
     "configuration": {
       "title": "Synapse",
       "properties": {
-        "synapse.enableDiagnostics": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable/disable real-time error diagnostics"
-        },
-        "synapse.enableAutoCompletion": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable/disable auto-completion"
-        },
         "synapse.pythonPath": {
           "type": "string",
           "default": "python",
-          "description": "Path to Python interpreter for running Synapse files"
+          "description": "Path to Python interpreter with SynapseLang installed"
+        },
+        "synapse.enableLinting": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable syntax checking and linting"
+        },
+        "synapse.dockingEngine": {
+          "type": "string",
+          "enum": [
+            "AutoDock Vina",
+            "AutoDock 4",
+            "Glide"
+          ],
+          "default": "AutoDock Vina",
+          "description": "Default molecular docking engine"
+        },
+        "synapse.outputFormat": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "xlsx"
+          ],
+          "default": "json",
+          "description": "Default output format for results"
+        },
+        "synapse.enablePharmKit": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable PharmKit professional features (requires license)"
         }
       }
     },

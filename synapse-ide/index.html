@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synapse Language IDE | Advanced Scientific Computing</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.min.css">
+    <link rel="stylesheet" href="styles/ide.css">
+    <link rel="stylesheet" href="styles/themes.css">
+    <link rel="icon" href="../branding/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <div id="synapse-ide">
+        <!-- IDE Header -->
+        <header class="ide-header">
+            <div class="header-left">
+                <div class="synapse-logo">
+                    <svg width="32" height="32" viewBox="0 0 256 256">
+                        <defs>
+                            <linearGradient id="synapseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#43E5FF"/>
+                                <stop offset="100%" stop-color="#7A5CFF"/>
+                            </linearGradient>
+                        </defs>
+                        <path d="M64 56 C128 56, 128 120, 192 120 C224 120, 224 160, 192 176 C160 192, 112 184, 88 208" 
+                              fill="none" stroke="url(#synapseGrad)" stroke-width="18" stroke-linecap="round"/>
+                        <circle cx="64" cy="56" r="16" fill="#0B0F14"/>
+                        <circle cx="192" cy="120" r="16" fill="#0B0F14"/>
+                        <circle cx="88" cy="208" r="16" fill="#0B0F14"/>
+                    </svg>
+                    <span>Synapse IDE</span>
+                </div>
+                <nav class="main-menu">
+                    <button class="menu-item" data-action="new-file">
+                        <span class="icon">📄</span> New
+                    </button>
+                    <button class="menu-item" data-action="open-project">
+                        <span class="icon">📁</span> Open
+                    </button>
+                    <button class="menu-item" data-action="save">
+                        <span class="icon">💾</span> Save
+                    </button>
+                </nav>
+            </div>
+            <div class="header-center">
+                <div class="language-selector">
+                    <select id="language-select">
+                        <option value="synapse">Synapse</option>
+                        <option value="qubit-flow">Qubit-Flow</option>
+                        <option value="quantum-net">Quantum-Net</option>
+                        <option value="python">Python</option>
+                        <option value="javascript">JavaScript</option>
+                    </select>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="action-btn" id="run-code">
+                    <span class="icon">▶️</span> Run
+                </button>
+                <button class="action-btn" id="debug-code">
+                    <span class="icon">🐛</span> Debug
+                </button>
+                <button class="action-btn" id="ai-assist">
+                    <span class="icon">🤖</span> AI Assist
+                </button>
+                <div class="theme-selector">
+                    <select id="theme-select">
+                        <option value="synapse-dark">Synapse Dark</option>
+                        <option value="synapse-light">Synapse Light</option>
+                        <option value="quantum-dark">Quantum Dark</option>
+                        <option value="vs-dark">VS Dark</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <!-- IDE Main Content -->
+        <main class="ide-main">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-tabs">
+                    <button class="tab active" data-tab="explorer">
+                        <span class="icon">📁</span>
+                        <span class="label">Explorer</span>
+                    </button>
+                    <button class="tab" data-tab="search">
+                        <span class="icon">🔍</span>
+                        <span class="label">Search</span>
+                    </button>
+                    <button class="tab" data-tab="git">
+                        <span class="icon">🌿</span>
+                        <span class="label">Git</span>
+                    </button>
+                    <button class="tab" data-tab="ai">
+                        <span class="icon">🤖</span>
+                        <span class="label">AI</span>
+                    </button>
+                </div>
+
+                <!-- Explorer Panel -->
+                <div id="explorer-panel" class="sidebar-panel active">
+                    <div class="panel-header">
+                        <h3>Project Explorer</h3>
+                        <button class="btn-icon" data-action="new-folder">
+                            <span class="icon">📁+</span>
+                        </button>
+                        <button class="btn-icon" data-action="new-file">
+                            <span class="icon">📄+</span>
+                        </button>
+                    </div>
+                    <div class="file-tree" id="file-tree">
+                        <!-- File tree will be populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Search Panel -->
+                <div id="search-panel" class="sidebar-panel">
+                    <div class="panel-header">
+                        <h3>Search & Replace</h3>
+                    </div>
+                    <div class="search-form">
+                        <input type="text" id="search-input" placeholder="Search in files...">
+                        <input type="text" id="replace-input" placeholder="Replace with...">
+                        <div class="search-options">
+                            <label><input type="checkbox" id="case-sensitive"> Case sensitive</label>
+                            <label><input type="checkbox" id="regex-search"> Regex</label>
+                            <label><input type="checkbox" id="whole-word"> Whole word</label>
+                        </div>
+                        <button class="btn-primary" id="search-all">Search All</button>
+                    </div>
+                    <div id="search-results"></div>
+                </div>
+
+                <!-- Git Panel -->
+                <div id="git-panel" class="sidebar-panel">
+                    <div class="panel-header">
+                        <h3>Source Control</h3>
+                        <button class="btn-icon" data-action="git-refresh">
+                            <span class="icon">🔄</span>
+                        </button>
+                    </div>
+                    <div class="git-status" id="git-status">
+                        <!-- Git status will be populated -->
+                    </div>
+                </div>
+
+                <!-- AI Panel -->
+                <div id="ai-panel" class="sidebar-panel">
+                    <div class="panel-header">
+                        <h3>AI Assistant</h3>
+                    </div>
+                    <div class="ai-chat" id="ai-chat">
+                        <div class="chat-messages" id="chat-messages"></div>
+                        <div class="chat-input">
+                            <input type="text" id="ai-input" placeholder="Ask AI about your code...">
+                            <button class="btn-primary" id="send-ai">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Editor Area -->
+            <section class="editor-area">
+                <!-- Tab Bar -->
+                <div class="tab-bar" id="tab-bar">
+                    <div class="tab editor-tab active" data-file="welcome.syn">
+                        <span class="tab-title">Welcome.syn</span>
+                        <button class="tab-close">×</button>
+                    </div>
+                </div>
+
+                <!-- Editor Container -->
+                <div class="editor-container">
+                    <div id="monaco-editor"></div>
+                </div>
+
+                <!-- AI Completion Popup -->
+                <div id="ai-completion-popup" class="completion-popup hidden">
+                    <div class="completion-header">
+                        <span class="icon">🤖</span>
+                        <span>AI Suggestion</span>
+                        <button class="close-btn">×</button>
+                    </div>
+                    <div class="completion-content" id="completion-content"></div>
+                    <div class="completion-actions">
+                        <button class="btn-primary" id="accept-completion">Accept</button>
+                        <button class="btn-secondary" id="reject-completion">Reject</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Output Panel -->
+            <section class="output-panel">
+                <div class="output-tabs">
+                    <button class="output-tab active" data-tab="console">Console</button>
+                    <button class="output-tab" data-tab="problems">Problems</button>
+                    <button class="output-tab" data-tab="debug">Debug</button>
+                    <button class="output-tab" data-tab="terminal">Terminal</button>
+                </div>
+
+                <div id="console-output" class="output-content active">
+                    <div class="output-header">
+                        <span>Console Output</span>
+                        <button class="btn-icon" data-action="clear-console">
+                            <span class="icon">🗑️</span>
+                        </button>
+                    </div>
+                    <div class="output-area" id="console-area"></div>
+                </div>
+
+                <div id="problems-output" class="output-content">
+                    <div class="output-header">
+                        <span>Problems</span>
+                        <span class="problem-count" id="problem-count">0</span>
+                    </div>
+                    <div class="output-area" id="problems-area"></div>
+                </div>
+
+                <div id="debug-output" class="output-content">
+                    <div class="output-header">
+                        <span>Debug Console</span>
+                        <div class="debug-controls">
+                            <button class="btn-icon" data-action="step-over">⏭️</button>
+                            <button class="btn-icon" data-action="step-into">⬇️</button>
+                            <button class="btn-icon" data-action="step-out">⬆️</button>
+                            <button class="btn-icon" data-action="continue">▶️</button>
+                            <button class="btn-icon" data-action="stop-debug">⏹️</button>
+                        </div>
+                    </div>
+                    <div class="output-area" id="debug-area"></div>
+                </div>
+
+                <div id="terminal-output" class="output-content">
+                    <div class="output-header">
+                        <span>Terminal</span>
+                        <button class="btn-icon" data-action="new-terminal">+</button>
+                    </div>
+                    <div class="terminal-container" id="terminal-container"></div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Status Bar -->
+        <footer class="status-bar">
+            <div class="status-left">
+                <span class="status-item" id="cursor-position">Ln 1, Col 1</span>
+                <span class="status-item" id="language-status">Synapse</span>
+                <span class="status-item" id="encoding">UTF-8</span>
+            </div>
+            <div class="status-center">
+                <span class="status-item" id="git-branch">main</span>
+                <span class="status-item" id="file-status">Ready</span>
+            </div>
+            <div class="status-right">
+                <span class="status-item" id="ai-status">AI Ready</span>
+                <span class="status-item" id="server-status">Connected</span>
+                <div class="notification-bell" id="notifications">
+                    <span class="icon">🔔</span>
+                    <span class="badge">0</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Context Menus -->
+    <div id="context-menu" class="context-menu hidden">
+        <button class="context-item" data-action="copy">Copy</button>
+        <button class="context-item" data-action="paste">Paste</button>
+        <button class="context-item" data-action="cut">Cut</button>
+        <hr>
+        <button class="context-item" data-action="format">Format Document</button>
+        <button class="context-item" data-action="refactor">Refactor</button>
+        <hr>
+        <button class="context-item" data-action="ai-explain">AI Explain</button>
+        <button class="context-item" data-action="ai-optimize">AI Optimize</button>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Initializing Synapse IDE...</div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+    <script src="js/language-definitions.js"></script>
+    <script src="js/ai-completion.js"></script>
+    <script src="js/file-manager.js"></script>
+    <script src="js/git-integration.js"></script>
+    <script src="js/debug-tools.js"></script>
+    <script src="js/theme-manager.js"></script>
+    <script src="js/synapse-ide.js"></script>
+</body>
+</html>

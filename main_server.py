@@ -20,12 +20,14 @@ CORS(app)
 BASE_DIR = Path(__file__).parent
 CROWEHUB_DIR = BASE_DIR / 'crowehub'
 WEBSITE_DIR = BASE_DIR / 'synapse-lang.com'
+SYNAPSE_IDE_DIR = BASE_DIR / 'synapse-ide'
 
 print("=" * 60)
 print("SYNAPSE-LANG.COM - MAIN PLATFORM SERVER")
 print("=" * 60)
 print("Main Website: http://localhost:8000")
 print("CroweHub IDE: http://localhost:8000/crowehub")
+print("Synapse IDE: http://localhost:8000/synapse-ide")
 print("Documentation: http://localhost:8000/docs")
 print("Package Registry: http://localhost:8000/packages")
 print("Community: http://localhost:8000/community")
@@ -169,6 +171,20 @@ def crowehub_static(path):
     return send_from_directory(CROWEHUB_DIR, path)
 
 # ==============================================
+# SYNAPSE IDE ROUTES
+# ==============================================
+
+@app.route('/synapse-ide')
+def synapse_ide():
+    """Serve Synapse IDE"""
+    return send_from_directory(SYNAPSE_IDE_DIR, 'index.html')
+
+@app.route('/synapse-ide/<path:path>')
+def synapse_ide_static(path):
+    """Serve Synapse IDE static files"""
+    return send_from_directory(SYNAPSE_IDE_DIR, path)
+
+# ==============================================
 # PACKAGE REGISTRY ROUTES
 # ==============================================
 
@@ -210,6 +226,7 @@ def packages():
             <nav>
                 <a href="/">Home</a>
                 <a href="/crowehub">CroweHub IDE</a>
+                <a href="/synapse-ide">Synapse IDE</a>
                 <a href="/docs">Docs</a>
                 <a href="/packages">Packages</a>
                 <a href="/community">Community</a>

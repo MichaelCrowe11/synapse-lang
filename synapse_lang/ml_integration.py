@@ -478,3 +478,105 @@ class MLIntegration:
             results[model_type] = cv_results
         
         return results
+
+
+class GaussianProcessUncertainty:
+    """Gaussian Process for uncertainty quantification in ML models."""
+    
+    def __init__(self, kernel: str = "rbf", length_scale: float = 1.0):
+        self.kernel = kernel
+        self.length_scale = length_scale
+        self.X_train = None
+        self.y_train = None
+        self.fitted = False
+        self.gp = None
+        
+        if SKLEARN_AVAILABLE:
+            # Use sklearn GP if available
+            if kernel == "rbf":
+                kernel_obj = RBF(length_scale=length_scale) + WhiteKernel()
+            elif kernel == "matern":
+                kernel_obj = Matern(length_scale=length_scale) + WhiteKernel()
+            else:
+                kernel_obj = RBF(length_scale=length_scale) + WhiteKernel()
+            
+            self.gp = GaussianProcessRegressor(kernel=kernel_obj, alpha=1e-6)
+    
+    def fit(self, X: np.ndarray, y: np.ndarray):
+        """Fit the Gaussian Process model."""
+        self.X_train = np.array(X)
+        
+        # Handle UncertainValue objects in y
+        if hasattr(y[0], 'value') and hasattr(y[0], 'uncertainty'):
+            # Extract values and uncertainties from UncertainValue objects
+            from .uncertainty import UncertainValue
+            values = np.array([yi.value if isinstance(yi, UncertainValue) else yi for yi in y])
+            uncertainties = np.array([yi.uncertainty if isinstance(yi, UncertainValue) else 0.0 for yi in y])
+            self.y_train = values
+            self.y_uncertainties = uncertainties
+            
+            # Incorporate uncertainties into GP alpha parameter (noise level)
+            if self.gp is not None:
+                avg_uncertainty = np.mean(uncertainties[uncertainties > 0])
+                if avg_uncertainty > 0:
+                    self.gp.alpha = avg_uncertainty ** 2
+        else:
+            self.y_train = np.array(y)
+            self.y_uncertainties = None
+        
+        if self.gp is not None:
+            self.gp.fit(self.X_train, self.y_train)
+        
+        self.fitted = True
+        return self
+    
+    def predict(self, X: np.ndarray, return_std: bool = None, return_uncertain: bool = None):
+        """Predict with uncertainty estimates."""
+        if not self.fitted:
+            raise ValueError("Model must be fitted before prediction")
+        
+        X = np.array(X)
+        
+        # Default behavior: if trained with UncertainValue objects, return UncertainValue objects
+        if return_uncertain is None:
+            return_uncertain = hasattr(self, 'y_uncertainties') and self.y_uncertainties is not None
+        
+        if return_std is None:
+            return_std = not return_uncertain
+        
+        if self.gp is not None:
+            # Use sklearn GP
+            mean, std = self.gp.predict(X, return_std=True)
+            
+            if return_uncertain:
+                # Return UncertainValue objects
+                from .uncertainty import UncertainValue
+                predictions = [UncertainValue(m, s) for m, s in zip(mean, std)]
+                return predictions
+            elif return_std:
+                return mean, std
+            return mean, None
+        else:
+            # Simple fallback implementation
+            mean = np.mean(self.y_train) * np.ones(len(X))
+            std = np.std(self.y_train) * np.ones(len(X))
+            
+            if return_uncertain:
+                from .uncertainty import UncertainValue
+                predictions = [UncertainValue(m, s) for m, s in zip(mean, std)]
+                return predictions
+            elif return_std:
+                return mean, std
+            return mean, None
+    
+    def sample(self, X: np.ndarray, n_samples: int = 10) -> np.ndarray:
+        """Sample from the posterior distribution."""
+        mean, std = self.predict(X, return_std=True, return_uncertain=False)
+        
+        if self.gp is not None and hasattr(self.gp, 'sample_y'):
+            # Use sklearn's sampling if available
+            return self.gp.sample_y(X, n_samples=n_samples).T
+        else:
+            # Fallback to normal sampling
+            samples = np.random.normal(mean[:, None], std[:, None], (len(X), n_samples))
+            return samples

@@ -1,84 +1,145 @@
-"""
-Synapse Programming Language
-A revolutionary language for scientific computing with parallel execution and uncertainty quantification.
+"""Synapse Language - Complete Implementation Package."""
 
-This software is proprietary and requires a valid license for commercial use.
-Community Edition is available for personal and educational use.
-"""
+__version__ = "2.0.0"
+__author__ = "Synapse Development Team"
 
-from __future__ import annotations
+# Core language components
+from .synapse_lexer import Lexer, Token, TokenType
+from .parser_enhanced import EnhancedParser
+from .ast_consolidated import *
+from .synapse_interpreter import SynapseInterpreter as Interpreter
 
-__version__ = "1.0.2"
-__author__ = "Michael Benjamin Crowe"
-__email__ = "michaelcrowe11@users.noreply.github.com"
-__license__ = "Proprietary (Dual License: Community/Commercial)"
+# Advanced features
+from .jit_compiler import JITCompiler, compile_synapse_code, synapse_jit
+from .security import (
+    ExecutionSandbox, 
+    ProcessSandbox,
+    SecurityPolicy,
+    sandboxed,
+    sandboxed_context,
+    create_scientific_sandbox,
+    create_quantum_sandbox
+)
 
-# Core imports - lazy loading for efficiency
-from .synapse_parser import parse as parse_synapse_code
-from .synapse_interpreter import SynapseInterpreter
-
-# Initialize license manager (optional, only if present)
+# Quantum computing - import only what exists
 try:
-    from .license_manager import get_license_manager, check_license_feature, track_usage
-    
-    # Check license on import
-    _license = get_license_manager()
-    _license_info = _license.get_license_info()
-    
-    print(f"Synapse Language v{__version__} - {_license_info['type'].title()} Edition")
-    if _license_info['type'] == 'community':
-        print("ℹ️  For commercial use and full features, visit https://github.com/MichaelCrowe11/synapse-lang")
-    
-    # Track initialization
-    track_usage("init", {"version": __version__})
+    from .quantum.core import QuantumCircuitBuilder as QuantumCircuit, SimulatorBackend as QuantumSimulator
+    from .quantum.semantics import QuantumSemanticError
 except ImportError:
-    # License manager not available in open source version
+    # Quantum modules may not be fully available
     pass
 
-# Optimized imports
+# Scientific computing - import only if available
 try:
-    from .interpreter_optimized import OptimizedInterpreter, run_program
+    from .uncertainty import UncertaintyEngine
 except ImportError:
-    # Fallback if optimizations not available
-    OptimizedInterpreter = SynapseInterpreter
-    def run_program(code: str, **kwargs):
-        interpreter = SynapseInterpreter()
-        return interpreter.execute(code)
+    pass
+
+try:
+    from .tensor_ops import TensorEngine
+except ImportError:
+    pass
+
+try:
+    from .symbolic import SymbolicEngine
+except ImportError:
+    pass
 
 # High-level API
-def execute(code: str, *, optimized: bool = True, **kwargs):
-    """
-    Execute Synapse code with optional optimization.
+def parse(code: str) -> ASTNode:
+    """Parse Synapse code into AST."""
+    lexer = Lexer(code)
+    tokens = lexer.tokenize()
+    parser = EnhancedParser(tokens)
+    return parser.parse()
+
+
+def compile(code: str, optimize: bool = True) -> callable:
+    """Compile Synapse code to optimized machine code."""
+    from .jit_compiler import CompilationConfig
     
-    Args:
-        code: Synapse source code
-        optimized: Use optimized interpreter (default: True)
-        **kwargs: Additional arguments for interpreter
+    config = CompilationConfig(
+        parallel=optimize,
+        fastmath=optimize,
+        optimize_level=3 if optimize else 0
+    )
     
-    Returns:
-        Execution result
-    """
-    if optimized:
-        return run_program(code, **kwargs)
+    return compile_synapse_code(code, config)
+
+
+def execute(code: str, sandbox: bool = True, context: dict = None) -> any:
+    """Execute Synapse code with optional sandboxing."""
+    if sandbox:
+        sandbox_exec = create_scientific_sandbox()
+        return sandbox_exec.execute(code, context)
     else:
-        interpreter = SynapseInterpreter()
-        return interpreter.execute(code)
+        ast = parse(code)
+        interpreter = Interpreter()
+        return interpreter.execute(ast, context or {})
 
-def run(source: str):
-    """Simple run function for backward compatibility."""
-    return execute(source)
 
-def version():
-    """Return the version string."""
-    return __version__
+def run_file(filepath: str, sandbox: bool = True) -> any:
+    """Run a Synapse source file."""
+    with open(filepath, 'r') as f:
+        code = f.read()
+    return execute(code, sandbox)
 
+
+# CLI entry point
+def main():
+    """Main CLI entry point."""
+    import sys
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Synapse Language Interpreter')
+    parser.add_argument('file', nargs='?', help='Synapse source file to run')
+    parser.add_argument('--compile', action='store_true', help='Compile to optimized code')
+    parser.add_argument('--no-sandbox', action='store_true', help='Disable security sandbox')
+    parser.add_argument('--repl', action='store_true', help='Start interactive REPL')
+    parser.add_argument('--version', action='version', version=f'Synapse {__version__}')
+    
+    args = parser.parse_args()
+    
+    if args.repl or not args.file:
+        from .synapse_repl import REPL
+        repl = REPL(sandbox=not args.no_sandbox)
+        repl.run()
+    elif args.file:
+        try:
+            if args.compile:
+                compiled = compile(open(args.file).read())
+                result = compiled()
+            else:
+                result = run_file(args.file, sandbox=not args.no_sandbox)
+            
+            if result is not None:
+                print(result)
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+
+# Export main components
 __all__ = [
-    "__version__",
-    "SynapseInterpreter",
-    "OptimizedInterpreter",
-    "parse_synapse_code",
-    "execute",
-    "run",
-    "run_program",
-    "version",
+    # Core
+    'Lexer', 'Token', 'TokenType',
+    'EnhancedParser', 'Interpreter',
+    
+    # AST Nodes
+    'ASTNode', 'ProgramNode', 'NumberNode', 'StringNode',
+    'IdentifierNode', 'BinaryOpNode', 'UnaryOpNode',
+    'HypothesisNode', 'ExperimentNode', 'ParallelNode',
+    'QuantumCircuitNode', 'QuantumGateNode',
+    
+    # Compilation
+    'JITCompiler', 'compile_synapse_code', 'synapse_jit',
+    
+    # Security
+    'ExecutionSandbox', 'SecurityPolicy', 'sandboxed',
+    
+    # High-level API
+    'parse', 'compile', 'execute', 'run_file',
+    
+    # Version
+    '__version__'
 ]

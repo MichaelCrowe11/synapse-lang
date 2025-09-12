@@ -409,8 +409,9 @@ class TestParallelWorkflows(unittest.TestCase):
                 parameters={'x': x_values, 'y': y_values}
             )
             
-            # Aggregate inner results
-            mean_result = np.mean([r['result'].value for r in inner_results])
+            # Aggregate inner results (parameter_sweep returns dict with tuple keys)
+            mean_result = np.mean([r.value if hasattr(r, 'value') else r 
+                                   for r in inner_results.values()])
             
             # Apply outer parameters
             final = mean_result * temperature / pressure

@@ -1,0 +1,36 @@
+# Synapse Language - Hello World Example
+
+# Simple output
+print("Hello, World from Synapse!");
+
+# Variables and string formatting
+name = "Synapse";
+version = 1.03;
+print("Welcome to " + name + " v" + str(version));
+
+# Mathematical computation
+x = 42;
+y = 13;
+result = x + y;
+print("The answer is: " + str(result));
+
+# Uncertainty example
+uncertain temp = 273.15 +/- 0.5;  # Kelvin
+print("Temperature: " + str(temp));
+
+# Parallel computation example
+parallel {
+    branch A: compute_factorial(5);
+    branch B: compute_fibonacci(10);
+}
+
+# Function definition
+function greet(name) {
+    return "Hello, " + name + "!";
+}
+
+# Call function
+message = greet("Scientist");
+print(message);
+
+print("Program completed successfully!");

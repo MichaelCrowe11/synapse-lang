@@ -1,0 +1,253 @@
+# Synapse Quantum Computing Demo
+# Demonstrates quantum-inspired features and uncertainty-aware computing
+
+# Import quantum and uncertainty modules
+import quantum.*;
+import uncertainty.*;
+import parallel.*;
+
+# =====================================
+# Example 1: Quantum Superposition State
+# =====================================
+
+# Create a quantum-inspired superposition state
+quantum state qubit = |0⟩ + |1⟩;
+
+# Measurement collapses the state
+observe qubit_result = qubit with probability {
+    |0⟩: 0.5,
+    |1⟩: 0.5
+};
+
+print("Measured qubit state:", qubit_result);
+
+# =====================================
+# Example 2: Uncertainty-Aware Computation
+# =====================================
+
+# Define measurements with uncertainty
+uncertain temperature = 273.15 ± 0.5;  # Kelvin
+uncertain pressure = 101.325 ± 0.1;    # kPa
+uncertain volume = 22.414 ± 0.01;      # Liters
+
+# Ideal gas calculation with automatic uncertainty propagation
+propagate uncertainty through {
+    n_moles = (pressure * volume) / (8.314 * temperature);
+}
+
+print("Number of moles:", n_moles.value, "±", n_moles.uncertainty);
+
+# =====================================
+# Example 3: Parallel Hypothesis Testing
+# =====================================
+
+hypothesis H1 {
+    assume: temperature > 273;
+    predict: state == "liquid";
+    validate: experimental_data;
+}
+
+hypothesis H2 {
+    assume: temperature <= 273;
+    predict: state == "solid";
+    validate: experimental_data;
+}
+
+# Test hypotheses in parallel
+parallel {
+    branch water_test: test_hypothesis(H1, temperature);
+    branch ice_test: test_hypothesis(H2, temperature);
+}
+
+# Synthesize results
+synthesize results = consensus(water_test, ice_test);
+
+# =====================================
+# Example 4: Monte Carlo Simulation
+# =====================================
+
+# Define a complex function with uncertainty
+function reaction_rate(T: uncertain, Ea: uncertain) {
+    # Arrhenius equation
+    A = 1e10;  # Pre-exponential factor
+    R = 8.314;  # Gas constant
+    
+    return A * exp(-Ea / (R * T));
+}
+
+# Run Monte Carlo simulation
+uncertain T_reaction = 300 ± 5;     # K
+uncertain Ea = 50000 ± 1000;        # J/mol
+
+monte_carlo simulation {
+    samples: 10000,
+    parameters: {
+        temperature: T_reaction,
+        activation_energy: Ea
+    },
+    function: reaction_rate
+}
+
+print("Reaction rate distribution:");
+print("  Mean:", simulation.mean);
+print("  Std Dev:", simulation.std);
+print("  95% CI:", simulation.confidence_interval(0.95));
+
+# =====================================
+# Example 5: Quantum-Classical Hybrid
+# =====================================
+
+# Quantum circuit simulation
+quantum circuit grover {
+    # Initialize quantum register
+    qreg[3] q;
+    
+    # Apply Hadamard gates
+    H(q[0]);
+    H(q[1]);
+    H(q[2]);
+    
+    # Oracle function marking target state |101⟩
+    oracle {
+        CZ(q[0], q[2]);
+        X(q[1]);
+        CZ(q[0], q[1]);
+        X(q[1]);
+    }
+    
+    # Diffusion operator
+    diffusion {
+        H(q[0]); H(q[1]); H(q[2]);
+        X(q[0]); X(q[1]); X(q[2]);
+        CCZ(q[0], q[1], q[2]);
+        X(q[0]); X(q[1]); X(q[2]);
+        H(q[0]); H(q[1]); H(q[2]);
+    }
+    
+    # Measure all qubits
+    measure q -> results;
+}
+
+# Run quantum circuit multiple times
+parallel quantum_runs[100] {
+    run grover circuit;
+}
+
+# Analyze quantum results statistically
+statistics quantum_stats = analyze(quantum_runs);
+print("Most probable state:", quantum_stats.mode);
+print("Success probability:", quantum_stats.success_rate);
+
+# =====================================
+# Example 6: Scientific Parameter Sweep
+# =====================================
+
+# Define experimental function
+function experiment(pH: Real, temp: Real, conc: Real) {
+    # Reaction yield model
+    optimal_pH = 7.0;
+    optimal_temp = 298;
+    
+    pH_factor = exp(-0.5 * ((pH - optimal_pH) / 0.5)^2);
+    temp_factor = exp(-0.01 * abs(temp - optimal_temp));
+    conc_factor = conc / (conc + 0.1);
+    
+    return pH_factor * temp_factor * conc_factor;
+}
+
+# Parameter sweep with uncertainty
+parameter_sweep optimization {
+    pH: linspace(5.0 ± 0.1, 9.0 ± 0.1, 20),
+    temperature: linspace(280 ± 1, 320 ± 1, 20),
+    concentration: logspace(0.01 ± 0.001, 1.0 ± 0.01, 10)
+}
+
+# Find optimal conditions
+optimal = maximize(optimization, experiment);
+print("Optimal conditions:");
+print("  pH:", optimal.pH);
+print("  Temperature:", optimal.temperature, "K");
+print("  Concentration:", optimal.concentration, "M");
+print("  Expected yield:", optimal.value);
+
+# =====================================
+# Example 7: Reasoning Chain
+# =====================================
+
+reason chain ThermodynamicAnalysis {
+    # Define premises
+    premise P1: "Energy is conserved in isolated system";
+    premise P2: "Entropy always increases";
+    premise P3: "Temperature = " + str(temperature.value);
+    
+    # Derive conclusions
+    derive D1 from P1: "ΔE_total = 0";
+    derive D2 from P2: "ΔS_universe > 0";
+    derive D3 from P3, D1: {
+        if temperature.value > 273 {
+            "System is above freezing point"
+        } else {
+            "System is below freezing point"
+        }
+    }
+    
+    # Final conclusion
+    conclude: D1 && D2 && D3 => "Process is thermodynamically feasible";
+}
+
+# Execute reasoning
+result = execute(ThermodynamicAnalysis);
+print("Reasoning result:", result.conclusion);
+print("Confidence:", result.confidence);
+
+# =====================================
+# Example 8: Distributed Computation
+# =====================================
+
+# Large dataset processing
+dataset measurements[1000000] = load("experimental_data.csv");
+
+# Distributed processing pipeline
+pipeline DataAnalysis {
+    # Stage 1: Parallel data cleaning
+    stage Cleaning parallel(16) {
+        map measurements {
+            sample => remove_outliers(sample, 3 * sigma)
+        } into cleaned_data;
+    }
+    
+    # Stage 2: Feature extraction
+    stage Features parallel(8) {
+        fork {
+            path mean_calc: compute_mean(cleaned_data);
+            path variance_calc: compute_variance(cleaned_data);
+            path correlation: compute_correlation_matrix(cleaned_data);
+        }
+    }
+    
+    # Stage 3: Synthesis
+    stage Synthesis {
+        merge: combine_results(mean_calc, variance_calc, correlation);
+        validate: statistical_tests(merge);
+        report: generate_report(validate);
+    }
+}
+
+# Execute pipeline
+analysis_result = run(DataAnalysis);
+print("Analysis complete. Report saved to:", analysis_result.report_path);
+
+# =====================================
+# Summary Statistics
+# =====================================
+
+print("\n=== Quantum Demo Summary ===");
+print("✓ Quantum superposition demonstrated");
+print("✓ Uncertainty propagation calculated");
+print("✓ Parallel hypotheses tested");
+print("✓ Monte Carlo simulation completed");
+print("✓ Quantum circuit simulated");
+print("✓ Parameter optimization performed");
+print("✓ Logical reasoning executed");
+print("✓ Distributed processing completed");
+print("\nAll quantum-inspired features demonstrated successfully!");

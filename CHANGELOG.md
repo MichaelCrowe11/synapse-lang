@@ -5,6 +5,31 @@ All notable changes to the Synapse Programming Language will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2025-01-10
+
+### Added
+- Complete parallel computing module with multiprocessing and threading support
+- Parameter sweep functionality for scientific computing
+- Thought streams for parallel hypothesis testing
+- SharedState for thread-safe parallel computations
+- Monte Carlo simulation capabilities
+- Distributed compute functions
+- Backend stubs for Dask, MPI, and Ray integration
+- Comprehensive quantum computing demo with working examples
+- GaussianProcessUncertainty for ML uncertainty quantification
+
+### Fixed
+- Import errors for UncertainValue and parallel modules
+- NumPy/SciPy version compatibility issues
+- Missing monte_carlo and propagate_uncertainty functions
+- Unicode encoding issues in demo files
+- Test suite import errors
+
+### Changed
+- Updated to NumPy 2.2.6 for compatibility
+- Enhanced uncertainty propagation with Monte Carlo support
+- Improved parallel execution optimization
+
 ## [1.0.0] - 2024-01-07
 
 ### 🎉 Initial Release

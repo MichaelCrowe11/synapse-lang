@@ -1,2 +1,3 @@
 @echo off
-python "%~dp0\synapse" %*
+REM Synapse Language Runner for Windows
+python "%~dp0run_synapse.py" %*

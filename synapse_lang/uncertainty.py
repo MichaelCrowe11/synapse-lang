@@ -132,6 +132,51 @@ class UncertaintyPropagator:
     4. Bayesian inference
     """
     
+    def monte_carlo(self, func: Callable, params: Dict[str, Any], n_samples: int = 1000) -> Union[Dict[str, Any], 'UncertainValue']:
+        """Run Monte Carlo simulation with given parameters."""
+        results = []
+        
+        # Check if any params are UncertainValue objects
+        has_uncertain = any(isinstance(v, UncertainValue) for v in params.values())
+        
+        for _ in range(n_samples):
+            # Sample parameters
+            sampled_params = {}
+            for key, value in params.items():
+                if isinstance(value, UncertainValue):
+                    # Sample from the uncertain value
+                    idx = np.random.randint(len(value.samples))
+                    sampled_params[key] = value.samples[idx]
+                elif isinstance(value, dict) and 'mean' in value and 'std' in value:
+                    sampled_params[key] = np.random.normal(value['mean'], value['std'])
+                else:
+                    sampled_params[key] = value
+            
+            # Evaluate function - try both dict and unpacked kwargs
+            try:
+                result = func(**sampled_params)  # Try as keyword arguments
+            except TypeError:
+                try:
+                    result = func(sampled_params)  # Try as single dict argument
+                except:
+                    # Try positional arguments in alphabetical order
+                    result = func(*sampled_params.values())
+                    
+            results.append(result)
+        
+        # If we had uncertain inputs, return an UncertainValue
+        if has_uncertain:
+            mean_val = np.mean(results)
+            std_val = np.std(results)
+            return UncertainValue(mean_val, std_val, samples=np.array(results))
+        
+        return {
+            'results': np.array(results),
+            'mean': np.mean(results),
+            'std': np.std(results),
+            'samples': n_samples
+        }
+    
     def __init__(self, method: str = "monte_carlo"):
         self.method = method
         self.symbolic_cache: Dict[str, sym.Expr] = {}
@@ -366,3 +411,16 @@ class UncertaintyIntegration:
         combined_uncertainty = 1 / np.sqrt(total_weight)
         
         return UncertainValue(weighted_mean, combined_uncertainty)
+
+
+# Public API functions for compatibility
+def monte_carlo(func: Callable, params: Dict[str, Any], n_samples: int = 1000) -> Dict[str, Any]:
+    """Run Monte Carlo simulation with given parameters."""
+    propagator = UncertaintyPropagator()
+    return propagator.monte_carlo(func, params, n_samples)
+
+
+def propagate_uncertainty(func: Callable, *uncertain_values: UncertainValue) -> UncertainValue:
+    """Propagate uncertainty through a function."""
+    propagator = UncertaintyPropagator()
+    return propagator.propagate(func, *uncertain_values)

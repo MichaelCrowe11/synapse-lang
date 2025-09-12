@@ -1,4 +1,76 @@
 {
+  "Drug Discovery Pipeline": {
+    "prefix": "drug-pipeline",
+    "body": [
+      "// Drug Discovery Pipeline",
+      "import pharmkit.*;",
+      "",
+      "// Load compound library",
+      "library = CompoundLibrary.from_sdf(\"${1:compounds.sdf}\");",
+      "",
+      "// Virtual screening",
+      "screener = VirtualScreener(",
+      "    receptor=\"${2:receptor.pdb}\",",
+      "    engine=\"AutoDock Vina\"",
+      ");",
+      "",
+      "// Run screening",
+      "results = screener.screen(library);",
+      "",
+      "// Filter hits",
+      "hits = results.filter(score < -7.0);",
+      "",
+      "// Generate QSAR model",
+      "qsar = QSARModel(target=\"${3:activity}\");",
+      "qsar.fit(hits.molecules, hits.activities);",
+      "",
+      "// Predict new compounds",
+      "predictions = qsar.predict(new_compounds);"
+    ],
+    "description": "Complete drug discovery pipeline"
+  },
+  "Molecular Docking": {
+    "prefix": "dock",
+    "body": [
+      "// Molecular Docking",
+      "engine = AutoDockVina();",
+      "result = engine.dock(",
+      "    ligand=parse_smiles(\"${1:SMILES}\"),",
+      "    receptor=\"${2:receptor.pdb}\",",
+      "    center=(${3:0, 0, 0}),",
+      "    size=(${4:20, 20, 20})",
+      ");",
+      "",
+      "print(f\"Binding affinity: {result.score}\");",
+      "print(f\"Interactions: {result.interaction_summary()}\");"
+    ],
+    "description": "Molecular docking setup"
+  },
+  "QSAR Model": {
+    "prefix": "qsar",
+    "body": [
+      "// QSAR Model Development",
+      "molecules = [",
+      "    parse_smiles(\"${1:SMILES1}\"),",
+      "    parse_smiles(\"${2:SMILES2}\"),",
+      "    // Add more molecules...",
+      "];",
+      "",
+      "activities = [",
+      "    UncertainValue(${3:7.5}, ${4:0.2}),",
+      "    UncertainValue(${5:6.8}, ${6:0.3}),",
+      "    // Add more activities...",
+      "];",
+      "",
+      "model = QSARModel(target=\"${7:activity}\");",
+      "model.fit(molecules, activities);",
+      "",
+      "// Validate model",
+      "print(f\"R² = {model.validation_metrics['r2_score']:.3f}\");",
+      "print(f\"RMSE = {model.validation_metrics['rmse']:.3f}\");"
+    ],
+    "description": "QSAR model development"
+  },
   "Hypothesis": {
     "prefix": "hyp",
     "body": [

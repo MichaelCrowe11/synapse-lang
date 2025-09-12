@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "synapse-lang"
-version = "1.0.2"
+version = "1.0.3"
 description = "A revolutionary programming language for scientific computing with parallel execution and uncertainty quantification"
 readme = "README.md"
 requires-python = ">=3.8"
