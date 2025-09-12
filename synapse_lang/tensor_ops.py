@@ -43,6 +43,36 @@ class TensorConfig:
     max_memory_gb: float = 8.0
     
     
+class Tensor:
+    """Tensor wrapper for consistent interface."""
+    
+    def __init__(self, data: np.ndarray):
+        self._data = data
+        
+    @property 
+    def data(self) -> np.ndarray:
+        """Get the tensor data."""
+        return self._data
+    
+    @property
+    def shape(self) -> Tuple[int, ...]:
+        """Get tensor shape."""
+        return self._data.shape
+        
+    @property
+    def dtype(self) -> np.dtype:
+        """Get tensor dtype.""" 
+        return self._data.dtype
+    
+    def __str__(self) -> str:
+        """String representation."""
+        return str(self._data)
+        
+    def __repr__(self) -> str:
+        """Representation."""
+        return f"Tensor(shape={self.shape}, dtype={self.dtype})"
+
+
 class LazyTensor:
     """Lazy evaluation tensor wrapper."""
     
@@ -80,8 +110,17 @@ class LazyTensor:
         
     @property
     def data(self) -> np.ndarray:
-        """Get materialized data."""
+        """Get the materialized tensor data."""
         return self.materialize()
+        
+    def __str__(self) -> str:
+        """String representation of the tensor."""
+        data = self.materialize()
+        return f"LazyTensor(shape={self.shape}, dtype={self.dtype}):\n{data}"
+        
+    def __repr__(self) -> str:
+        """Representation of the tensor."""
+        return f"LazyTensor(shape={self.shape}, dtype={self.dtype})"
 
 
 class TensorEngine:
@@ -108,7 +147,7 @@ class TensorEngine:
             
     def tensor(self, data: Union[list, np.ndarray], 
                shape: Optional[Tuple[int, ...]] = None,
-               dtype: Optional[str] = None) -> Union[np.ndarray, LazyTensor]:
+               dtype: Optional[str] = None) -> Union[Tensor, LazyTensor]:
         """Create a tensor with the specified backend."""
         dtype = dtype or self.config.precision
         
@@ -120,19 +159,21 @@ class TensorEngine:
         
         return self._create_tensor(data, dtype)
         
-    def _create_tensor(self, data: Union[list, np.ndarray], dtype: str) -> Any:
+    def _create_tensor(self, data: Union[list, np.ndarray], dtype: str) -> Tensor:
         """Create tensor with backend-specific implementation."""
         if self.config.backend == Backend.TORCH:
             import torch
             device = self.config.device
-            return torch.tensor(data, dtype=getattr(torch, dtype), device=device)
+            torch_tensor = torch.tensor(data, dtype=getattr(torch, dtype), device=device)
+            return Tensor(torch_tensor.numpy())
             
         elif self.config.backend == Backend.TENSORFLOW:
             import tensorflow as tf
-            return tf.constant(data, dtype=getattr(tf, dtype))
+            tf_tensor = tf.constant(data, dtype=getattr(tf, dtype))
+            return Tensor(tf_tensor.numpy())
             
         else:  # NumPy or Numba
-            return np.array(data, dtype=dtype)
+            return Tensor(np.array(data, dtype=dtype))
             
     def zeros(self, shape: Tuple[int, ...], dtype: Optional[str] = None) -> Any:
         """Create zero tensor."""
@@ -202,11 +243,17 @@ class TensorEngine:
             result = LazyTensor(a.shape, a.dtype)
             result.add_operation(lambda x, y: x + y, b)
             return result
+        
+        # Extract data from Tensor objects
+        a_data = a.data if isinstance(a, Tensor) else a
+        b_data = b.data if isinstance(b, Tensor) else b
             
         if self.config.backend == Backend.NUMBA:
-            return self._numba_add(a, b)
+            result = self._numba_add(a_data, b_data)
         else:
-            return a + b
+            result = a_data + b_data
+            
+        return Tensor(result)
             
     @njit(parallel=True, fastmath=True)
     def _numba_multiply(a: np.ndarray, b: np.ndarray) -> np.ndarray:
@@ -249,15 +296,21 @@ class TensorEngine:
             result = LazyTensor(shape, a.dtype)
             result.add_operation(lambda x, y: x @ y, b)
             return result
+        
+        # Extract data from Tensor objects
+        a_data = a.data if isinstance(a, Tensor) else a
+        b_data = b.data if isinstance(b, Tensor) else b
             
         if self.config.backend == Backend.NUMBA:
-            return self._numba_matmul(a, b)
+            result = self._numba_matmul(a_data, b_data)
         elif self.config.backend == Backend.TORCH:
-            return torch.matmul(a, b)
+            result = torch.matmul(a_data, b_data)
         elif self.config.backend == Backend.TENSORFLOW:
-            return tf.matmul(a, b)
+            result = tf.matmul(a_data, b_data)
         else:
-            return np.matmul(a, b)
+            result = np.matmul(a_data, b_data)
+            
+        return Tensor(result)
             
     def transpose(self, tensor: Any, axes: Optional[Tuple[int, ...]] = None) -> Any:
         """Transpose tensor."""
