@@ -39,6 +39,25 @@ class TokenType(Enum):
     SOLVE = "solve"
     PROVE = "prove"
     USING = "using"
+    
+    # Additional keywords for compatibility
+    FROM = "from"
+    INTO = "into"
+    THROUGH = "through"
+    WHERE = "where"
+    WHEN = "when"
+    UNTIL = "until"
+    VALUE = "value"
+    MAP = "map"
+    PREDICT = "predict"
+    VALIDATE = "validate"
+    SYNTHESIZE = "synthesize"
+    ASSUME = "assume"
+    SETUP = "setup"
+    AUTO = "auto"
+    COST = "cost"
+    OPTIMIZER = "optimizer"
+    UNCERTAINTY = "uncertainty"
 
     # Quantum computing keywords
     QUANTUM = "quantum"
@@ -98,12 +117,26 @@ class TokenType(Enum):
     GREATER_THAN = ">"
     EQUALS = "=="
     NOT_EQUALS = "!="
+    LESS_EQUAL = "<="
+    GREATER_EQUAL = ">="
     AND = "&&"
     OR = "||"
     NOT = "!"
     ARROW = "=>"
     BIND_OUTPUT = "->"
     CHANNEL_SEND = "<-"
+    DOT = "."
+    PERCENT = "%"
+    TILDE = "~"
+    QUESTION = "?"
+    
+    # Additional operators for compatibility
+    STAR = "*"
+    SLASH = "/"
+    EQUAL = "="
+    EQUAL_EQUAL = "=="
+    NOT_EQUAL = "!="
+    PLUS_MINUS = "+-"
 
     # Delimiters
     LEFT_PAREN = "("
@@ -218,7 +251,7 @@ class Lexer:
 
             # multi-char operators
             two = (ch or '') + (self.peek_char() or '')
-            if two in {"==", "!=", "&&", "||", "=>", "->", "<-"}:
+            if two in {"==", "!=", "&&", "||", "=>", "->", "<-", "<=", ">=", "+-"}:
                 mapping = {
                     "==": TokenType.EQUALS,
                     "!=": TokenType.NOT_EQUALS,
@@ -227,6 +260,9 @@ class Lexer:
                     "=>": TokenType.ARROW,
                     "->": TokenType.BIND_OUTPUT,
                     "<-": TokenType.CHANNEL_SEND,
+                    "<=": TokenType.LESS_EQUAL,
+                    ">=": TokenType.GREATER_EQUAL,
+                    "+-": TokenType.PLUS_MINUS,
                 }
                 self.advance(); self.advance()
                 self.tokens.append(Token(mapping[two], two, line, col))
@@ -245,6 +281,8 @@ class Lexer:
                 '{': TokenType.LEFT_BRACE, '}': TokenType.RIGHT_BRACE,
                 '[': TokenType.LEFT_BRACKET, ']': TokenType.RIGHT_BRACKET,
                 ',': TokenType.COMMA, ':': TokenType.COLON, ';': TokenType.SEMICOLON,
+                '.': TokenType.DOT, '%': TokenType.PERCENT, '~': TokenType.TILDE,
+                '?': TokenType.QUESTION,
             }
             if ch in single_map:
                 self.advance()

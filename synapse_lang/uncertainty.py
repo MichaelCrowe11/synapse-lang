@@ -1,426 +1,606 @@
-"""
-Advanced Uncertainty Propagation for Synapse Language
-Implements sophisticated uncertainty quantification and error propagation
-"""
+"""UncertaintyEngine - Complete uncertainty quantification for Synapse language."""
 
 import numpy as np
-from scipy import stats
-from typing import Union, Tuple, List, Dict, Any, Callable, Optional
-from dataclasses import dataclass, field
-import sympy as sym
-from numba import jit, vectorize
+import numba
+from numba import jit, njit, prange
+from typing import Union, List, Tuple, Optional, Callable, Any, Dict
+from dataclasses import dataclass
+import functools
+from enum import Enum
 import warnings
+from scipy import stats
+import math
+
+try:
+    from uncertainties import ufloat, unumpy
+    UNCERTAINTIES_AVAILABLE = True
+except ImportError:
+    UNCERTAINTIES_AVAILABLE = False
+
+
+class PropagationMethod(Enum):
+    """Uncertainty propagation methods."""
+    LINEAR = "linear"  # First-order Taylor approximation
+    MONTE_CARLO = "monte_carlo"  # Monte Carlo sampling
+    BAYESIAN = "bayesian"  # Bayesian inference
+    INTERVAL = "interval"  # Interval arithmetic
+    POLYNOMIAL = "polynomial"  # Polynomial chaos expansion
 
 
 @dataclass
+class UncertaintyConfig:
+    """Uncertainty engine configuration."""
+    method: PropagationMethod = PropagationMethod.LINEAR
+    samples: int = 10000  # For Monte Carlo
+    confidence_level: float = 0.95
+    correlation_threshold: float = 1e-10
+    max_order: int = 2  # For polynomial methods
+    parallel: bool = True
+    cache_results: bool = True
+
+
 class UncertainValue:
-    """
-    Represents a value with associated uncertainty
-    Supports multiple uncertainty representations and propagation methods
-    """
-    value: float
-    uncertainty: float
-    distribution: str = "normal"  # normal, uniform, triangular, beta
-    confidence: float = 0.68  # 1-sigma by default
-    samples: Optional[np.ndarray] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    """Represents a value with uncertainty."""
     
-    def __post_init__(self):
-        if self.samples is None:
-            self.samples = self._generate_samples(10000)
-    
-    def _generate_samples(self, n_samples: int = 10000) -> np.ndarray:
-        """Generate Monte Carlo samples from the uncertainty distribution"""
-        np.random.seed(42)  # Reproducible for testing
+    def __init__(self, nominal: float, uncertainty: float = 0.0, 
+                 distribution: str = "normal", correlation_id: Optional[str] = None):
+        self.nominal = float(nominal)
+        self.uncertainty = float(abs(uncertainty))
+        self.distribution = distribution.lower()
+        self.correlation_id = correlation_id
+        self._samples_cache = None
         
-        if self.distribution == "normal":
-            return np.random.normal(self.value, self.uncertainty, n_samples)
-        elif self.distribution == "uniform":
-            half_width = self.uncertainty * np.sqrt(3)  # Convert to uniform half-width
-            return np.random.uniform(self.value - half_width, self.value + half_width, n_samples)
-        elif self.distribution == "triangular":
-            return np.random.triangular(self.value - self.uncertainty, 
-                                       self.value, 
-                                       self.value + self.uncertainty, n_samples)
-        elif self.distribution == "beta":
-            # Beta distribution centered on value with spread uncertainty
-            alpha, beta = 2, 2  # Default shape parameters
-            return stats.beta.rvs(alpha, beta, loc=self.value-self.uncertainty, 
-                                scale=2*self.uncertainty, size=n_samples)
-        else:
-            raise ValueError(f"Unsupported distribution: {self.distribution}")
+    @property 
+    def relative_uncertainty(self) -> float:
+        """Relative uncertainty as fraction."""
+        if self.nominal == 0:
+            return float('inf') if self.uncertainty > 0 else 0.0
+        return abs(self.uncertainty / self.nominal)
     
-    def __str__(self) -> str:
-        return f"{self.value:.6g} ± {self.uncertainty:.6g}"
+    @property
+    def confidence_interval(self, confidence: float = 0.95) -> Tuple[float, float]:
+        """Confidence interval bounds."""
+        if self.distribution == "normal":
+            z_score = stats.norm.ppf((1 + confidence) / 2)
+            margin = z_score * self.uncertainty
+            return (self.nominal - margin, self.nominal + margin)
+        elif self.distribution == "uniform":
+            half_width = self.uncertainty * math.sqrt(3)
+            return (self.nominal - half_width, self.nominal + half_width)
+        else:
+            # Fallback to normal approximation
+            margin = 1.96 * self.uncertainty  # 95% CI
+            return (self.nominal - margin, self.nominal + margin)
+    
+    def sample(self, n_samples: int = 1000) -> np.ndarray:
+        """Generate random samples from the distribution."""
+        if self._samples_cache is not None and len(self._samples_cache) >= n_samples:
+            return self._samples_cache[:n_samples]
+            
+        if self.distribution == "normal":
+            samples = np.random.normal(self.nominal, self.uncertainty, n_samples)
+        elif self.distribution == "uniform":
+            half_width = self.uncertainty * math.sqrt(3)
+            samples = np.random.uniform(
+                self.nominal - half_width, 
+                self.nominal + half_width, 
+                n_samples
+            )
+        elif self.distribution == "lognormal":
+            # For lognormal, uncertainty is the geometric standard deviation
+            mu = np.log(self.nominal)
+            sigma = np.log(1 + self.uncertainty / self.nominal)
+            samples = np.random.lognormal(mu, sigma, n_samples)
+        elif self.distribution == "triangular":
+            # Symmetric triangular around nominal
+            half_width = self.uncertainty * math.sqrt(6)
+            samples = np.random.triangular(
+                self.nominal - half_width,
+                self.nominal,
+                self.nominal + half_width,
+                n_samples
+            )
+        else:
+            # Default to normal
+            samples = np.random.normal(self.nominal, self.uncertainty, n_samples)
+            
+        self._samples_cache = samples
+        return samples
+    
+    def __add__(self, other) -> 'UncertainValue':
+        if isinstance(other, UncertainValue):
+            # Check for correlation
+            if (self.correlation_id and other.correlation_id and 
+                self.correlation_id == other.correlation_id):
+                # Perfect positive correlation
+                new_uncertainty = self.uncertainty + other.uncertainty
+            else:
+                # Uncorrelated - add in quadrature
+                new_uncertainty = math.sqrt(self.uncertainty**2 + other.uncertainty**2)
+            return UncertainValue(self.nominal + other.nominal, new_uncertainty)
+        else:
+            return UncertainValue(self.nominal + other, self.uncertainty)
+    
+    def __radd__(self, other) -> 'UncertainValue':
+        return self.__add__(other)
+    
+    def __sub__(self, other) -> 'UncertainValue':
+        if isinstance(other, UncertainValue):
+            if (self.correlation_id and other.correlation_id and 
+                self.correlation_id == other.correlation_id):
+                # Perfect correlation - uncertainties cancel for subtraction
+                new_uncertainty = abs(self.uncertainty - other.uncertainty)
+            else:
+                new_uncertainty = math.sqrt(self.uncertainty**2 + other.uncertainty**2)
+            return UncertainValue(self.nominal - other.nominal, new_uncertainty)
+        else:
+            return UncertainValue(self.nominal - other, self.uncertainty)
+    
+    def __rsub__(self, other) -> 'UncertainValue':
+        return UncertainValue(other, 0) - self
+    
+    def __mul__(self, other) -> 'UncertainValue':
+        if isinstance(other, UncertainValue):
+            # For multiplication: σ_z/z = √((σ_x/x)² + (σ_y/y)²)
+            if self.nominal == 0 or other.nominal == 0:
+                return UncertainValue(0, 0)
+            
+            rel_unc1 = self.relative_uncertainty
+            rel_unc2 = other.relative_uncertainty
+            
+            if (self.correlation_id and other.correlation_id and 
+                self.correlation_id == other.correlation_id):
+                # Correlated case
+                new_rel_unc = rel_unc1 + rel_unc2
+            else:
+                new_rel_unc = math.sqrt(rel_unc1**2 + rel_unc2**2)
+                
+            new_nominal = self.nominal * other.nominal
+            new_uncertainty = abs(new_nominal * new_rel_unc)
+            return UncertainValue(new_nominal, new_uncertainty)
+        else:
+            return UncertainValue(self.nominal * other, abs(self.uncertainty * other))
+    
+    def __rmul__(self, other) -> 'UncertainValue':
+        return self.__mul__(other)
+    
+    def __truediv__(self, other) -> 'UncertainValue':
+        if isinstance(other, UncertainValue):
+            if other.nominal == 0:
+                raise ZeroDivisionError("Division by uncertain zero")
+            
+            rel_unc1 = self.relative_uncertainty
+            rel_unc2 = other.relative_uncertainty
+            
+            if (self.correlation_id and other.correlation_id and 
+                self.correlation_id == other.correlation_id):
+                new_rel_unc = abs(rel_unc1 - rel_unc2)
+            else:
+                new_rel_unc = math.sqrt(rel_unc1**2 + rel_unc2**2)
+                
+            new_nominal = self.nominal / other.nominal
+            new_uncertainty = abs(new_nominal * new_rel_unc)
+            return UncertainValue(new_nominal, new_uncertainty)
+        else:
+            if other == 0:
+                raise ZeroDivisionError("Division by zero")
+            return UncertainValue(self.nominal / other, self.uncertainty / abs(other))
+    
+    def __rtruediv__(self, other) -> 'UncertainValue':
+        return UncertainValue(other, 0) / self
+    
+    def __pow__(self, exponent) -> 'UncertainValue':
+        if isinstance(exponent, UncertainValue):
+            # Use logarithmic differentiation for a^b
+            if self.nominal <= 0:
+                raise ValueError("Cannot raise non-positive uncertain number to uncertain power")
+            
+            # z = x^y, ln(z) = y*ln(x)
+            # σ_z/z = √((y*σ_x/x)² + (ln(x)*σ_y)²)
+            ln_x = math.log(self.nominal)
+            rel_unc_x = self.relative_uncertainty
+            
+            term1 = (exponent.nominal * rel_unc_x) ** 2
+            term2 = (ln_x * exponent.uncertainty) ** 2
+            new_rel_unc = math.sqrt(term1 + term2)
+            
+            new_nominal = self.nominal ** exponent.nominal
+            new_uncertainty = abs(new_nominal * new_rel_unc)
+            return UncertainValue(new_nominal, new_uncertainty)
+        else:
+            # Simple power rule: z = x^n, σ_z = |n*x^(n-1)*σ_x|
+            if self.nominal == 0 and exponent != 0:
+                return UncertainValue(0, 0)
+            
+            new_nominal = self.nominal ** exponent
+            derivative = exponent * (self.nominal ** (exponent - 1))
+            new_uncertainty = abs(derivative * self.uncertainty)
+            return UncertainValue(new_nominal, new_uncertainty)
+    
+    def sin(self) -> 'UncertainValue':
+        """Sine function with uncertainty propagation."""
+        new_nominal = math.sin(self.nominal)
+        derivative = math.cos(self.nominal)
+        new_uncertainty = abs(derivative * self.uncertainty)
+        return UncertainValue(new_nominal, new_uncertainty)
+    
+    def cos(self) -> 'UncertainValue':
+        """Cosine function with uncertainty propagation."""
+        new_nominal = math.cos(self.nominal)
+        derivative = -math.sin(self.nominal)
+        new_uncertainty = abs(derivative * self.uncertainty)
+        return UncertainValue(new_nominal, new_uncertainty)
+    
+    def exp(self) -> 'UncertainValue':
+        """Exponential function with uncertainty propagation."""
+        new_nominal = math.exp(self.nominal)
+        new_uncertainty = new_nominal * self.uncertainty
+        return UncertainValue(new_nominal, new_uncertainty)
+    
+    def log(self) -> 'UncertainValue':
+        """Natural logarithm with uncertainty propagation."""
+        if self.nominal <= 0:
+            raise ValueError("Cannot take logarithm of non-positive uncertain number")
+        new_nominal = math.log(self.nominal)
+        new_uncertainty = self.uncertainty / self.nominal
+        return UncertainValue(new_nominal, new_uncertainty)
+    
+    def sqrt(self) -> 'UncertainValue':
+        """Square root with uncertainty propagation."""
+        if self.nominal < 0:
+            raise ValueError("Cannot take square root of negative uncertain number")
+        if self.nominal == 0:
+            return UncertainValue(0, 0)
+        
+        new_nominal = math.sqrt(self.nominal)
+        derivative = 0.5 / new_nominal
+        new_uncertainty = derivative * self.uncertainty
+        return UncertainValue(new_nominal, new_uncertainty)
     
     def __repr__(self) -> str:
-        return f"UncertainValue({self.value}, {self.uncertainty}, '{self.distribution}')"
+        return f"{self.nominal} ± {self.uncertainty}"
     
-    # Arithmetic operations with uncertainty propagation
-    def __add__(self, other):
-        if isinstance(other, UncertainValue):
-            # Quadrature addition for independent uncertainties
-            new_value = self.value + other.value
-            new_uncertainty = np.sqrt(self.uncertainty**2 + other.uncertainty**2)
-            new_samples = self.samples + other.samples
-            return UncertainValue(new_value, new_uncertainty, samples=new_samples)
-        else:
-            # Adding constant
-            return UncertainValue(self.value + other, self.uncertainty, samples=self.samples + other)
-    
-    def __sub__(self, other):
-        if isinstance(other, UncertainValue):
-            new_value = self.value - other.value
-            new_uncertainty = np.sqrt(self.uncertainty**2 + other.uncertainty**2)
-            new_samples = self.samples - other.samples
-            return UncertainValue(new_value, new_uncertainty, samples=new_samples)
-        else:
-            return UncertainValue(self.value - other, self.uncertainty, samples=self.samples - other)
-    
-    def __mul__(self, other):
-        if isinstance(other, UncertainValue):
-            # Relative uncertainty propagation for multiplication
-            new_value = self.value * other.value
-            rel_unc_self = self.uncertainty / abs(self.value) if self.value != 0 else 0
-            rel_unc_other = other.uncertainty / abs(other.value) if other.value != 0 else 0
-            new_rel_uncertainty = np.sqrt(rel_unc_self**2 + rel_unc_other**2)
-            new_uncertainty = abs(new_value) * new_rel_uncertainty
-            new_samples = self.samples * other.samples
-            return UncertainValue(new_value, new_uncertainty, samples=new_samples)
-        else:
-            return UncertainValue(self.value * other, abs(other) * self.uncertainty, 
-                                samples=self.samples * other)
-    
-    def __truediv__(self, other):
-        if isinstance(other, UncertainValue):
-            new_value = self.value / other.value
-            rel_unc_self = self.uncertainty / abs(self.value) if self.value != 0 else 0
-            rel_unc_other = other.uncertainty / abs(other.value) if other.value != 0 else 0
-            new_rel_uncertainty = np.sqrt(rel_unc_self**2 + rel_unc_other**2)
-            new_uncertainty = abs(new_value) * new_rel_uncertainty
-            new_samples = self.samples / other.samples
-            return UncertainValue(new_value, new_uncertainty, samples=new_samples)
-        else:
-            return UncertainValue(self.value / other, self.uncertainty / abs(other),
-                                samples=self.samples / other)
-    
-    def __pow__(self, power):
-        """Power operation with uncertainty propagation"""
-        new_value = self.value ** power
-        if self.value != 0:
-            new_rel_uncertainty = abs(power) * (self.uncertainty / abs(self.value))
-            new_uncertainty = abs(new_value) * new_rel_uncertainty
-        else:
-            new_uncertainty = 0
-        new_samples = self.samples ** power
-        return UncertainValue(new_value, new_uncertainty, samples=new_samples)
-    
-    # Reverse operations
-    __radd__ = __add__
-    __rsub__ = lambda self, other: UncertainValue(other - self.value, self.uncertainty)
-    __rmul__ = __mul__
-    __rtruediv__ = lambda self, other: UncertainValue(other / self.value, 
-                                                     abs(other) * self.uncertainty / (self.value**2))
+    def __str__(self) -> str:
+        return self.__repr__()
 
 
-class UncertaintyPropagator:
-    """
-    Advanced uncertainty propagation using multiple methods:
-    1. Linear approximation (first-order Taylor expansion)
-    2. Monte Carlo sampling
-    3. Symbolic differentiation
-    4. Bayesian inference
-    """
-    
-    def monte_carlo(self, func: Callable, params: Dict[str, Any], n_samples: int = 1000) -> Union[Dict[str, Any], 'UncertainValue']:
-        """Run Monte Carlo simulation with given parameters."""
-        results = []
-        
-        # Check if any params are UncertainValue objects
-        has_uncertain = any(isinstance(v, UncertainValue) for v in params.values())
-        
-        for _ in range(n_samples):
-            # Sample parameters
-            sampled_params = {}
-            for key, value in params.items():
-                if isinstance(value, UncertainValue):
-                    # Sample from the uncertain value
-                    idx = np.random.randint(len(value.samples))
-                    sampled_params[key] = value.samples[idx]
-                elif isinstance(value, dict) and 'mean' in value and 'std' in value:
-                    sampled_params[key] = np.random.normal(value['mean'], value['std'])
-                else:
-                    sampled_params[key] = value
-            
-            # Evaluate function - try both dict and unpacked kwargs
-            try:
-                result = func(**sampled_params)  # Try as keyword arguments
-            except TypeError:
-                try:
-                    result = func(sampled_params)  # Try as single dict argument
-                except:
-                    # Try positional arguments in alphabetical order
-                    result = func(*sampled_params.values())
-                    
-            results.append(result)
-        
-        # If we had uncertain inputs, return an UncertainValue
-        if has_uncertain:
-            mean_val = np.mean(results)
-            std_val = np.std(results)
-            return UncertainValue(mean_val, std_val, samples=np.array(results))
-        
-        return {
-            'results': np.array(results),
-            'mean': np.mean(results),
-            'std': np.std(results),
-            'samples': n_samples
-        }
-    
-    def __init__(self, method: str = "monte_carlo"):
-        self.method = method
-        self.symbolic_cache: Dict[str, sym.Expr] = {}
-    
-    @jit(nopython=True)
-    def _linear_propagation(self, func: Callable, values: np.ndarray, 
-                          uncertainties: np.ndarray, derivatives: np.ndarray) -> float:
-        """First-order linear uncertainty propagation"""
-        variance = np.sum((derivatives * uncertainties) ** 2)
-        return np.sqrt(variance)
-    
-    def monte_carlo_propagation(self, func: Callable, *uncertain_values: UncertainValue,
-                               n_samples: int = 100000) -> UncertainValue:
-        """Monte Carlo uncertainty propagation"""
-        # Stack all samples
-        samples_list = [uv.samples[:n_samples] for uv in uncertain_values]
-        
-        # Apply function to all sample combinations
-        try:
-            result_samples = func(*samples_list)
-            
-            # Calculate statistics
-            mean_result = np.mean(result_samples)
-            std_result = np.std(result_samples)
-            
-            return UncertainValue(mean_result, std_result, samples=result_samples)
-        except Exception as e:
-            raise RuntimeError(f"Monte Carlo propagation failed: {e}")
-    
-    def symbolic_propagation(self, expression: str, variables: Dict[str, UncertainValue]) -> UncertainValue:
-        """Symbolic differentiation for uncertainty propagation"""
-        try:
-            # Parse symbolic expression
-            expr = sym.sympify(expression)
-            symbols = list(expr.free_symbols)
-            
-            # Calculate partial derivatives
-            partials = {}
-            for symbol in symbols:
-                partials[symbol] = sym.diff(expr, symbol)
-            
-            # Evaluate at mean values
-            var_values = {sym.Symbol(name): uv.value for name, uv in variables.items()}
-            result_value = float(expr.subs(var_values))
-            
-            # Calculate uncertainty using partial derivatives
-            variance = 0
-            for symbol in symbols:
-                var_name = str(symbol)
-                if var_name in variables:
-                    partial_value = float(partials[symbol].subs(var_values))
-                    variance += (partial_value * variables[var_name].uncertainty) ** 2
-            
-            uncertainty = np.sqrt(variance)
-            
-            return UncertainValue(result_value, uncertainty)
-        
-        except Exception as e:
-            raise RuntimeError(f"Symbolic propagation failed: {e}")
-    
-    def bayesian_update(self, prior: UncertainValue, likelihood_data: np.ndarray, 
-                       likelihood_uncertainty: float) -> UncertainValue:
-        """Bayesian uncertainty update with new measurements"""
-        # Simplified Bayesian update assuming normal distributions
-        prior_precision = 1 / (prior.uncertainty ** 2)
-        likelihood_precision = 1 / (likelihood_uncertainty ** 2)
-        
-        # Posterior precision and mean
-        posterior_precision = prior_precision + len(likelihood_data) * likelihood_precision
-        posterior_variance = 1 / posterior_precision
-        
-        posterior_mean = (prior_precision * prior.value + 
-                         likelihood_precision * np.sum(likelihood_data)) / posterior_precision
-        
-        posterior_uncertainty = np.sqrt(posterior_variance)
-        
-        return UncertainValue(posterior_mean, posterior_uncertainty, distribution="normal")
-
-
-class CorrelatedUncertainty:
-    """Handle correlated uncertainties between variables"""
+class CorrelationMatrix:
+    """Manages correlations between uncertain variables."""
     
     def __init__(self):
-        self.correlation_matrix: Dict[Tuple[str, str], float] = {}
+        self.correlations: Dict[Tuple[str, str], float] = {}
         self.variables: Dict[str, UncertainValue] = {}
     
-    def add_variable(self, name: str, uncertain_value: UncertainValue):
-        """Add a variable to the correlation tracking"""
-        self.variables[name] = uncertain_value
+    def add_variable(self, name: str, variable: UncertainValue):
+        """Add a variable to the correlation matrix."""
+        self.variables[name] = variable
+        variable.correlation_id = name
     
     def set_correlation(self, var1: str, var2: str, correlation: float):
-        """Set correlation coefficient between two variables (-1 to 1)"""
-        if not (-1 <= correlation <= 1):
-            raise ValueError("Correlation must be between -1 and 1")
+        """Set correlation coefficient between two variables."""
+        if abs(correlation) > 1:
+            raise ValueError("Correlation coefficient must be between -1 and 1")
         
-        self.correlation_matrix[(var1, var2)] = correlation
-        self.correlation_matrix[(var2, var1)] = correlation  # Symmetric
+        key = tuple(sorted([var1, var2]))
+        self.correlations[key] = correlation
     
-    def propagate_correlated(self, func: Callable, var_names: List[str]) -> UncertainValue:
-        """Propagate uncertainty accounting for correlations"""
-        values = [self.variables[name].value for name in var_names]
-        uncertainties = [self.variables[name].uncertainty for name in var_names]
+    def get_correlation(self, var1: str, var2: str) -> float:
+        """Get correlation coefficient between two variables."""
+        if var1 == var2:
+            return 1.0
         
-        # Create correlated samples using Cholesky decomposition
-        n_vars = len(var_names)
-        correlation_matrix = np.eye(n_vars)
+        key = tuple(sorted([var1, var2]))
+        return self.correlations.get(key, 0.0)
+    
+    def propagate_correlated(self, expression: Callable, variables: List[str], 
+                           samples: int = 10000) -> UncertainValue:
+        """Propagate uncertainties through expression considering correlations."""
+        # Generate correlated samples using Cholesky decomposition
+        n_vars = len(variables)
         
-        for i, var1 in enumerate(var_names):
-            for j, var2 in enumerate(var_names):
-                if i != j:
-                    corr = self.correlation_matrix.get((var1, var2), 0.0)
-                    correlation_matrix[i, j] = corr
+        # Build correlation matrix
+        corr_matrix = np.eye(n_vars)
+        for i, var1 in enumerate(variables):
+            for j, var2 in enumerate(variables):
+                corr_matrix[i, j] = self.get_correlation(var1, var2)
         
         # Generate correlated samples
-        n_samples = 10000
-        uncorrelated_samples = np.random.standard_normal((n_samples, n_vars))
-        
         try:
-            cholesky = np.linalg.cholesky(correlation_matrix)
-            correlated_samples = uncorrelated_samples @ cholesky.T
+            L = np.linalg.cholesky(corr_matrix)
+            uncorr_samples = np.random.standard_normal((samples, n_vars))
+            corr_samples = uncorr_samples @ L.T
             
-            # Scale and shift samples
-            scaled_samples = []
-            for i, (value, uncertainty) in enumerate(zip(values, uncertainties)):
-                scaled_samples.append(value + uncertainty * correlated_samples[:, i])
+            # Transform to actual distributions
+            var_samples = []
+            for i, var_name in enumerate(variables):
+                var = self.variables[var_name]
+                if var.distribution == "normal":
+                    samples_i = var.nominal + var.uncertainty * corr_samples[:, i]
+                else:
+                    # For non-normal, use inverse CDF transformation
+                    uniform_samples = stats.norm.cdf(corr_samples[:, i])
+                    if var.distribution == "uniform":
+                        half_width = var.uncertainty * math.sqrt(3)
+                        samples_i = stats.uniform.ppf(
+                            uniform_samples, 
+                            var.nominal - half_width, 
+                            2 * half_width
+                        )
+                    else:  # Default to normal
+                        samples_i = var.nominal + var.uncertainty * corr_samples[:, i]
+                
+                var_samples.append(samples_i)
             
-            # Apply function
-            result_samples = func(*scaled_samples)
+            # Evaluate expression for all samples
+            var_samples = np.array(var_samples).T
+            results = np.array([expression(*sample) for sample in var_samples])
             
-            return UncertainValue(np.mean(result_samples), np.std(result_samples), 
-                                samples=result_samples)
-        
+            # Calculate statistics
+            mean_result = np.mean(results)
+            std_result = np.std(results, ddof=1)
+            
+            return UncertainValue(mean_result, std_result)
+            
         except np.linalg.LinAlgError:
             warnings.warn("Correlation matrix is not positive definite, using uncorrelated propagation")
-            return self.propagate_uncorrelated(func, var_names)
+            return self._propagate_uncorrelated(expression, variables, samples)
     
-    def propagate_uncorrelated(self, func: Callable, var_names: List[str]) -> UncertainValue:
-        """Fallback to uncorrelated propagation"""
-        uncertain_values = [self.variables[name] for name in var_names]
-        propagator = UncertaintyPropagator("monte_carlo")
-        return propagator.monte_carlo_propagation(func, *uncertain_values)
+    def _propagate_uncorrelated(self, expression: Callable, variables: List[str], 
+                               samples: int) -> UncertainValue:
+        """Fallback for uncorrelated propagation."""
+        var_samples = []
+        for var_name in variables:
+            var = self.variables[var_name]
+            var_samples.append(var.sample(samples))
+        
+        var_samples = np.array(var_samples).T
+        results = np.array([expression(*sample) for sample in var_samples])
+        
+        mean_result = np.mean(results)
+        std_result = np.std(results, ddof=1)
+        
+        return UncertainValue(mean_result, std_result)
 
 
-# Mathematical functions with uncertainty support
-class UncertainMath:
-    """Mathematical functions that preserve uncertainty"""
+class UncertaintyEngine:
+    """Main uncertainty quantification engine."""
     
+    def __init__(self, config: Optional[UncertaintyConfig] = None):
+        self.config = config or UncertaintyConfig()
+        self.correlation_matrix = CorrelationMatrix()
+        self.variables = {}
+        self.cache = {}
+    
+    def create_uncertain(self, nominal: float, uncertainty: float, 
+                        distribution: str = "normal", name: Optional[str] = None) -> UncertainValue:
+        """Create an uncertain value."""
+        uval = UncertainValue(nominal, uncertainty, distribution)
+        if name:
+            self.variables[name] = uval
+            self.correlation_matrix.add_variable(name, uval)
+        return uval
+    
+    def set_correlation(self, var1: str, var2: str, correlation: float):
+        """Set correlation between variables."""
+        self.correlation_matrix.set_correlation(var1, var2, correlation)
+    
+    def propagate(self, expression: Callable, variables: Union[List[str], Dict[str, UncertainValue]], 
+                  method: Optional[PropagationMethod] = None) -> UncertainValue:
+        """Propagate uncertainties through an expression."""
+        method = method or self.config.method
+        
+        if isinstance(variables, dict):
+            var_names = list(variables.keys())
+            for name, var in variables.items():
+                self.correlation_matrix.add_variable(name, var)
+        else:
+            var_names = variables
+        
+        cache_key = (str(expression), tuple(sorted(var_names)), method.value)
+        if self.config.cache_results and cache_key in self.cache:
+            return self.cache[cache_key]
+        
+        if method == PropagationMethod.LINEAR:
+            result = self._linear_propagation(expression, var_names)
+        elif method == PropagationMethod.MONTE_CARLO:
+            result = self._monte_carlo_propagation(expression, var_names)
+        elif method == PropagationMethod.BAYESIAN:
+            result = self._bayesian_propagation(expression, var_names)
+        elif method == PropagationMethod.INTERVAL:
+            result = self._interval_propagation(expression, var_names)
+        else:
+            result = self._monte_carlo_propagation(expression, var_names)  # Default
+        
+        if self.config.cache_results:
+            self.cache[cache_key] = result
+        
+        return result
+    
+    def _linear_propagation(self, expression: Callable, var_names: List[str]) -> UncertainValue:
+        """First-order Taylor approximation propagation."""
+        # Get nominal values
+        nominals = [self.correlation_matrix.variables[name].nominal for name in var_names]
+        
+        # Evaluate function at nominal point
+        f_nominal = expression(*nominals)
+        
+        # Compute partial derivatives numerically
+        h = 1e-8  # Step size for numerical differentiation
+        derivatives = []
+        
+        for i, var_name in enumerate(var_names):
+            point_plus = nominals.copy()
+            point_minus = nominals.copy()
+            point_plus[i] += h
+            point_minus[i] -= h
+            
+            try:
+                f_plus = expression(*point_plus)
+                f_minus = expression(*point_minus)
+                derivative = (f_plus - f_minus) / (2 * h)
+            except:
+                # Forward difference if central fails
+                try:
+                    f_plus = expression(*point_plus)
+                    derivative = (f_plus - f_nominal) / h
+                except:
+                    derivative = 0.0
+            
+            derivatives.append(derivative)
+        
+        # Calculate uncertainty using error propagation formula
+        variance = 0.0
+        for i, var1 in enumerate(var_names):
+            for j, var2 in enumerate(var_names):
+                uncertainty1 = self.correlation_matrix.variables[var1].uncertainty
+                uncertainty2 = self.correlation_matrix.variables[var2].uncertainty
+                correlation = self.correlation_matrix.get_correlation(var1, var2)
+                
+                variance += (derivatives[i] * derivatives[j] * 
+                           uncertainty1 * uncertainty2 * correlation)
+        
+        uncertainty = math.sqrt(abs(variance))
+        return UncertainValue(f_nominal, uncertainty)
+    
+    def _monte_carlo_propagation(self, expression: Callable, var_names: List[str]) -> UncertainValue:
+        """Monte Carlo uncertainty propagation."""
+        return self.correlation_matrix.propagate_correlated(
+            expression, var_names, self.config.samples
+        )
+    
+    def _bayesian_propagation(self, expression: Callable, var_names: List[str]) -> UncertainValue:
+        """Bayesian uncertainty propagation (simplified implementation)."""
+        # For now, fall back to Monte Carlo
+        # In a full implementation, this would use Bayesian inference
+        return self._monte_carlo_propagation(expression, var_names)
+    
+    def _interval_propagation(self, expression: Callable, var_names: List[str]) -> UncertainValue:
+        """Interval arithmetic propagation."""
+        # Find min/max bounds by sampling extreme points
+        n_vars = len(var_names)
+        
+        # Sample corners of uncertainty hypercube
+        results = []
+        for i in range(2**n_vars):
+            point = []
+            for j, var_name in enumerate(var_names):
+                var = self.correlation_matrix.variables[var_name]
+                if (i >> j) & 1:
+                    # Upper bound
+                    point.append(var.nominal + var.uncertainty)
+                else:
+                    # Lower bound
+                    point.append(var.nominal - var.uncertainty)
+            
+            try:
+                result = expression(*point)
+                results.append(result)
+            except:
+                pass  # Skip points where function is undefined
+        
+        if not results:
+            return UncertainValue(0, float('inf'))
+        
+        min_val = min(results)
+        max_val = max(results)
+        center = (min_val + max_val) / 2
+        half_width = (max_val - min_val) / 2
+        
+        return UncertainValue(center, half_width)
+    
+    # Mathematical functions for uncertain values
     @staticmethod
     def sin(x: UncertainValue) -> UncertainValue:
-        """Sine with uncertainty propagation"""
-        new_value = np.sin(x.value)
-        # Derivative of sin is cos
-        derivative = np.cos(x.value)
-        new_uncertainty = abs(derivative) * x.uncertainty
-        new_samples = np.sin(x.samples)
-        return UncertainValue(new_value, new_uncertainty, samples=new_samples)
+        return x.sin()
     
     @staticmethod
     def cos(x: UncertainValue) -> UncertainValue:
-        """Cosine with uncertainty propagation"""
-        new_value = np.cos(x.value)
-        derivative = -np.sin(x.value)  # Derivative of cos is -sin
-        new_uncertainty = abs(derivative) * x.uncertainty
-        new_samples = np.cos(x.samples)
-        return UncertainValue(new_value, new_uncertainty, samples=new_samples)
+        return x.cos()
     
     @staticmethod
     def exp(x: UncertainValue) -> UncertainValue:
-        """Exponential with uncertainty propagation"""
-        new_value = np.exp(x.value)
-        derivative = new_value  # Derivative of exp is exp
-        new_uncertainty = derivative * x.uncertainty
-        new_samples = np.exp(x.samples)
-        return UncertainValue(new_value, new_uncertainty, samples=new_samples)
+        return x.exp()
     
     @staticmethod
     def log(x: UncertainValue) -> UncertainValue:
-        """Natural logarithm with uncertainty propagation"""
-        if x.value <= 0:
-            raise ValueError("Cannot take logarithm of non-positive value")
-        
-        new_value = np.log(x.value)
-        derivative = 1 / x.value  # Derivative of ln is 1/x
-        new_uncertainty = abs(derivative) * x.uncertainty
-        new_samples = np.log(np.clip(x.samples, 1e-10, None))  # Avoid log(0)
-        return UncertainValue(new_value, new_uncertainty, samples=new_samples)
+        return x.log()
     
     @staticmethod
     def sqrt(x: UncertainValue) -> UncertainValue:
-        """Square root with uncertainty propagation"""
-        if x.value < 0:
-            raise ValueError("Cannot take square root of negative value")
-        
-        new_value = np.sqrt(x.value)
-        derivative = 1 / (2 * new_value) if new_value != 0 else 0
-        new_uncertainty = abs(derivative) * x.uncertainty
-        new_samples = np.sqrt(np.clip(x.samples, 0, None))
-        return UncertainValue(new_value, new_uncertainty, samples=new_samples)
-
-
-# Integration with Synapse language constructs
-class UncertaintyIntegration:
-    """Integration layer for Synapse language uncertainty features"""
+        return x.sqrt()
     
-    @staticmethod
-    def create_uncertain(value: float, uncertainty: float, 
-                        distribution: str = "normal") -> UncertainValue:
-        """Create uncertain value from Synapse syntax: uncertain x = 5.0 ± 0.1"""
-        return UncertainValue(value, uncertainty, distribution)
-    
-    @staticmethod
-    def measure_with_uncertainty(measurement_func: Callable, 
-                               repetitions: int = 100) -> UncertainValue:
-        """Perform repeated measurements to estimate uncertainty"""
-        measurements = []
-        for _ in range(repetitions):
-            measurements.append(measurement_func())
+    def sensitivity_analysis(self, expression: Callable, var_names: List[str]) -> Dict[str, float]:
+        """Perform sensitivity analysis to identify most important variables."""
+        # Use Sobol indices or local sensitivity
+        sensitivities = {}
         
-        measurements = np.array(measurements)
-        mean_value = np.mean(measurements)
-        uncertainty = np.std(measurements, ddof=1)  # Sample standard deviation
+        base_result = self._linear_propagation(expression, var_names)
+        base_variance = base_result.uncertainty ** 2
         
-        return UncertainValue(mean_value, uncertainty, samples=measurements)
-    
-    @staticmethod
-    def combine_measurements(*measurements: UncertainValue) -> UncertainValue:
-        """Optimally combine multiple measurements of the same quantity"""
-        weights = [1 / (m.uncertainty ** 2) for m in measurements]
-        total_weight = sum(weights)
+        for var_name in var_names:
+            # Calculate first-order Sobol index (simplified)
+            # Remove this variable and see variance reduction
+            other_vars = [v for v in var_names if v != var_name]
+            if other_vars:
+                reduced_result = self._linear_propagation(expression, other_vars)
+                reduced_variance = reduced_result.uncertainty ** 2
+                sensitivity = max(0, (base_variance - reduced_variance) / base_variance)
+            else:
+                sensitivity = 1.0
+            
+            sensitivities[var_name] = sensitivity
         
-        weighted_mean = sum(w * m.value for w, m in zip(weights, measurements)) / total_weight
-        combined_uncertainty = 1 / np.sqrt(total_weight)
-        
-        return UncertainValue(weighted_mean, combined_uncertainty)
+        return sensitivities
 
 
-# Public API functions for compatibility
-def monte_carlo(func: Callable, params: Dict[str, Any], n_samples: int = 1000) -> Dict[str, Any]:
-    """Run Monte Carlo simulation with given parameters."""
-    propagator = UncertaintyPropagator()
-    return propagator.monte_carlo(func, params, n_samples)
+# High-level convenience functions
+def uncertain(nominal: float, uncertainty: float, distribution: str = "normal") -> UncertainValue:
+    """Create an uncertain value."""
+    return UncertainValue(nominal, uncertainty, distribution)
 
-
-def propagate_uncertainty(func: Callable, *uncertain_values: UncertainValue) -> UncertainValue:
+def propagate_uncertainty(func: Callable, **kwargs) -> UncertainValue:
     """Propagate uncertainty through a function."""
-    propagator = UncertaintyPropagator()
-    return propagator.propagate(func, *uncertain_values)
+    engine = UncertaintyEngine()
+    variables = {}
+    
+    for name, value in kwargs.items():
+        if isinstance(value, UncertainValue):
+            variables[name] = value
+        else:
+            variables[name] = UncertainValue(value, 0)
+    
+    return engine.propagate(func, variables)
+
+# Decorator for uncertainty propagation
+def uncertain_function(method: PropagationMethod = PropagationMethod.LINEAR):
+    """Decorator to automatically propagate uncertainties."""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            # Check if any arguments are uncertain
+            uncertain_args = {}
+            regular_args = []
+            
+            for i, arg in enumerate(args):
+                if isinstance(arg, UncertainValue):
+                    uncertain_args[f'arg_{i}'] = arg
+                    regular_args.append(arg.nominal)
+                else:
+                    regular_args.append(arg)
+            
+            if not uncertain_args:
+                # No uncertain arguments, call normally
+                return func(*args, **kwargs)
+            
+            # Create wrapper function for propagation
+            def wrapper_func(*nominal_args):
+                combined_args = list(args)
+                for i, (name, _) in enumerate(uncertain_args.items()):
+                    combined_args[int(name.split('_')[1])] = nominal_args[i]
+                return func(*combined_args, **kwargs)
+            
+            engine = UncertaintyEngine(UncertaintyConfig(method=method))
+            return engine.propagate(wrapper_func, uncertain_args)
+        
+        return wrapper
+    return decorator

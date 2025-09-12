@@ -472,17 +472,8 @@ class EnhancedParser:
         if self.check(TokenType.CONSTRAIN):
             return self.parse_constraint()
         
-        # Tensor definition
-        if self.check(TokenType.TENSOR):
-            return self.parse_tensor_declaration()
-        
-        # Channel definition
-        if self.check(TokenType.CHANNEL):
-            return self.parse_channel()
-        
-        # Async block
-        if self.check(TokenType.ASYNC):
-            return self.parse_async()
+        # Note: Tensor, Channel, and Async syntax currently handled through identifiers
+        # Future versions may add dedicated tokens for these constructs
         
         # Run statement
         if self.check(TokenType.RUN):

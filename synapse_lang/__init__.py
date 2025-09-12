@@ -29,21 +29,40 @@ except ImportError:
     # Quantum modules may not be fully available
     pass
 
-# Scientific computing - import only if available
+# Scientific computing - import with fallbacks
 try:
-    from .uncertainty import UncertaintyEngine
+    from .uncertainty import UncertaintyEngine, UncertainValue, uncertain
+    UNCERTAINTY_AVAILABLE = True
 except ImportError:
-    pass
+    UNCERTAINTY_AVAILABLE = False
+    # Create fallback classes
+    class UncertaintyEngine:
+        def __init__(self, *args, **kwargs): pass
+    class UncertainValue:
+        def __init__(self, *args, **kwargs): pass
+    def uncertain(*args, **kwargs): return None
 
 try:
-    from .tensor_ops import TensorEngine
+    from .tensor_ops import TensorEngine, TensorConfig, create_tensor_engine
+    TENSOR_AVAILABLE = True
 except ImportError:
-    pass
+    TENSOR_AVAILABLE = False
+    class TensorEngine:
+        def __init__(self, *args, **kwargs): pass
+    class TensorConfig:
+        def __init__(self, *args, **kwargs): pass
+    def create_tensor_engine(*args, **kwargs): return None
 
 try:
-    from .symbolic import SymbolicEngine
+    from .symbolic import SymbolicEngine, SymbolicExpression, symbolic_var
+    SYMBOLIC_AVAILABLE = True
 except ImportError:
-    pass
+    SYMBOLIC_AVAILABLE = False
+    class SymbolicEngine:
+        def __init__(self, *args, **kwargs): pass
+    class SymbolicExpression:
+        def __init__(self, *args, **kwargs): pass
+    def symbolic_var(*args, **kwargs): return None
 
 # High-level API
 def parse(code: str) -> ASTNode:
