@@ -1,0 +1,30 @@
+{
+  "total_tests": 3,
+  "passed": 0,
+  "failed": 3,
+  "success_rate": 0.0,
+  "timestamp": "2025-09-12T08:33:07.208548",
+  "detailed_results": [
+    {
+      "test": "Charge Creation",
+      "success": false,
+      "message": "Error: HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/create-charge (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001B8FE171250>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+      "timestamp": "2025-09-12T08:32:59.064160",
+      "data": {}
+    },
+    {
+      "test": "Charge Creation",
+      "success": false,
+      "message": "Error: HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/create-charge (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001B8FE7BBAD0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+      "timestamp": "2025-09-12T08:33:03.159160",
+      "data": {}
+    },
+    {
+      "test": "Charge Creation",
+      "success": false,
+      "message": "Error: HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/create-charge (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001B8FE7C8F10>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+      "timestamp": "2025-09-12T08:33:07.208548",
+      "data": {}
+    }
+  ]
+}
