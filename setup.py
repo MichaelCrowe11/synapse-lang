@@ -31,10 +31,10 @@ else:
 
 setup(
     name="synapse-lang",
-    version="2.1.0",
+    version="2.2.0",
     author="Michael Benjamin Crowe",
     author_email="michaelcrowe11@users.noreply.github.com",
-    description="Quantum-first programming language for scientific computing with native quantum algorithms, uncertainty quantification, and parallel execution",
+    description="Enterprise quantum computing platform with cloud-native architecture, distributed execution, and comprehensive quantum algorithms",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/MichaelCrowe11/synapse-lang",
@@ -94,9 +94,23 @@ setup(
             "ipykernel>=6.15.0",
         ],
         "quantum": [
-            "qiskit>=0.43.0",
+            "qiskit>=0.44.0",
             "cirq>=1.2.0",
-            "pennylane>=0.31.0",
+            "pennylane>=0.32.0",
+        ],
+        "cloud": [
+            "fastapi>=0.104.0",
+            "uvicorn[standard]>=0.24.0",
+            "aioredis>=2.0.1",
+            "asyncpg>=0.29.0",
+            "docker>=6.1.0",
+            "kubernetes>=27.2.0",
+        ],
+        "enterprise": [
+            "stripe>=7.0.0",
+            "boto3>=1.29.0",
+            "motor>=3.3.0",
+            "prometheus-client>=0.19.0",
         ],
     },
     entry_points={
