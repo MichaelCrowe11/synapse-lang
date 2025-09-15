@@ -46,7 +46,7 @@ jobs:
         python run_tests.py --all --coverage
     
     - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v5
       with:
         file: ./tests/coverage.xml
         flags: unittests
