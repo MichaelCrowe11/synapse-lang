@@ -1,0 +1,210 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Synapse Quantum Platform Overview",
+    "tags": ["quantum", "synapse", "platform"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Quantum Jobs Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(quantum_jobs_total{status=\"queued\"})",
+            "legendFormat": "Queued"
+          },
+          {
+            "expr": "sum(quantum_jobs_total{status=\"running\"})",
+            "legendFormat": "Running"
+          },
+          {
+            "expr": "sum(quantum_jobs_total{status=\"completed\"})",
+            "legendFormat": "Completed"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Circuit Execution Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(quantum_circuits_executed_total[5m])",
+            "legendFormat": "Circuits/sec"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "id": 3,
+        "title": "Platform Resource Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(container_cpu_usage_seconds_total[5m]) * 100",
+            "legendFormat": "CPU %"
+          },
+          {
+            "expr": "container_memory_usage_bytes / container_spec_memory_limit_bytes * 100",
+            "legendFormat": "Memory %"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 8
+        }
+      },
+      {
+        "id": 4,
+        "title": "API Request Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total[5m])) by (service)",
+            "legendFormat": "{{service}}"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        }
+      },
+      {
+        "id": 5,
+        "title": "Error Rates",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m])) by (service)",
+            "legendFormat": "{{service}} 5xx"
+          },
+          {
+            "expr": "sum(rate(quantum_job_failures_total[5m])) by (backend)",
+            "legendFormat": "{{backend}} failures"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        }
+      },
+      {
+        "id": 6,
+        "title": "Quantum Simulator Performance",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(quantum_simulation_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(quantum_simulation_duration_seconds_bucket[5m]))",
+            "legendFormat": "Median"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 24
+        }
+      },
+      {
+        "id": 7,
+        "title": "Active Users",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "increase(user_logins_total[1h])",
+            "legendFormat": "Hourly Logins"
+          },
+          {
+            "expr": "sum(active_sessions_total)",
+            "legendFormat": "Active Sessions"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 0,
+          "y": 32
+        }
+      },
+      {
+        "id": 8,
+        "title": "Package Registry Stats",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "package_downloads_total",
+            "legendFormat": "Total Downloads"
+          },
+          {
+            "expr": "package_uploads_total",
+            "legendFormat": "Total Packages"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 8,
+          "y": 32
+        }
+      },
+      {
+        "id": 9,
+        "title": "Queue Depth",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rabbitmq_queue_messages{queue=\"quantum_jobs\"}",
+            "legendFormat": "Quantum Jobs Queue"
+          },
+          {
+            "expr": "rabbitmq_queue_messages{queue=\"notifications\"}",
+            "legendFormat": "Notifications Queue"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 16,
+          "y": 32
+        }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "5s",
+    "schemaVersion": 30,
+    "version": 1
+  }
+}

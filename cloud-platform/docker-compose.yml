@@ -1,0 +1,186 @@
+version: '3.9'
+
+services:
+  # API Gateway
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - POSTGRES_URL=postgresql://synapse:synapse@postgres:5432/synapse
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      - redis
+      - postgres
+      - rabbitmq
+    networks:
+      - synapse-net
+
+  # Quantum Executor Service
+  quantum-executor:
+    build: ./quantum-executor
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - POSTGRES_URL=postgresql://synapse:synapse@postgres:5432/synapse
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - MAX_QUBITS=30
+      - GPU_ENABLED=true
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    depends_on:
+      - redis
+      - postgres
+      - rabbitmq
+    networks:
+      - synapse-net
+
+  # Circuit Optimizer Service
+  circuit-optimizer:
+    build: ./circuit-optimizer
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - OPTIMIZATION_LEVEL=3
+    deploy:
+      replicas: 2
+    networks:
+      - synapse-net
+
+  # User Management Service
+  user-service:
+    build: ./user-service
+    environment:
+      - MONGODB_URL=mongodb://mongo:27017/users
+      - JWT_SECRET=${JWT_SECRET}
+      - STRIPE_API_KEY=${STRIPE_API_KEY}
+    depends_on:
+      - mongo
+    networks:
+      - synapse-net
+
+  # Package Registry Service
+  package-registry:
+    build: ./package-registry
+    ports:
+      - "8001:8001"
+    volumes:
+      - package-storage:/app/packages
+    environment:
+      - POSTGRES_URL=postgresql://synapse:synapse@postgres:5432/packages
+      - S3_BUCKET=${S3_BUCKET}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+    depends_on:
+      - postgres
+    networks:
+      - synapse-net
+
+  # Analytics Service
+  analytics:
+    build: ./analytics
+    environment:
+      - CLICKHOUSE_URL=clickhouse://clickhouse:9000
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - clickhouse
+      - redis
+    networks:
+      - synapse-net
+
+  # Monitoring Stack
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - synapse-net
+
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    networks:
+      - synapse-net
+
+  # Databases
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=synapse
+      - POSTGRES_USER=synapse
+      - POSTGRES_PASSWORD=synapse
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - synapse-net
+
+  mongo:
+    image: mongo:6
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - synapse-net
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis-data:/data
+    networks:
+      - synapse-net
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - synapse-net
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+    networks:
+      - synapse-net
+
+  # Frontend
+  web-app:
+    build: ./web-app
+    ports:
+      - "3001:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api-gateway:8000
+    networks:
+      - synapse-net
+
+networks:
+  synapse-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  mongo-data:
+  redis-data:
+  rabbitmq-data:
+  clickhouse-data:
+  prometheus-data:
+  grafana-data:
+  package-storage:
