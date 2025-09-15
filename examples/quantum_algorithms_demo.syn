@@ -1,0 +1,477 @@
+// Quantum Algorithms Demonstration in Synapse-Lang
+// Showcases various quantum algorithms and their applications
+
+import quantum.*;
+import tensor.*;
+
+// ======================================
+// 1. Grover's Search Algorithm Demo
+// ======================================
+experiment GroverSearchDemo {
+    // Search for specific items in unsorted database
+    parallel {
+        branch small_search: {
+            // Search in 4-item database for item 3
+            quantum circuit grover_4 {
+                qubits: 2
+                oracle: mark_state(|11⟩)
+                diffuser: inversion_about_average()
+                iterations: 1  // Optimal for N=4, M=1
+            }
+            measure: all
+            analyze: success_probability()
+        }
+
+        branch medium_search: {
+            // Search in 16-item database for items 5 and 10
+            quantum circuit grover_16 {
+                qubits: 4
+                oracle: mark_states([|0101⟩, |1010⟩])
+                diffuser: grover_diffusion()
+                iterations: 2  // ~π/4 * sqrt(16/2)
+            }
+            measure: all
+            analyze: amplified_amplitudes()
+        }
+    }
+
+    synthesize: compare_speedup(classical_search, quantum_search)
+}
+
+// ======================================
+// 2. Quantum Fourier Transform Applications
+// ======================================
+pipeline QuantumFourierApplications {
+    stage PeriodFinding {
+        // Find period of function f(x) = a^x mod N
+        quantum circuit shor_qft {
+            precision_qubits: 8
+            work_qubits: 4
+
+            initialize: superposition(precision_qubits)
+            modular_exp: controlled_U(a=7, N=15)
+            transform: QFT(precision_qubits)
+            measure: precision_register
+        }
+
+        classical post_process {
+            continued_fraction: extract_period(measurement)
+            verify: check_factors(period, N)
+        }
+    }
+
+    stage PhaseEstimation {
+        // Estimate eigenphase of unitary operator
+        quantum circuit qpe {
+            counting_qubits: 5
+            eigenstate_qubits: 2
+
+            prepare: eigenstate(|ψ⟩)
+            controlled_evolution: U^(2^k) for k in range(5)
+            inverse_qft: QFT†(counting_qubits)
+            measure: counting_register
+
+            output: phase = measurement / 2^5
+        }
+    }
+}
+
+// ======================================
+// 3. Variational Quantum Eigensolver (VQE)
+// ======================================
+experiment VQE_H2_Molecule {
+    // Find ground state energy of H2 molecule
+
+    parameters {
+        ansatz_depth: 3
+        optimizer: "COBYLA"
+        max_iterations: 100
+        convergence_threshold: 1e-6
+    }
+
+    quantum circuit vqe_ansatz(θ) {
+        qubits: 4  // Minimal basis for H2
+
+        // Hardware-efficient ansatz
+        layer_1: {
+            RY(θ[0], q0); RY(θ[1], q1)
+            RY(θ[2], q2); RY(θ[3], q3)
+            CNOT(q0, q1); CNOT(q2, q3)
+        }
+
+        layer_2: {
+            RY(θ[4], q0); RY(θ[5], q1)
+            RY(θ[6], q2); RY(θ[7], q3)
+            CNOT(q1, q2); CNOT(q0, q3)
+        }
+
+        layer_3: {
+            RY(θ[8], q0); RY(θ[9], q1)
+            RY(θ[10], q2); RY(θ[11], q3)
+        }
+    }
+
+    hamiltonian H2_hamiltonian {
+        // Molecular Hamiltonian in second quantization
+        terms: [
+            -0.81261 * I,
+            0.17120 * Z0,
+            0.16893 * Z1,
+            -0.22276 * Z2,
+            0.17120 * Z0*Z1,
+            0.12055 * Z0*Z2,
+            0.16615 * Z1*Z2*Z3,
+            0.04532 * X0*X1*Y2*Y3
+        ]
+    }
+
+    optimization_loop {
+        initialize: random_parameters(12)
+
+        while not converged {
+            // Prepare ansatz with current parameters
+            state = vqe_ansatz(θ)
+
+            // Measure expectation value
+            energy = ⟨state|H2_hamiltonian|state⟩
+
+            // Classical optimization step
+            θ_new = optimizer.step(energy, θ)
+
+            // Check convergence
+            if |energy_new - energy_old| < threshold {
+                converged = true
+            }
+        }
+
+        output: ground_state_energy = energy
+    }
+}
+
+// ======================================
+// 4. Quantum Approximate Optimization Algorithm (QAOA)
+// ======================================
+experiment QAOA_MaxCut {
+    // Solve MaxCut problem on graph
+
+    graph specification {
+        vertices: 5
+        edges: [(0,1), (1,2), (2,3), (3,4), (4,0), (0,2)]
+    }
+
+    parameters {
+        p: 3  // Number of QAOA layers
+        shots: 10000
+    }
+
+    quantum circuit qaoa_circuit(γ, β) {
+        qubits: 5
+
+        // Initial state: uniform superposition
+        initialize: H⊗5
+
+        // p rounds of QAOA
+        repeat(p) {
+            // Problem Hamiltonian
+            for edge in edges {
+                apply: exp(-iγ*Z_i*Z_j)
+            }
+
+            // Mixer Hamiltonian
+            for qubit in qubits {
+                apply: exp(-iβ*X)
+            }
+        }
+
+        measure: all
+    }
+
+    optimization {
+        // Grid search or gradient-based optimization
+        parallel {
+            branch grid_search: {
+                γ_range: [0, π]
+                β_range: [0, π]
+                resolution: 20
+
+                evaluate: all_combinations(γ, β)
+                select: max_expectation_value()
+            }
+
+            branch gradient_descent: {
+                initialize: random(γ, β)
+                learning_rate: 0.1
+
+                while not converged {
+                    gradient = estimate_gradient(γ, β)
+                    update: parameters -= learning_rate * gradient
+                }
+            }
+        }
+
+        synthesize: best_parameters(grid_search, gradient_descent)
+    }
+}
+
+// ======================================
+// 5. Quantum Machine Learning
+// ======================================
+pipeline QuantumMachineLearning {
+    stage QuantumKernelSVM {
+        // Quantum feature map for classification
+
+        quantum circuit feature_map(x) {
+            qubits: 3
+
+            // First layer: encode classical data
+            layer_1: {
+                RZ(x[0], q0)
+                RZ(x[1], q1)
+                RZ(x[2], q2)
+            }
+
+            // Entangling layer
+            entangle: {
+                CNOT(q0, q1)
+                CNOT(q1, q2)
+                CNOT(q2, q0)
+            }
+
+            // Second encoding layer
+            layer_2: {
+                RZ(x[0]*x[1], q0)
+                RZ(x[1]*x[2], q1)
+                RZ(x[2]*x[0], q2)
+            }
+        }
+
+        kernel_computation(x_i, x_j) {
+            // Compute quantum kernel K(x_i, x_j)
+            circuit: {
+                prepare: feature_map(x_i)
+                inverse: feature_map†(x_j)
+                measure: all_zeros_probability()
+            }
+
+            return: |⟨0|U†(x_j)U(x_i)|0⟩|²
+        }
+
+        training {
+            // Build kernel matrix
+            K = matrix[N×N]
+            for i, j in samples {
+                K[i,j] = kernel_computation(x_i, x_j)
+            }
+
+            // Classical SVM optimization
+            α = solve_dual_problem(K, y)
+
+            return: support_vectors, α
+        }
+    }
+
+    stage QuantumNeuralNetwork {
+        // Parameterized quantum circuit as neural network
+
+        quantum circuit qnn_layer(x, W) {
+            qubits: 4
+
+            // Data encoding
+            encode: {
+                RY(arcsin(x[0]), q0)
+                RY(arcsin(x[1]), q1)
+                RY(arcsin(x[2]), q2)
+                RY(arcsin(x[3]), q3)
+            }
+
+            // Parameterized layer
+            variational: {
+                RZ(W[0,0], q0); RY(W[0,1], q0)
+                RZ(W[1,0], q1); RY(W[1,1], q1)
+                RZ(W[2,0], q2); RY(W[2,1], q2)
+                RZ(W[3,0], q3); RY(W[3,1], q3)
+
+                // Entanglement
+                CZ(q0, q1); CZ(q2, q3)
+                CZ(q1, q2); CZ(q0, q3)
+            }
+
+            measure: expectation(Z⊗4)
+        }
+
+        training_loop {
+            loss_function: MSE
+            optimizer: Adam(lr=0.01)
+
+            for epoch in range(100) {
+                for batch in data_loader {
+                    // Forward pass
+                    predictions = qnn_layer(batch.x, W)
+
+                    // Compute loss
+                    loss = MSE(predictions, batch.y)
+
+                    // Backward pass (parameter shift rule)
+                    gradients = parameter_shift_gradients(loss, W)
+
+                    // Update weights
+                    W = optimizer.step(W, gradients)
+                }
+            }
+        }
+    }
+}
+
+// ======================================
+// 6. Quantum Error Correction Demo
+// ======================================
+experiment QuantumErrorCorrection {
+    // Implement 3-qubit bit flip code
+
+    quantum circuit bit_flip_code {
+        logical_qubit: q0
+        ancilla_qubits: [q1, q2]
+
+        // Encoding
+        encode: {
+            CNOT(q0, q1)
+            CNOT(q0, q2)
+            // |ψ⟩ → α|000⟩ + β|111⟩
+        }
+
+        // Simulate error (bit flip on random qubit)
+        error_channel: {
+            probability: 0.1
+            apply: X(random_qubit)
+        }
+
+        // Syndrome measurement
+        syndrome: {
+            ancilla_1: q3
+            ancilla_2: q4
+
+            CNOT(q0, q3)
+            CNOT(q1, q3)
+            CNOT(q1, q4)
+            CNOT(q2, q4)
+
+            measure: [q3, q4] → syndrome
+        }
+
+        // Error correction
+        correction: {
+            switch(syndrome) {
+                case |00⟩: no_error()
+                case |01⟩: X(q2)
+                case |10⟩: X(q1)
+                case |11⟩: X(q0)
+            }
+        }
+
+        // Decoding
+        decode: {
+            CNOT(q0, q2)
+            CNOT(q0, q1)
+        }
+
+        verify: fidelity(initial_state, final_state)
+    }
+}
+
+// ======================================
+// 7. Quantum Simulation of Physical Systems
+// ======================================
+experiment QuantumSimulation {
+    // Simulate time evolution of quantum systems
+
+    parallel {
+        branch ising_model: {
+            // 1D Transverse field Ising model
+            hamiltonian H_ising {
+                J: 1.0  // Coupling strength
+                h: 0.5  // Transverse field
+
+                H = -J * Σ(Z_i * Z_{i+1}) - h * Σ(X_i)
+            }
+
+            quantum circuit trotter_evolution(t, steps) {
+                dt = t / steps
+
+                repeat(steps) {
+                    // First term: ZZ interactions
+                    for i in range(n_qubits-1) {
+                        RZZ(-J * dt, i, i+1)
+                    }
+
+                    // Second term: X field
+                    for i in range(n_qubits) {
+                        RX(-h * dt, i)
+                    }
+                }
+            }
+
+            observables: {
+                magnetization: ⟨Z⟩
+                correlation: ⟨Z_i * Z_j⟩
+                entanglement_entropy: S(ρ_A)
+            }
+        }
+
+        branch heisenberg_model: {
+            // XXZ Heisenberg model
+            hamiltonian H_heisenberg {
+                J_xy: 1.0
+                J_z: 0.5
+
+                H = J_xy * Σ(X_i*X_{i+1} + Y_i*Y_{i+1}) + J_z * Σ(Z_i*Z_{i+1})
+            }
+
+            quantum circuit evolution(t) {
+                // Use advanced Trotter decomposition
+                apply: suzuki_trotter_4th_order(H_heisenberg, t)
+            }
+        }
+    }
+
+    synthesize: compare_dynamics(ising_model, heisenberg_model)
+}
+
+// ======================================
+// Main Execution
+// ======================================
+main {
+    print("Quantum Algorithms Demonstration")
+    print("=================================")
+
+    // Run demonstrations
+    results = {}
+
+    results.grover = run(GroverSearchDemo)
+    print(f"Grover speedup: {results.grover.speedup}x")
+
+    results.qft = run(QuantumFourierApplications)
+    print(f"Period found: {results.qft.period}")
+
+    results.vqe = run(VQE_H2_Molecule)
+    print(f"H2 ground state energy: {results.vqe.energy} Hartree")
+
+    results.qaoa = run(QAOA_MaxCut)
+    print(f"MaxCut value: {results.qaoa.cut_value}")
+
+    results.qml = run(QuantumMachineLearning)
+    print(f"QML accuracy: {results.qml.accuracy}%")
+
+    results.qec = run(QuantumErrorCorrection)
+    print(f"Error correction fidelity: {results.qec.fidelity}")
+
+    results.simulation = run(QuantumSimulation)
+    print(f"Simulation complete: {results.simulation.observables}")
+
+    // Visualize results
+    visualize: {
+        plot_grover_amplification(results.grover)
+        plot_vqe_convergence(results.vqe)
+        plot_qaoa_landscape(results.qaoa)
+        plot_quantum_dynamics(results.simulation)
+    }
+}

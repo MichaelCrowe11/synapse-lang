@@ -6,21 +6,22 @@ Complete implementation with all language constructs
 from typing import List, Optional, Union, Dict, Any
 from dataclasses import dataclass
 from enum import Enum
-from synapse_interpreter import Token, TokenType, Lexer
-from synapse_ast_complete import *
+from synapse_lang.synapse_lexer import Token, TokenType, Lexer
+from synapse_lang.synapse_ast_enhanced import *
 
-class ParseError(Exception):
+class ParserError(Exception):
     """Parse error exception"""
     def __init__(self, message: str, token: Token):
         self.message = message
         self.token = token
         super().__init__(f"{message} at line {token.line}, column {token.column}")
 
-class Parser:
+class EnhancedParser:
     """Complete recursive descent parser for Synapse language"""
     
-    def __init__(self, tokens: List[Token]):
-        self.tokens = tokens
+    def __init__(self, lexer: Lexer):
+        self.lexer = lexer
+        self.tokens = lexer.tokenize()
         self.current = 0
     
     def peek(self, offset: int = 0) -> Token:
@@ -52,7 +53,7 @@ class Parser:
         """Consume token of expected type or raise error"""
         if self.check(token_type):
             return self.advance()
-        raise ParseError(message, self.peek())
+        raise ParserError(message, self.peek())
     
     def skip_newlines(self):
         """Skip newline tokens"""
@@ -899,7 +900,7 @@ class Parser:
         if self.check(TokenType.LEFT_BRACE):
             return self.parse_block()
         
-        raise ParseError(f"Unexpected token: {self.peek()}", self.peek())
+        raise ParserError(f"Unexpected token: {self.peek()}", self.peek())
     
     def parse_block(self) -> BlockNode:
         """Parse block of statements"""
@@ -960,7 +961,7 @@ class Parser:
             
             return SimpleTypeNode(type_name)
         
-        raise ParseError("Expected type expression", self.peek())
+        raise ParserError("Expected type expression", self.peek())
     
     def parse_function_call(self, name: str) -> FunctionCallNode:
         """Parse function call"""
@@ -981,6 +982,5 @@ class Parser:
 def parse_synapse_code(source: str) -> ProgramNode:
     """Helper function to parse Synapse source code"""
     lexer = Lexer(source)
-    tokens = lexer.tokenize()
-    parser = Parser(tokens)
+    parser = EnhancedParser(lexer)
     return parser.parse()

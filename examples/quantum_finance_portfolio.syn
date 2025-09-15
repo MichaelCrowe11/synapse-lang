@@ -1,0 +1,455 @@
+// Quantum Finance: Portfolio Optimization using Quantum Computing
+// This example demonstrates quantum algorithms for financial applications
+
+import quantum.*;
+import tensor.*;
+import optimization.*;
+
+// ======================================
+// Quantum Portfolio Optimization
+// Using QAOA and VQE for efficient frontier calculation
+// ======================================
+
+experiment QuantumPortfolioOptimization {
+    // Portfolio parameters
+    parameters {
+        assets: ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA"]
+        historical_data: load_market_data("2020-2024")
+        risk_tolerance: 0.15  // 15% maximum volatility
+        target_return: 0.12   // 12% annual return
+    }
+
+    // Calculate expected returns and covariance matrix
+    stage DataPreparation {
+        returns = calculate_returns(historical_data)
+
+        // Uncertainty in returns estimation
+        uncertain expected_returns = {
+            "AAPL": 0.15 ± 0.03,
+            "GOOGL": 0.12 ± 0.025,
+            "MSFT": 0.14 ± 0.028,
+            "AMZN": 0.11 ± 0.022,
+            "TSLA": 0.25 ± 0.08
+        }
+
+        covariance_matrix = tensor[5×5] {
+            compute: historical_covariance(returns)
+            regularize: shrinkage_estimator(λ=0.1)
+        }
+    }
+
+    // Quantum optimization using QAOA
+    stage QuantumOptimization {
+        // Encode portfolio optimization as QUBO problem
+        quantum circuit portfolio_qaoa(γ, β) {
+            qubits: 15  // 3 qubits per asset for weight discretization
+
+            // Initial superposition
+            for q in range(15) {
+                H(q)
+            }
+
+            // QAOA layers
+            layers: 5
+            for p in range(layers) {
+                // Cost Hamiltonian: minimize risk, maximize return
+                cost_hamiltonian {
+                    // Risk term
+                    for i, j in assets {
+                        weight_i = decode_weight(qubits[3*i:3*i+3])
+                        weight_j = decode_weight(qubits[3*j:3*j+3])
+                        apply: exp(-iγ[p] * covariance[i,j] * weight_i * weight_j)
+                    }
+
+                    // Return term (negative for maximization)
+                    for i in assets {
+                        weight_i = decode_weight(qubits[3*i:3*i+3])
+                        apply: exp(iγ[p] * expected_returns[i] * weight_i)
+                    }
+                }
+
+                // Mixer Hamiltonian
+                mixer_hamiltonian {
+                    for q in range(15) {
+                        RX(2*β[p], q)
+                    }
+                }
+            }
+
+            // Constraint: weights sum to 1
+            constraint_layer {
+                // Penalty for violating sum constraint
+                total_weight = sum(decode_weights(qubits))
+                if (abs(total_weight - 1.0) > 0.01) {
+                    apply_penalty: 1000 * (total_weight - 1.0)²
+                }
+            }
+
+            measure: all
+        }
+
+        // Optimize QAOA parameters
+        optimization_loop {
+            initialize: random_parameters(γ[5], β[5])
+            optimizer: "COBYLA"
+            max_iterations: 100
+
+            while not converged {
+                // Run quantum circuit
+                results = portfolio_qaoa(γ, β)
+
+                // Calculate expectation value
+                portfolio_value = evaluate_portfolio(results, expected_returns, covariance_matrix)
+
+                // Update parameters
+                γ, β = optimizer.step(portfolio_value, γ, β)
+            }
+
+            output: optimal_weights = decode_best_solution(results)
+        }
+    }
+
+    // Classical benchmark for comparison
+    stage ClassicalBenchmark {
+        // Markowitz mean-variance optimization
+        classical_weights = markowitz_optimization(
+            expected_returns,
+            covariance_matrix,
+            risk_tolerance
+        )
+
+        // Monte Carlo simulation
+        monte_carlo {
+            simulations: 10000
+            time_horizon: 252  // Trading days
+
+            for sim in range(simulations) {
+                portfolio_path = simulate_portfolio(
+                    classical_weights,
+                    expected_returns,
+                    covariance_matrix
+                )
+                metrics.append(calculate_metrics(portfolio_path))
+            }
+        }
+    }
+
+    // Compare quantum vs classical results
+    synthesize {
+        comparison = {
+            quantum_sharpe: calculate_sharpe(quantum_weights),
+            classical_sharpe: calculate_sharpe(classical_weights),
+            quantum_var: calculate_var(quantum_weights, 0.95),
+            classical_var: calculate_var(classical_weights, 0.95),
+            speedup: classical_time / quantum_time
+        }
+
+        visualize: plot_efficient_frontier(quantum_weights, classical_weights)
+        return: comparison
+    }
+}
+
+// ======================================
+// Quantum Credit Risk Analysis
+// Using quantum machine learning for default prediction
+// ======================================
+
+pipeline QuantumCreditRisk {
+    stage FeatureEngineering {
+        // Load credit data
+        credit_data = load_dataset("credit_risk_2024.csv")
+
+        // Quantum feature map for non-linear relationships
+        quantum circuit feature_map(x[8]) {
+            qubits: 8  // 8 financial features
+
+            // First encoding layer
+            for i in range(8) {
+                RY(2*arcsin(sqrt(x[i])), i)
+            }
+
+            // Entangling layer for feature interactions
+            for i in range(7) {
+                CNOT(i, i+1)
+            }
+            CNOT(7, 0)  // Circular entanglement
+
+            // Second encoding layer with interactions
+            for i in range(8) {
+                for j in range(i+1, 8) {
+                    RZ(x[i]*x[j]*π, i)
+                    controlled_RY(x[i]*x[j], i, j)
+                }
+            }
+        }
+
+        // Extract quantum features
+        quantum_features = []
+        for sample in credit_data {
+            state = feature_map(sample.features)
+            quantum_features.append(measure_expectations(state))
+        }
+    }
+
+    stage QuantumClassifier {
+        // Variational quantum classifier
+        quantum circuit vqc(x, θ[32]) {
+            qubits: 8
+            depth: 4
+
+            // Encode input
+            encode: feature_map(x)
+
+            // Variational layers
+            for layer in range(depth) {
+                // Rotation layer
+                for q in range(8) {
+                    RY(θ[layer*8 + q], q)
+                    RZ(θ[layer*8 + q + 16], q)
+                }
+
+                // Entangling layer
+                for q in range(0, 8, 2) {
+                    if q+1 < 8 {
+                        CNOT(q, q+1)
+                    }
+                }
+                for q in range(1, 8, 2) {
+                    if q+1 < 8 {
+                        CNOT(q, q+1)
+                    }
+                }
+            }
+
+            // Measurement for classification
+            measure: [0]  // Single qubit for binary classification
+        }
+
+        // Training loop
+        training {
+            split_data: train(0.8), test(0.2)
+            batch_size: 32
+            epochs: 50
+
+            for epoch in range(epochs) {
+                for batch in train_loader {
+                    // Forward pass
+                    predictions = []
+                    for sample in batch {
+                        pred = vqc(sample.features, θ)
+                        predictions.append(pred)
+                    }
+
+                    // Calculate loss (binary cross-entropy)
+                    loss = BCE(predictions, batch.labels)
+
+                    // Parameter shift rule for gradients
+                    gradients = parameter_shift_gradient(loss, θ)
+
+                    // Update parameters
+                    θ = adam_optimizer.step(θ, gradients, lr=0.01)
+                }
+
+                // Validation
+                val_accuracy = evaluate(test_data, θ)
+                print(f"Epoch {epoch}: Loss={loss:.4f}, Val Acc={val_accuracy:.2%}")
+            }
+        }
+    }
+
+    stage RiskAssessment {
+        // Quantum amplitude estimation for tail risk
+        quantum circuit tail_risk_estimation {
+            precision_qubits: 6  // 2^6 = 64 precision levels
+            risk_qubits: 8
+
+            // Prepare risk distribution
+            prepare_distribution(historical_losses)
+
+            // Grover operator for extreme events
+            oracle {
+                threshold: -0.05  // 5% loss threshold
+                mark_states(loss < threshold)
+            }
+
+            // Amplitude estimation
+            for i in range(precision_qubits) {
+                H(precision[i])
+                controlled_grover(precision[i], risk_qubits, 2^i)
+            }
+
+            // Inverse QFT for probability extraction
+            inverse_QFT(precision_qubits)
+
+            measure: precision_qubits
+            tail_probability = measurement / 2^precision_qubits
+        }
+
+        // Value at Risk (VaR) calculation
+        var_95 = quantum_percentile(portfolio_returns, 0.95)
+
+        // Conditional Value at Risk (CVaR)
+        cvar_95 = quantum_expectation(returns | returns < var_95)
+    }
+}
+
+// ======================================
+// Quantum Option Pricing
+// Black-Scholes using quantum amplitude estimation
+// ======================================
+
+experiment QuantumOptionPricing {
+    parameters {
+        spot_price: 100.0
+        strike_price: 105.0
+        risk_free_rate: 0.05
+        volatility: 0.2 ± 0.02  // Uncertain volatility
+        time_to_maturity: 0.25  // 3 months
+        option_type: "european_call"
+    }
+
+    // Quantum algorithm for option pricing
+    quantum circuit option_pricer {
+        // Number of qubits for price discretization
+        price_qubits: 8  // 256 price levels
+        ancilla_qubits: 1
+
+        // Prepare probability distribution of final prices
+        prepare_lognormal {
+            mean: log(spot_price) + (risk_free_rate - 0.5*volatility²)*time_to_maturity
+            std: volatility * sqrt(time_to_maturity)
+
+            for i in range(2^price_qubits) {
+                price = decode_price(i)
+                amplitude = lognormal_pdf(price, mean, std)
+                set_amplitude(i, sqrt(amplitude))
+            }
+        }
+
+        // Payoff function
+        payoff_oracle {
+            for i in range(2^price_qubits) {
+                price = decode_price(i)
+                if option_type == "european_call" {
+                    payoff = max(price - strike_price, 0)
+                } else {  // put
+                    payoff = max(strike_price - price, 0)
+                }
+
+                // Rotate ancilla based on payoff
+                controlled_RY(2*arcsin(sqrt(payoff/max_payoff)), i, ancilla)
+            }
+        }
+
+        // Amplitude estimation for expected payoff
+        amplitude_estimation {
+            precision: 10  // 2^10 = 1024 precision
+
+            estimate = quantum_amplitude_estimation(
+                payoff_oracle,
+                precision
+            )
+
+            expected_payoff = estimate * max_payoff
+        }
+
+        // Discount to present value
+        option_price = expected_payoff * exp(-risk_free_rate * time_to_maturity)
+    }
+
+    // Greeks calculation using quantum gradients
+    stage GreeksCalculation {
+        parallel {
+            branch delta: {
+                // Price sensitivity to spot price
+                quantum_gradient(option_price, spot_price)
+            }
+
+            branch gamma: {
+                // Second derivative wrt spot price
+                quantum_hessian(option_price, spot_price)
+            }
+
+            branch vega: {
+                // Sensitivity to volatility
+                quantum_gradient(option_price, volatility)
+            }
+
+            branch theta: {
+                // Time decay
+                quantum_gradient(option_price, time_to_maturity)
+            }
+
+            branch rho: {
+                // Interest rate sensitivity
+                quantum_gradient(option_price, risk_free_rate)
+            }
+        }
+
+        synthesize: compile_greeks_report()
+    }
+
+    // Monte Carlo comparison
+    stage MonteCarloValidation {
+        paths: 1000000
+
+        mc_price = monte_carlo_option_price(
+            spot_price, strike_price, risk_free_rate,
+            volatility, time_to_maturity, paths
+        )
+
+        comparison = {
+            quantum_price: option_price,
+            monte_carlo_price: mc_price,
+            difference: abs(option_price - mc_price),
+            speedup: mc_time / quantum_time,
+            precision_gain: 1/sqrt(paths) / quantum_error
+        }
+    }
+}
+
+// ======================================
+// Main Execution and Reporting
+// ======================================
+
+main {
+    print("Quantum Finance Suite")
+    print("=" * 50)
+
+    // Run portfolio optimization
+    portfolio_results = run(QuantumPortfolioOptimization)
+    print(f"Portfolio Optimization Results:")
+    print(f"  Quantum Sharpe Ratio: {portfolio_results.quantum_sharpe:.3f}")
+    print(f"  Speedup vs Classical: {portfolio_results.speedup:.1f}x")
+    print(f"  Optimal Weights: {portfolio_results.optimal_weights}")
+
+    // Run credit risk analysis
+    credit_results = run(QuantumCreditRisk)
+    print(f"\nCredit Risk Analysis:")
+    print(f"  Model Accuracy: {credit_results.accuracy:.2%}")
+    print(f"  Tail Risk (95% VaR): {credit_results.var_95:.2%}")
+    print(f"  Expected Shortfall (CVaR): {credit_results.cvar_95:.2%}")
+
+    // Run option pricing
+    option_results = run(QuantumOptionPricing)
+    print(f"\nOption Pricing Results:")
+    print(f"  Quantum Price: ${option_results.quantum_price:.2f}")
+    print(f"  Monte Carlo Price: ${option_results.mc_price:.2f}")
+    print(f"  Greeks:")
+    print(f"    Delta: {option_results.delta:.4f}")
+    print(f"    Gamma: {option_results.gamma:.4f}")
+    print(f"    Vega: {option_results.vega:.4f}")
+    print(f"    Theta: {option_results.theta:.4f}")
+
+    // Generate comprehensive report
+    generate_report {
+        format: "pdf"
+        include: [
+            portfolio_optimization_charts(),
+            risk_metrics_dashboard(),
+            option_pricing_surface(),
+            quantum_advantage_analysis()
+        ]
+        save_to: "quantum_finance_report.pdf"
+    }
+}

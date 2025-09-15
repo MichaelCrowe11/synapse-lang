@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synapse Platform - Test Checkout</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .plan-card {
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .plan-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .plan-price {
+            font-size: 36px;
+            font-weight: bold;
+            color: #333;
+            margin: 10px 0;
+        }
+        .plan-features {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+        .plan-features li {
+            padding: 8px 0;
+            color: #555;
+        }
+        .plan-features li:before {
+            content: "✓ ";
+            color: #667eea;
+            font-weight: bold;
+        }
+        .checkout-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: bold;
+            transition: transform 0.2s;
+            margin: 10px 5px;
+        }
+        .checkout-button:hover {
+            transform: scale(1.05);
+        }
+        .test-info {
+            background: #f0f0f0;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .test-info h3 {
+            margin-top: 0;
+            color: #666;
+        }
+        .test-card {
+            font-family: monospace;
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Synapse Platform</h1>
+        <p class="subtitle">Quantum-Enhanced AI/ML Platform - Test Checkout</p>
+        
+        <div class="plan-card">
+            <div class="plan-name">Professional Plan</div>
+            <div class="plan-price">$99<span style="font-size: 18px; color: #666;">/month</span></div>
+            <ul class="plan-features">
+                <li>100,000 API calls/month</li>
+                <li>Unlimited quantum simulations</li>
+                <li>50 GPU hours/month</li>
+                <li>AutoML optimization</li>
+                <li>Priority support</li>
+            </ul>
+            
+            <a href="https://checkout.stripe.com/c/pay/cs_test_a19ysQSolfQCJIo390jZXSWKucPNIkp82vBrlZKoC0mLpBebCT3HLvcSq0" 
+               class="checkout-button">
+                Start Subscription →
+            </a>
+        </div>
+        
+        <div class="test-info">
+            <h3>🧪 Test Mode Information</h3>
+            <p>Use these test card details to complete the checkout:</p>
+            <div class="test-card">
+                Card Number: 4242 4242 4242 4242<br>
+                Expiry: 12/25<br>
+                CVC: 123<br>
+                ZIP: 12345
+            </div>
+            <p><strong>Note:</strong> This is a test transaction. No real charges will be made.</p>
+        </div>
+        
+        <h2>Other Plans</h2>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="plan-card" style="border-color: #ccc;">
+                <div class="plan-name" style="color: #666;">Starter</div>
+                <div class="plan-price" style="font-size: 28px;">$29<span style="font-size: 16px; color: #666;">/mo</span></div>
+                <ul class="plan-features" style="font-size: 14px;">
+                    <li>10,000 API calls</li>
+                    <li>5 GPU hours</li>
+                </ul>
+            </div>
+            
+            <div class="plan-card" style="border-color: #ffd700;">
+                <div class="plan-name" style="color: #ffd700;">Enterprise</div>
+                <div class="plan-price" style="font-size: 28px;">$499<span style="font-size: 16px; color: #666;">/mo</span></div>
+                <ul class="plan-features" style="font-size: 14px;">
+                    <li>Unlimited API calls</li>
+                    <li>500 GPU hours</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 40px; color: #999;">
+            <p>Powered by Stripe | CROWE LOGIC Account</p>
+            <p>Session ID: cs_test_a19ysQSolfQCJIo390jZXSWKucPNIkp82vBrlZKoC0mLpBebCT3HLvcSq0</p>
+        </div>
+    </div>
+</body>
+</html>

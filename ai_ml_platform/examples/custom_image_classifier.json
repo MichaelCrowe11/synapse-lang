@@ -1,0 +1,44 @@
+{
+  "name": "CustomImageClassifier",
+  "layers": [
+    {
+      "name": "dense1",
+      "layer_type": "Dense",
+      "units": null,
+      "activation": null,
+      "dropout_rate": null,
+      "kernel_size": null,
+      "stride": null,
+      "padding": null,
+      "quantum_circuit": null,
+      "parameters": {}
+    },
+    {
+      "name": "dense2",
+      "layer_type": "Dense",
+      "units": null,
+      "activation": null,
+      "dropout_rate": null,
+      "kernel_size": null,
+      "stride": null,
+      "padding": null,
+      "quantum_circuit": null,
+      "parameters": {}
+    },
+    {
+      "name": "output",
+      "layer_type": "Dense",
+      "units": null,
+      "activation": null,
+      "dropout_rate": null,
+      "kernel_size": null,
+      "stride": null,
+      "padding": null,
+      "quantum_circuit": null,
+      "parameters": {}
+    }
+  ],
+  "optimizer": "adamw",
+  "loss_function": "categorical_crossentropy",
+  "learning_rate": 0.001
+}

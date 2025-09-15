@@ -1,0 +1,345 @@
+{
+  "Quantum Circuit": {
+    "prefix": "qcirc",
+    "body": [
+      "quantum circuit ${1:circuit_name} {",
+      "\tqubits: ${2:num_qubits}",
+      "\t",
+      "\t// Initialize qubits",
+      "\tinitialize: ${3:superposition}",
+      "\t",
+      "\t// Apply quantum gates",
+      "\t$0",
+      "\t",
+      "\t// Measure qubits",
+      "\tmeasure: ${4:all}",
+      "}"
+    ],
+    "description": "Create a quantum circuit"
+  },
+
+  "Bell Pair": {
+    "prefix": "bell",
+    "body": [
+      "// Create Bell pair (maximally entangled state)",
+      "H(q${1:0})",
+      "CNOT(q${1:0}, q${2:1})",
+      "// Result: (|00⟩ + |11⟩)/√2"
+    ],
+    "description": "Create a Bell pair"
+  },
+
+  "GHZ State": {
+    "prefix": "ghz",
+    "body": [
+      "// Create GHZ state for ${1:n} qubits",
+      "H(q0)",
+      "for i in range(1, ${1:n}) {",
+      "\tCNOT(q0, q[i])",
+      "}",
+      "// Result: (|00...0⟩ + |11...1⟩)/√2"
+    ],
+    "description": "Create a GHZ state"
+  },
+
+  "Quantum Fourier Transform": {
+    "prefix": "qft",
+    "body": [
+      "// Quantum Fourier Transform on ${1:n} qubits",
+      "function QFT(qubits[${1:n}]) {",
+      "\tfor j in range(${1:n}) {",
+      "\t\tH(qubits[j])",
+      "\t\tfor k in range(j+1, ${1:n}) {",
+      "\t\t\tcontrolled_phase(π/2^(k-j), qubits[k], qubits[j])",
+      "\t\t}",
+      "\t}",
+      "\t// Swap qubits for correct ordering",
+      "\tfor i in range(${1:n}/2) {",
+      "\t\tSWAP(qubits[i], qubits[${1:n}-1-i])",
+      "\t}",
+      "}"
+    ],
+    "description": "Implement Quantum Fourier Transform"
+  },
+
+  "Grover's Algorithm": {
+    "prefix": "grover",
+    "body": [
+      "experiment GroverSearch {",
+      "\t// Search for marked item in N=${1:16} items",
+      "\tqubits: ${2:4}  // log2(N) qubits",
+      "\t",
+      "\t// Initialize in superposition",
+      "\tfor q in qubits {",
+      "\t\tH(q)",
+      "\t}",
+      "\t",
+      "\t// Grover iterations",
+      "\titerations: floor(π/4 * sqrt(${1:16}))",
+      "\trepeat(iterations) {",
+      "\t\t// Oracle - marks target state",
+      "\t\toracle(${3:target})",
+      "\t\t",
+      "\t\t// Diffusion operator",
+      "\t\tdiffuser()",
+      "\t}",
+      "\t",
+      "\tmeasure: all",
+      "}"
+    ],
+    "description": "Implement Grover's search algorithm"
+  },
+
+  "Parallel Execution": {
+    "prefix": "parallel",
+    "body": [
+      "parallel {",
+      "\tbranch ${1:branch1}: {",
+      "\t\t${2:// First parallel computation}",
+      "\t}",
+      "\t",
+      "\tbranch ${3:branch2}: {",
+      "\t\t${4:// Second parallel computation}",
+      "\t}",
+      "\t",
+      "\tbranch ${5:branch3}: {",
+      "\t\t${6:// Third parallel computation}",
+      "\t}",
+      "}",
+      "",
+      "synthesize: ${7:combine_results}($1, $3, $5)"
+    ],
+    "description": "Create parallel execution branches"
+  },
+
+  "Uncertainty Value": {
+    "prefix": "uncertain",
+    "body": [
+      "uncertain ${1:measurement} = ${2:value} ± ${3:error}"
+    ],
+    "description": "Define an uncertain value"
+  },
+
+  "Reasoning Chain": {
+    "prefix": "reason",
+    "body": [
+      "reason chain ${1:ChainName} {",
+      "\tpremise P1: \"${2:First premise}\"",
+      "\tpremise P2: \"${3:Second premise}\"",
+      "\t",
+      "\tderive D1 from P1: \"${4:Derivation}\"",
+      "\tderive D2 from P2: \"${5:Derivation}\"",
+      "\t",
+      "\tconclude: D1 and D2 => \"${6:Conclusion}\"",
+      "}"
+    ],
+    "description": "Create a reasoning chain"
+  },
+
+  "Experiment": {
+    "prefix": "experiment",
+    "body": [
+      "experiment ${1:ExperimentName} {",
+      "\thypothesis: \"${2:State your hypothesis}\"",
+      "\t",
+      "\tsetup {",
+      "\t\t${3:// Initialize experimental setup}",
+      "\t}",
+      "\t",
+      "\tprocedure {",
+      "\t\t${4:// Experimental procedure}",
+      "\t}",
+      "\t",
+      "\tanalysis {",
+      "\t\t${5:// Data analysis}",
+      "\t}",
+      "\t",
+      "\tconclusion: ${6:verify_hypothesis()}",
+      "}"
+    ],
+    "description": "Define a scientific experiment"
+  },
+
+  "Pipeline": {
+    "prefix": "pipeline",
+    "body": [
+      "pipeline ${1:PipelineName} {",
+      "\tstage ${2:Stage1} {",
+      "\t\tinput: ${3:data}",
+      "\t\tprocess: ${4:transformation}",
+      "\t\toutput: ${5:result}",
+      "\t}",
+      "\t",
+      "\tstage ${6:Stage2} {",
+      "\t\tinput: $5",
+      "\t\tprocess: ${7:analysis}",
+      "\t\toutput: ${8:final_result}",
+      "\t}",
+      "}"
+    ],
+    "description": "Create a processing pipeline"
+  },
+
+  "Tensor Operation": {
+    "prefix": "tensor",
+    "body": [
+      "tensor ${1:T} = tensor[${2:dims}] {",
+      "\tshape: [${3:shape}]",
+      "\tdtype: ${4:float32}",
+      "\tdevice: ${5:gpu}",
+      "\t",
+      "\toperations: {",
+      "\t\t${6:// Tensor operations}",
+      "\t}",
+      "}"
+    ],
+    "description": "Define a tensor operation"
+  },
+
+  "VQE Circuit": {
+    "prefix": "vqe",
+    "body": [
+      "// Variational Quantum Eigensolver",
+      "quantum circuit vqe_ansatz(θ[${1:num_params}]) {",
+      "\tqubits: ${2:num_qubits}",
+      "\t",
+      "\t// Parameterized ansatz",
+      "\tfor layer in range(${3:depth}) {",
+      "\t\t// Rotation layer",
+      "\t\tfor q in range($2) {",
+      "\t\t\tRY(θ[layer*$2 + q], q)",
+      "\t\t}",
+      "\t\t",
+      "\t\t// Entangling layer",
+      "\t\tfor q in range($2-1) {",
+      "\t\t\tCNOT(q, q+1)",
+      "\t\t}",
+      "\t}",
+      "}"
+    ],
+    "description": "Create VQE ansatz circuit"
+  },
+
+  "QAOA Circuit": {
+    "prefix": "qaoa",
+    "body": [
+      "// Quantum Approximate Optimization Algorithm",
+      "quantum circuit qaoa(γ[${1:p}], β[${1:p}]) {",
+      "\tqubits: ${2:num_qubits}",
+      "\t",
+      "\t// Initial state: uniform superposition",
+      "\tfor q in range($2) {",
+      "\t\tH(q)",
+      "\t}",
+      "\t",
+      "\t// QAOA layers",
+      "\tfor layer in range(${1:p}) {",
+      "\t\t// Problem Hamiltonian",
+      "\t\tproblem_hamiltonian(γ[layer])",
+      "\t\t",
+      "\t\t// Mixer Hamiltonian",
+      "\t\tmixer_hamiltonian(β[layer])",
+      "\t}",
+      "\t",
+      "\tmeasure: all",
+      "}"
+    ],
+    "description": "Create QAOA circuit"
+  },
+
+  "Quantum Teleportation": {
+    "prefix": "teleport",
+    "body": [
+      "// Quantum Teleportation Protocol",
+      "experiment QuantumTeleportation {",
+      "\t// Alice has qubit 0 to teleport",
+      "\t// Bob has qubit 2",
+      "\t// Shared entangled pair: qubits 1,2",
+      "\t",
+      "\t// Create entangled pair",
+      "\tH(q1)",
+      "\tCNOT(q1, q2)",
+      "\t",
+      "\t// Alice performs Bell measurement",
+      "\tCNOT(q0, q1)",
+      "\tH(q0)",
+      "\tmeasure(q0) -> m0",
+      "\tmeasure(q1) -> m1",
+      "\t",
+      "\t// Bob applies corrections",
+      "\tif (m1 == 1) X(q2)",
+      "\tif (m0 == 1) Z(q2)",
+      "\t",
+      "\t// q2 now contains the teleported state",
+      "}"
+    ],
+    "description": "Implement quantum teleportation"
+  },
+
+  "Error Correction": {
+    "prefix": "qec",
+    "body": [
+      "// Quantum Error Correction - ${1:3}-qubit code",
+      "quantum circuit error_correction {",
+      "\t// Encoding",
+      "\tlogical_qubit: q0",
+      "\tancilla: [q1, q2]",
+      "\t",
+      "\t// Encode logical qubit",
+      "\tCNOT(q0, q1)",
+      "\tCNOT(q0, q2)",
+      "\t// |ψ⟩ → α|000⟩ + β|111⟩",
+      "\t",
+      "\t// Error channel (simulated)",
+      "\terror_probability: ${2:0.1}",
+      "\t",
+      "\t// Syndrome measurement",
+      "\tsyndrome_qubits: [q3, q4]",
+      "\tCNOT(q0, q3)",
+      "\tCNOT(q1, q3)",
+      "\tCNOT(q1, q4)",
+      "\tCNOT(q2, q4)",
+      "\t",
+      "\t// Error correction based on syndrome",
+      "\tcorrect_errors(syndrome)",
+      "\t",
+      "\t// Decode",
+      "\tCNOT(q0, q2)",
+      "\tCNOT(q0, q1)",
+      "}"
+    ],
+    "description": "Implement quantum error correction"
+  },
+
+  "Quantum Phase Estimation": {
+    "prefix": "qpe",
+    "body": [
+      "// Quantum Phase Estimation",
+      "quantum circuit phase_estimation {",
+      "\tcounting_qubits: ${1:4}",
+      "\teigenstate_qubits: ${2:1}",
+      "\t",
+      "\t// Initialize counting qubits in superposition",
+      "\tfor q in range($1) {",
+      "\t\tH(counting[q])",
+      "\t}",
+      "\t",
+      "\t// Prepare eigenstate",
+      "\tprepare_eigenstate(eigenstate)",
+      "\t",
+      "\t// Controlled unitary operations",
+      "\tfor i in range($1) {",
+      "\t\tcontrolled_U^(2^i)(counting[i], eigenstate)",
+      "\t}",
+      "\t",
+      "\t// Inverse QFT on counting qubits",
+      "\tinverse_QFT(counting)",
+      "\t",
+      "\t// Measure to get phase",
+      "\tmeasure: counting",
+      "\tphase = measurement / 2^$1",
+      "}"
+    ],
+    "description": "Implement quantum phase estimation"
+  }
+}

@@ -40,6 +40,17 @@ class TokenType(Enum):
     PROVE = "prove"
     USING = "using"
     
+    # Control flow keywords
+    IF = "if"
+    ELSE = "else"
+    ELIF = "elif"
+    WHILE = "while"
+    FOR = "for"
+    IN = "in"
+    BREAK = "break"
+    CONTINUE = "continue"
+    RETURN = "return"
+
     # Additional keywords for compatibility
     FROM = "from"
     INTO = "into"
@@ -129,6 +140,21 @@ class TokenType(Enum):
     PERCENT = "%"
     TILDE = "~"
     QUESTION = "?"
+
+    # Mathematical operators for symbolic math
+    INTEGRAL = "∫"
+    DERIVATIVE = "∂"
+    GRADIENT = "∇"
+    INFINITY = "∞"
+    SQRT = "√"
+    THETA = "θ"
+    PHI = "φ"
+    PI = "π"
+    SIGMA = "Σ"
+    PRODUCT = "∏"
+    LIMIT = "lim"
+    PARTIAL = "∂"
+    NABLA = "∇"
     
     # Additional operators for compatibility
     STAR = "*"
@@ -137,6 +163,7 @@ class TokenType(Enum):
     EQUAL_EQUAL = "=="
     NOT_EQUAL = "!="
     PLUS_MINUS = "+-"
+    UNCERTAINTY_OP = "±"
 
     # Delimiters
     LEFT_PAREN = "("
@@ -157,6 +184,8 @@ class TokenType(Enum):
     # Special
     EOF = "EOF"
     NEWLINE = "NEWLINE"
+    INDENT = "INDENT"
+    DEDENT = "DEDENT"
 
 
 @dataclass
@@ -174,9 +203,19 @@ class Lexer:
         self.line = 1
         self.column = 1
         self.tokens: List[Token] = []
+        self.indent_stack = [0]  # Stack to track indentation levels
+        self.at_line_start = True  # Track if we're at the start of a line
 
-        # keyword map
-        self.keywords = {k.value: k for k in TokenType if k.value.isalpha() and k not in (TokenType.IDENTIFIER,)}
+        # keyword map - exclude single-letter gate names from general keywords
+        # Gate names should only be recognized in quantum circuit context
+        gate_types = {
+            TokenType.H, TokenType.X, TokenType.Y, TokenType.Z,
+            TokenType.S, TokenType.T, TokenType.U
+        }
+        self.keywords = {
+            k.value: k for k in TokenType
+            if k.value and k.value.isalpha() and k not in (TokenType.IDENTIFIER,) and k not in gate_types
+        }
 
     def current_char(self) -> Optional[str]:
         if self.position >= len(self.source):
@@ -194,9 +233,51 @@ class Lexer:
             if self.source[self.position] == "\n":
                 self.line += 1
                 self.column = 1
+                self.at_line_start = True
             else:
                 self.column += 1
+                if not self.source[self.position].isspace():
+                    self.at_line_start = False
             self.position += 1
+
+    def handle_indentation(self) -> None:
+        """Handle indentation at the start of a line"""
+        if not self.at_line_start:
+            return
+
+        indent_level = 0
+        start_pos = self.position
+
+        # Count spaces and tabs (convert tabs to 4 spaces)
+        while self.current_char() and self.current_char() in " \t":
+            if self.current_char() == " ":
+                indent_level += 1
+            elif self.current_char() == "\t":
+                indent_level += 4
+            self.advance()
+
+        # If line is empty or comment, don't process indentation
+        if self.current_char() in [None, '\n', '#'] or (self.current_char() == '/' and self.peek_char() == '/'):
+            return
+
+        current_indent = self.indent_stack[-1]
+        line, col = self.line, 1
+
+        if indent_level > current_indent:
+            # Increase in indentation
+            self.indent_stack.append(indent_level)
+            self.tokens.append(Token(TokenType.INDENT, None, line, col))
+        elif indent_level < current_indent:
+            # Decrease in indentation - may need multiple DEDENT tokens
+            while self.indent_stack and self.indent_stack[-1] > indent_level:
+                self.indent_stack.pop()
+                self.tokens.append(Token(TokenType.DEDENT, None, line, col))
+
+            # Check for indentation error
+            if not self.indent_stack or self.indent_stack[-1] != indent_level:
+                raise SyntaxError(f"Indentation error at line {line}")
+
+        self.at_line_start = False
 
     def skip_whitespace(self) -> None:
         while self.current_char() and self.current_char() in " \t\r":
@@ -242,6 +323,10 @@ class Lexer:
 
     def tokenize(self) -> List[Token]:
         while self.position < len(self.source):
+            # Handle indentation at start of line
+            if self.at_line_start:
+                self.handle_indentation()
+
             self.skip_whitespace()
             self.skip_comment()
             if self.position >= len(self.source):
@@ -271,6 +356,7 @@ class Lexer:
             if ch is None:
                 break
             if ch == '\n':
+                self.tokens.append(Token(TokenType.NEWLINE, '\n', line, col))
                 self.advance()
                 continue
             single_map = {
@@ -282,7 +368,11 @@ class Lexer:
                 '[': TokenType.LEFT_BRACKET, ']': TokenType.RIGHT_BRACKET,
                 ',': TokenType.COMMA, ':': TokenType.COLON, ';': TokenType.SEMICOLON,
                 '.': TokenType.DOT, '%': TokenType.PERCENT, '~': TokenType.TILDE,
-                '?': TokenType.QUESTION,
+                '?': TokenType.QUESTION, '±': TokenType.UNCERTAINTY_OP,
+                # Mathematical Unicode symbols
+                '∫': TokenType.INTEGRAL, '∂': TokenType.DERIVATIVE, '∇': TokenType.GRADIENT,
+                '∞': TokenType.INFINITY, '√': TokenType.SQRT, 'θ': TokenType.THETA,
+                'φ': TokenType.PHI, 'π': TokenType.PI, 'Σ': TokenType.SIGMA, '∏': TokenType.PRODUCT,
             }
             if ch in single_map:
                 self.advance()
@@ -305,5 +395,11 @@ class Lexer:
                 continue
             # unknown -> skip
             self.advance()
+
+        # Add DEDENT tokens for any remaining indentation at end of file
+        while len(self.indent_stack) > 1:
+            self.indent_stack.pop()
+            self.tokens.append(Token(TokenType.DEDENT, None, self.line, self.column))
+
         self.tokens.append(Token(TokenType.EOF, None, self.line, self.column))
         return self.tokens

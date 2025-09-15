@@ -1,7 +1,7 @@
 {
   "name": "synapse-lang",
   "displayName": "SynapseLang",
-  "description": "Language support for SynapseLang - Drug Discovery DSL with molecular modeling, QSAR, and docking capabilities",
+  "description": "Language support for SynapseLang - Quantum computing and scientific reasoning language with parallel thought processing",
   "version": "0.1.0",
   "publisher": "synapse-lang",
   "icon": "icon.png",
@@ -29,13 +29,13 @@
     "Data Science"
   ],
   "keywords": [
-    "drug-discovery",
-    "cheminformatics",
-    "molecular-modeling",
-    "qsar",
-    "docking",
-    "pharmaceutical",
-    "bioinformatics",
+    "quantum-computing",
+    "quantum-algorithms",
+    "scientific-computing",
+    "parallel-processing",
+    "uncertainty-quantification",
+    "reasoning-chains",
+    "tensor-operations",
     "synapse"
   ],
   "main": "./extension.js",
@@ -60,19 +60,44 @@
         "icon": "$(check)"
       },
       {
-        "command": "synapse.generateQSAR",
-        "title": "Generate QSAR Model",
+        "command": "synapse.runQuantumCircuit",
+        "title": "Run Quantum Circuit",
+        "icon": "$(circuit-board)"
+      },
+      {
+        "command": "synapse.visualizeQuantumState",
+        "title": "Visualize Quantum State",
         "icon": "$(graph)"
       },
       {
-        "command": "synapse.runDocking",
-        "title": "Run Molecular Docking",
-        "icon": "$(rocket)"
+        "command": "synapse.runParallelExecution",
+        "title": "Run Parallel Branches",
+        "icon": "$(split-horizontal)"
       },
       {
-        "command": "synapse.showHelp",
-        "title": "Show SynapseLang Help",
+        "command": "synapse.analyzeUncertainty",
+        "title": "Analyze Uncertainty Propagation",
+        "icon": "$(warning)"
+      },
+      {
+        "command": "synapse.debugReasoningChain",
+        "title": "Debug Reasoning Chain",
+        "icon": "$(debug)"
+      },
+      {
+        "command": "synapse.showQuantumHelp",
+        "title": "Show Quantum Computing Help",
         "icon": "$(question)"
+      },
+      {
+        "command": "synapse.openREPL",
+        "title": "Open Synapse REPL",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "synapse.formatDocument",
+        "title": "Format Synapse Document",
+        "icon": "$(code)"
       }
     ],
     "menus": {
@@ -91,12 +116,17 @@
       "editor/context": [
         {
           "when": "resourceExtname == .syn",
-          "command": "synapse.generateQSAR",
+          "command": "synapse.runQuantumCircuit",
           "group": "synapse"
         },
         {
           "when": "resourceExtname == .syn",
-          "command": "synapse.runDocking",
+          "command": "synapse.visualizeQuantumState",
+          "group": "synapse"
+        },
+        {
+          "when": "resourceExtname == .syn",
+          "command": "synapse.runParallelExecution",
           "group": "synapse"
         }
       ]
@@ -126,15 +156,35 @@
           "default": true,
           "description": "Enable syntax checking and linting"
         },
-        "synapse.dockingEngine": {
+        "synapse.quantumBackend": {
           "type": "string",
           "enum": [
-            "AutoDock Vina",
-            "AutoDock 4",
-            "Glide"
+            "synapse_simulator",
+            "qiskit",
+            "cirq",
+            "pennylane"
           ],
-          "default": "AutoDock Vina",
-          "description": "Default molecular docking engine"
+          "default": "synapse_simulator",
+          "description": "Quantum computing backend for circuit execution"
+        },
+        "synapse.maxQubits": {
+          "type": "number",
+          "default": 24,
+          "minimum": 1,
+          "maximum": 30,
+          "description": "Maximum number of qubits for simulation"
+        },
+        "synapse.enableQuantumNoise": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable quantum noise models in simulations"
+        },
+        "synapse.parallelThreads": {
+          "type": "number",
+          "default": 4,
+          "minimum": 1,
+          "maximum": 16,
+          "description": "Number of threads for parallel execution"
         },
         "synapse.outputFormat": {
           "type": "string",
@@ -146,10 +196,22 @@
           "default": "json",
           "description": "Default output format for results"
         },
-        "synapse.enablePharmKit": {
+        "synapse.enableAdvancedFeatures": {
           "type": "boolean",
           "default": false,
-          "description": "Enable PharmKit professional features (requires license)"
+          "description": "Enable advanced quantum algorithms and tensor operations"
+        },
+        "synapse.uncertaintyPrecision": {
+          "type": "number",
+          "default": 6,
+          "minimum": 1,
+          "maximum": 15,
+          "description": "Decimal precision for uncertainty calculations"
+        },
+        "synapse.debugMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable debug mode with detailed execution traces"
         }
       }
     },

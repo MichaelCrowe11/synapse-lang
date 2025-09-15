@@ -1,0 +1,3 @@
+# Stripe Price IDs for Synapse Platform
+# Created for account: CROWE LOGIC
+

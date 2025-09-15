@@ -23,7 +23,8 @@ from .semantics import (
     parse_noise_model,
     validate_backend_config,
 )
-from .core import QuantumCircuitBuilder, SimulatorBackend, QuantumGate, QuantumAlgorithms
+from .core import QuantumCircuitBuilder, SimulatorBackend, QuantumGate
+from .algorithms import QuantumAlgorithms
 
 __all__ = [
     # semantics
