@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "synapse-lang"
-version = "2.0.0"
-description = "A revolutionary programming language for scientific computing with parallel execution and uncertainty quantification"
+version = "2.1.0"
+description = "Quantum-first programming language for scientific computing with native quantum algorithms, uncertainty quantification, and parallel execution"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "Proprietary"}
@@ -30,7 +30,7 @@ keywords = [
     "drug-discovery",
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Education",

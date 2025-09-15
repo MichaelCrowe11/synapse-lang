@@ -31,10 +31,10 @@ else:
 
 setup(
     name="synapse-lang",
-    version="1.0.2",
+    version="2.1.0",
     author="Michael Benjamin Crowe",
     author_email="michaelcrowe11@users.noreply.github.com",
-    description="A revolutionary programming language for scientific computing with parallel execution and uncertainty quantification",
+    description="Quantum-first programming language for scientific computing with native quantum algorithms, uncertainty quantification, and parallel execution",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/MichaelCrowe11/synapse-lang",
@@ -54,13 +54,14 @@ setup(
         "synapse"
     ],
     classifiers=[
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Science/Research",
         "Intended Audience :: Developers",
         "Topic :: Scientific/Engineering",
         "Topic :: Scientific/Engineering :: Physics",
         "Topic :: Scientific/Engineering :: Chemistry",
         "Topic :: Scientific/Engineering :: Bio-Informatics",
+        "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Topic :: Software Development :: Compilers",
         "Topic :: Software Development :: Interpreters",
         "License :: Other/Proprietary License",
@@ -92,11 +93,17 @@ setup(
             "jupyterlab>=3.4.0",
             "ipykernel>=6.15.0",
         ],
+        "quantum": [
+            "qiskit>=0.43.0",
+            "cirq>=1.2.0",
+            "pennylane>=0.31.0",
+        ],
     },
     entry_points={
         "console_scripts": [
             "synapse=synapse_lang.cli:main",
             "synapse-repl=synapse_lang.repl:main",
+            "synapse-quantum=synapse_lang.quantum.runner:main",
             "qflow=qubit_flow_lang:placeholder",
             "qnet=quantum_net_lang:placeholder",
         ],
