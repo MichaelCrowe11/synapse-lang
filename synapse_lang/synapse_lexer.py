@@ -2,9 +2,9 @@
 Synapse Language Lexer (packaged)
 """
 
-from typing import Any, List, Optional, Union
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 
 class TokenType(Enum):
@@ -39,7 +39,7 @@ class TokenType(Enum):
     SOLVE = "solve"
     PROVE = "prove"
     USING = "using"
-    
+
     # Control flow keywords
     IF = "if"
     ELSE = "else"
@@ -155,7 +155,7 @@ class TokenType(Enum):
     LIMIT = "lim"
     PARTIAL = "∂"
     NABLA = "∇"
-    
+
     # Additional operators for compatibility
     STAR = "*"
     SLASH = "/"
@@ -202,7 +202,7 @@ class Lexer:
         self.position = 0
         self.line = 1
         self.column = 1
-        self.tokens: List[Token] = []
+        self.tokens: list[Token] = []
         self.indent_stack = [0]  # Stack to track indentation levels
         self.at_line_start = True  # Track if we're at the start of a line
 
@@ -217,12 +217,12 @@ class Lexer:
             if k.value and k.value.isalpha() and k not in (TokenType.IDENTIFIER,) and k not in gate_types
         }
 
-    def current_char(self) -> Optional[str]:
+    def current_char(self) -> str | None:
         if self.position >= len(self.source):
             return None
         return self.source[self.position]
 
-    def peek_char(self, offset: int = 1) -> Optional[str]:
+    def peek_char(self, offset: int = 1) -> str | None:
         pos = self.position + offset
         if pos >= len(self.source):
             return None
@@ -246,7 +246,6 @@ class Lexer:
             return
 
         indent_level = 0
-        start_pos = self.position
 
         # Count spaces and tabs (convert tabs to 4 spaces)
         while self.current_char() and self.current_char() in " \t":
@@ -257,7 +256,7 @@ class Lexer:
             self.advance()
 
         # If line is empty or comment, don't process indentation
-        if self.current_char() in [None, '\n', '#'] or (self.current_char() == '/' and self.peek_char() == '/'):
+        if self.current_char() in [None, "\n", "#"] or (self.current_char() == "/" and self.peek_char() == "/"):
             return
 
         current_indent = self.indent_stack[-1]
@@ -284,18 +283,18 @@ class Lexer:
             self.advance()
 
     def skip_comment(self) -> None:
-        if self.current_char() == '#':
-            while self.current_char() and self.current_char() != '\n':
+        if self.current_char() == "#":
+            while self.current_char() and self.current_char() != "\n":
                 self.advance()
-        elif self.current_char() == '/' and self.peek_char() == '/':
-            while self.current_char() and self.current_char() != '\n':
+        elif self.current_char() == "/" and self.peek_char() == "/":
+            while self.current_char() and self.current_char() != "\n":
                 self.advance()
 
-    def read_number(self) -> Union[int, float]:
+    def read_number(self) -> int | float:
         start = self.position
         has_dot = False
-        while self.current_char() and (self.current_char().isdigit() or self.current_char() == '.'):
-            if self.current_char() == '.':
+        while self.current_char() and (self.current_char().isdigit() or self.current_char() == "."):
+            if self.current_char() == ".":
                 if has_dot:
                     break
                 has_dot = True
@@ -305,7 +304,7 @@ class Lexer:
 
     def read_identifier(self) -> str:
         start = self.position
-        while self.current_char() and (self.current_char().isalnum() or self.current_char() == '_'):
+        while self.current_char() and (self.current_char().isalnum() or self.current_char() == "_"):
             self.advance()
         return self.source[start:self.position]
 
@@ -314,14 +313,14 @@ class Lexer:
         self.advance()
         start = self.position
         while self.current_char() and self.current_char() != quote:
-            if self.current_char() == '\\':
+            if self.current_char() == "\\":
                 self.advance()
             self.advance()
         value = self.source[start:self.position]
         self.advance()  # closing quote
         return value
 
-    def tokenize(self) -> List[Token]:
+    def tokenize(self) -> list[Token]:
         while self.position < len(self.source):
             # Handle indentation at start of line
             if self.at_line_start:
@@ -335,7 +334,7 @@ class Lexer:
             ch = self.current_char()
 
             # multi-char operators
-            two = (ch or '') + (self.peek_char() or '')
+            two = (ch or "") + (self.peek_char() or "")
             if two in {"==", "!=", "&&", "||", "=>", "->", "<-", "<=", ">=", "+-"}:
                 mapping = {
                     "==": TokenType.EQUALS,
@@ -355,24 +354,24 @@ class Lexer:
 
             if ch is None:
                 break
-            if ch == '\n':
-                self.tokens.append(Token(TokenType.NEWLINE, '\n', line, col))
+            if ch == "\n":
+                self.tokens.append(Token(TokenType.NEWLINE, "\n", line, col))
                 self.advance()
                 continue
             single_map = {
-                '=': TokenType.ASSIGN, '+': TokenType.PLUS, '-': TokenType.MINUS,
-                '*': TokenType.MULTIPLY, '/': TokenType.DIVIDE, '^': TokenType.POWER,
-                '<': TokenType.LESS_THAN, '>': TokenType.GREATER_THAN, '!': TokenType.NOT,
-                '(': TokenType.LEFT_PAREN, ')': TokenType.RIGHT_PAREN,
-                '{': TokenType.LEFT_BRACE, '}': TokenType.RIGHT_BRACE,
-                '[': TokenType.LEFT_BRACKET, ']': TokenType.RIGHT_BRACKET,
-                ',': TokenType.COMMA, ':': TokenType.COLON, ';': TokenType.SEMICOLON,
-                '.': TokenType.DOT, '%': TokenType.PERCENT, '~': TokenType.TILDE,
-                '?': TokenType.QUESTION, '±': TokenType.UNCERTAINTY_OP,
+                "=": TokenType.ASSIGN, "+": TokenType.PLUS, "-": TokenType.MINUS,
+                "*": TokenType.MULTIPLY, "/": TokenType.DIVIDE, "^": TokenType.POWER,
+                "<": TokenType.LESS_THAN, ">": TokenType.GREATER_THAN, "!": TokenType.NOT,
+                "(": TokenType.LEFT_PAREN, ")": TokenType.RIGHT_PAREN,
+                "{": TokenType.LEFT_BRACE, "}": TokenType.RIGHT_BRACE,
+                "[": TokenType.LEFT_BRACKET, "]": TokenType.RIGHT_BRACKET,
+                ",": TokenType.COMMA, ":": TokenType.COLON, ";": TokenType.SEMICOLON,
+                ".": TokenType.DOT, "%": TokenType.PERCENT, "~": TokenType.TILDE,
+                "?": TokenType.QUESTION, "±": TokenType.UNCERTAINTY_OP,
                 # Mathematical Unicode symbols
-                '∫': TokenType.INTEGRAL, '∂': TokenType.DERIVATIVE, '∇': TokenType.GRADIENT,
-                '∞': TokenType.INFINITY, '√': TokenType.SQRT, 'θ': TokenType.THETA,
-                'φ': TokenType.PHI, 'π': TokenType.PI, 'Σ': TokenType.SIGMA, '∏': TokenType.PRODUCT,
+                "∫": TokenType.INTEGRAL, "∂": TokenType.DERIVATIVE, "∇": TokenType.GRADIENT,
+                "∞": TokenType.INFINITY, "√": TokenType.SQRT, "θ": TokenType.THETA,
+                "φ": TokenType.PHI, "π": TokenType.PI, "Σ": TokenType.SIGMA, "∏": TokenType.PRODUCT,
             }
             if ch in single_map:
                 self.advance()
@@ -386,7 +385,7 @@ class Lexer:
                 s = self.read_string()
                 self.tokens.append(Token(TokenType.STRING, s, line, col))
                 continue
-            if ch.isalpha() or ch == '_':
+            if ch.isalpha() or ch == "_":
                 ident_start = self.position
                 ident = self.read_identifier()
                 token_type = self.keywords.get(ident.lower(), TokenType.IDENTIFIER)

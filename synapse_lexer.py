@@ -2,9 +2,10 @@
 Lexer and Token definitions for Synapse Language
 """
 
-from typing import Any, Dict, List, Optional, Tuple, Union
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
+
 
 class TokenType(Enum):
     # Keywords
@@ -38,7 +39,7 @@ class TokenType(Enum):
     SOLVE = "solve"
     PROVE = "prove"
     USING = "using"
-    
+
     # Quantum computing keywords
     QUANTUM = "quantum"
     CIRCUIT = "circuit"
@@ -170,7 +171,7 @@ class Lexer:
             "solve": TokenType.SOLVE,
             "prove": TokenType.PROVE,
             "using": TokenType.USING,
-            
+
             # Quantum computing keywords
             "quantum": TokenType.QUANTUM,
             "circuit": TokenType.CIRCUIT,
@@ -205,12 +206,12 @@ class Lexer:
             "ccx": TokenType.CCX, "toffoli": TokenType.TOFFOLI, "cswap": TokenType.CSWAP,
         }
 
-    def current_char(self) -> Optional[str]:
+    def current_char(self) -> str | None:
         if self.position >= len(self.source):
             return None
         return self.source[self.position]
 
-    def peek_char(self, offset: int = 1) -> Optional[str]:
+    def peek_char(self, offset: int = 1) -> str | None:
         pos = self.position + offset
         if pos >= len(self.source):
             return None
@@ -218,7 +219,7 @@ class Lexer:
 
     def advance(self) -> None:
         if self.position < len(self.source):
-            if self.source[self.position] == '\n':
+            if self.source[self.position] == "\n":
                 self.line += 1
                 self.column = 1
             else:
@@ -226,29 +227,29 @@ class Lexer:
             self.position += 1
 
     def skip_whitespace(self) -> None:
-        while self.current_char() and self.current_char() in ' \t\r':
+        while self.current_char() and self.current_char() in " \t\r":
             self.advance()
 
     def skip_comment(self) -> None:
         # Updated to handle '#' style comments as per recent examples
-        if self.current_char() == '#':
-            while self.current_char() and self.current_char() != '\n':
+        if self.current_char() == "#":
+            while self.current_char() and self.current_char() != "\n":
                 self.advance()
-        elif self.current_char() == '/' and self.peek_char() == '/':
-            while self.current_char() and self.current_char() != '\n':
+        elif self.current_char() == "/" and self.peek_char() == "/":
+            while self.current_char() and self.current_char() != "\n":
                 self.advance()
 
-    def read_number(self) -> Union[int, float]:
+    def read_number(self) -> int | float:
         start = self.position
         has_dot = False
 
-        while self.current_char() and (self.current_char().isdigit() or self.current_char() == '.'):
-            if self.current_char() == '.':
+        while self.current_char() and (self.current_char().isdigit() or self.current_char() == "."):
+            if self.current_char() == ".":
                 if has_dot:
                     break
                 has_dot = True
             self.advance()
-        
+
         num_str = self.source[start:self.position]
         if has_dot:
             return float(num_str)
@@ -257,7 +258,7 @@ class Lexer:
     def read_identifier(self) -> str:
         start = self.position
 
-        while self.current_char() and (self.current_char().isalnum() or self.current_char() == '_'):
+        while self.current_char() and (self.current_char().isalnum() or self.current_char() == "_"):
             self.advance()
 
         return self.source[start:self.position]
@@ -268,7 +269,7 @@ class Lexer:
         start = self.position
 
         while self.current_char() and self.current_char() != quote_char:
-            if self.current_char() == '\\':
+            if self.current_char() == "\\":
                 self.advance()  # Skip escape character
             self.advance()
 
@@ -276,7 +277,7 @@ class Lexer:
         self.advance()  # Skip closing quote
         return value
 
-    def tokenize(self) -> List[Token]:
+    def tokenize(self) -> list[Token]:
         while self.position < len(self.source):
             self.skip_whitespace()
             self.skip_comment()
@@ -288,91 +289,91 @@ class Lexer:
             column = self.column
 
             # Multi-character operators
-            if self.current_char() == '=' and self.peek_char() == '=':
+            if self.current_char() == "=" and self.peek_char() == "=":
                 self.advance()
                 self.advance()
                 self.tokens.append(Token(TokenType.EQUALS, "==", line, column))
-            elif self.current_char() == '!' and self.peek_char() == '=':
+            elif self.current_char() == "!" and self.peek_char() == "=":
                 self.advance()
                 self.advance()
                 self.tokens.append(Token(TokenType.NOT_EQUALS, "!=", line, column))
-            elif self.current_char() == '&' and self.peek_char() == '&':
+            elif self.current_char() == "&" and self.peek_char() == "&":
                 self.advance()
                 self.advance()
                 self.tokens.append(Token(TokenType.AND, "&&", line, column))
-            elif self.current_char() == '|' and self.peek_char() == '|':
+            elif self.current_char() == "|" and self.peek_char() == "|":
                 self.advance()
                 self.advance()
                 self.tokens.append(Token(TokenType.OR, "||", line, column))
-            elif self.current_char() == '=' and self.peek_char() == '>':
+            elif self.current_char() == "=" and self.peek_char() == ">":
                 self.advance()
                 self.advance()
                 self.tokens.append(Token(TokenType.ARROW, "=>", line, column))
-            elif self.current_char() == '-' and self.peek_char() == '>':
+            elif self.current_char() == "-" and self.peek_char() == ">":
                 self.advance()
                 self.advance()
                 self.tokens.append(Token(TokenType.BIND_OUTPUT, "->", line, column))
-            elif self.current_char() == '<' and self.peek_char() == '-':
+            elif self.current_char() == "<" and self.peek_char() == "-":
                 self.advance()
                 self.advance()
                 self.tokens.append(Token(TokenType.CHANNEL_SEND, "<-", line, column))
 
             # Single character operators and delimiters
-            elif self.current_char() == '=':
+            elif self.current_char() == "=":
                 self.advance()
                 self.tokens.append(Token(TokenType.ASSIGN, "=", line, column))
-            elif self.current_char() == '+':
+            elif self.current_char() == "+":
                 self.advance()
                 self.tokens.append(Token(TokenType.PLUS, "+", line, column))
-            elif self.current_char() == '-':
+            elif self.current_char() == "-":
                 self.advance()
                 self.tokens.append(Token(TokenType.MINUS, "-", line, column))
-            elif self.current_char() == '*':
+            elif self.current_char() == "*":
                 self.advance()
                 self.tokens.append(Token(TokenType.MULTIPLY, "*", line, column))
-            elif self.current_char() == '/':
+            elif self.current_char() == "/":
                 self.advance()
                 self.tokens.append(Token(TokenType.DIVIDE, "/", line, column))
-            elif self.current_char() == '^':
+            elif self.current_char() == "^":
                 self.advance()
                 self.tokens.append(Token(TokenType.POWER, "^", line, column))
-            elif self.current_char() == '<':
+            elif self.current_char() == "<":
                 self.advance()
                 self.tokens.append(Token(TokenType.LESS_THAN, "<", line, column))
-            elif self.current_char() == '>':
+            elif self.current_char() == ">":
                 self.advance()
                 self.tokens.append(Token(TokenType.GREATER_THAN, ">", line, column))
-            elif self.current_char() == '!':
+            elif self.current_char() == "!":
                 self.advance()
                 self.tokens.append(Token(TokenType.NOT, "!", line, column))
-            elif self.current_char() == '(':
+            elif self.current_char() == "(":
                 self.advance()
                 self.tokens.append(Token(TokenType.LEFT_PAREN, "(", line, column))
-            elif self.current_char() == ')':
+            elif self.current_char() == ")":
                 self.advance()
                 self.tokens.append(Token(TokenType.RIGHT_PAREN, ")", line, column))
-            elif self.current_char() == '{':
+            elif self.current_char() == "{":
                 self.advance()
                 self.tokens.append(Token(TokenType.LEFT_BRACE, "{", line, column))
-            elif self.current_char() == '}':
+            elif self.current_char() == "}":
                 self.advance()
                 self.tokens.append(Token(TokenType.RIGHT_BRACE, "}", line, column))
-            elif self.current_char() == '[':
+            elif self.current_char() == "[":
                 self.advance()
                 self.tokens.append(Token(TokenType.LEFT_BRACKET, "[", line, column))
-            elif self.current_char() == ']':
+            elif self.current_char() == "]":
                 self.advance()
                 self.tokens.append(Token(TokenType.RIGHT_BRACKET, "]", line, column))
-            elif self.current_char() == ',':
+            elif self.current_char() == ",":
                 self.advance()
                 self.tokens.append(Token(TokenType.COMMA, ",", line, column))
-            elif self.current_char() == ':':
+            elif self.current_char() == ":":
                 self.advance()
                 self.tokens.append(Token(TokenType.COLON, ":", line, column))
-            elif self.current_char() == ';':
+            elif self.current_char() == ";":
                 self.advance()
                 self.tokens.append(Token(TokenType.SEMICOLON, ";", line, column))
-            elif self.current_char() == '\n':
+            elif self.current_char() == "\n":
                 self.advance()
                 # Don't add newline tokens if they are not significant
                 # self.tokens.append(Token(TokenType.NEWLINE, "\\n", line, column))
@@ -388,12 +389,12 @@ class Lexer:
                 self.tokens.append(Token(TokenType.STRING, value, line, column))
 
             # Identifiers and keywords
-            elif self.current_char().isalpha() or self.current_char() == '_':
+            elif self.current_char().isalpha() or self.current_char() == "_":
                 start_pos = self.position
                 identifier = self.read_identifier()
                 original_identifier = self.source[start_pos:self.position]
                 token_type = self.keywords.get(identifier.lower(), TokenType.IDENTIFIER)
-                
+
                 value = original_identifier if token_type == TokenType.IDENTIFIER else identifier.lower()
                 self.tokens.append(Token(token_type, value, line, column))
 

@@ -2,7 +2,12 @@
 
 Import from `synapse_lang.quantum` instead. This file will be removed in a future release.
 """
-from .synapse_lang.quantum import QuantumCircuitBuilder, SimulatorBackend, QuantumGate, QuantumAlgorithms  # type: ignore
+from .synapse_lang.quantum import (  # type: ignore
+    QuantumAlgorithms,
+    QuantumCircuitBuilder,
+    QuantumGate,
+    SimulatorBackend,
+)
 
 __all__ = [
     "QuantumCircuitBuilder",

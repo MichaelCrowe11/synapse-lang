@@ -1,8 +1,13 @@
-from qnet_lang.tokens import Tok
 from qnet_lang.ast import (
-    ProgramNode, NetworkNode, ProtocolNode, NodeDefNode, LinkDefNode, 
-    OnNode, SendNode, RecvNode, EntangleNode, ParamNode
+    LinkDefNode,
+    NetworkNode,
+    NodeDefNode,
+    ParamNode,
+    ProgramNode,
+    ProtocolNode,
 )
+from qnet_lang.tokens import Tok
+
 
 class Parser:
     def __init__(self, tokens):
@@ -45,7 +50,7 @@ class Parser:
             elif current_tok_type in [Tok.FIBER, Tok.CLASSICAL]:
                 statements.append(self.parse_link_def())
             else:
-                self.error(f"Unexpected token in network block. Expected NODE, FIBER, or CLASSICAL.")
+                self.error("Unexpected token in network block. Expected NODE, FIBER, or CLASSICAL.")
         return statements
 
     def parse_node_def(self):
@@ -69,12 +74,12 @@ class Parser:
             while self.peek().type != Tok.RPAREN:
                 if self.current_token() is None:
                     self.error("Unclosed parameter list")
-                
+
                 param_name = self.expect(Tok.ID).value
                 self.expect(Tok.ASSIGN)
                 param_value_tok = self.expect_one_of(Tok.ID, Tok.NUM)
                 params.append(ParamNode(param_name, param_value_tok.value))
-                
+
                 if self.peek().type != Tok.RPAREN:
                     self.expect(Tok.COMMA)
             self.expect(Tok.RPAREN)
@@ -95,7 +100,7 @@ class Parser:
             self.advance()
             return True
         return False
-    
+
     def expect(self, token_type):
         token = self.current_token()
         if token and token.type == token_type:

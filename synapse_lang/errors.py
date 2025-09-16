@@ -5,11 +5,10 @@ This module provides a hierarchical error system with detailed error information
 recovery mechanisms, and debugging support.
 """
 
-from typing import Optional, List, Dict, Any, Union
+import traceback
 from dataclasses import dataclass
 from enum import Enum
-import traceback
-import sys
+from typing import Any
 
 
 class ErrorSeverity(Enum):
@@ -37,7 +36,7 @@ class ErrorCategory(Enum):
 @dataclass
 class SourceLocation:
     """Represents a location in source code."""
-    filename: Optional[str] = None
+    filename: str | None = None
     line: int = -1
     column: int = -1
     length: int = 0
@@ -51,10 +50,10 @@ class SourceLocation:
 @dataclass
 class ErrorContext:
     """Additional context for error reporting."""
-    variables: Dict[str, Any] = None
-    call_stack: List[str] = None
-    quantum_state: Optional[str] = None
-    parallel_context: Optional[str] = None
+    variables: dict[str, Any] = None
+    call_stack: list[str] = None
+    quantum_state: str | None = None
+    parallel_context: str | None = None
 
     def __post_init__(self):
         if self.variables is None:
@@ -69,12 +68,12 @@ class SynapseError(Exception):
     def __init__(
         self,
         message: str,
-        location: Optional[SourceLocation] = None,
+        location: SourceLocation | None = None,
         category: ErrorCategory = ErrorCategory.RUNTIME,
         severity: ErrorSeverity = ErrorSeverity.ERROR,
-        context: Optional[ErrorContext] = None,
-        cause: Optional[Exception] = None,
-        suggestions: Optional[List[str]] = None
+        context: ErrorContext | None = None,
+        cause: Exception | None = None,
+        suggestions: list[str] | None = None
     ):
         super().__init__(message)
         self.message = message
@@ -140,7 +139,7 @@ class SynapseError(Exception):
 class SyntaxError(SynapseError):
     """Syntax errors during parsing."""
 
-    def __init__(self, message: str, location: Optional[SourceLocation] = None, **kwargs):
+    def __init__(self, message: str, location: SourceLocation | None = None, **kwargs):
         super().__init__(
             message,
             location=location,
@@ -152,7 +151,7 @@ class SyntaxError(SynapseError):
 class SemanticError(SynapseError):
     """Semantic analysis errors."""
 
-    def __init__(self, message: str, location: Optional[SourceLocation] = None, **kwargs):
+    def __init__(self, message: str, location: SourceLocation | None = None, **kwargs):
         super().__init__(
             message,
             location=location,
@@ -263,8 +262,8 @@ class ErrorCollector:
     """Collects and manages multiple errors during compilation/execution."""
 
     def __init__(self, max_errors: int = 100):
-        self.errors: List[SynapseError] = []
-        self.warnings: List[SynapseError] = []
+        self.errors: list[SynapseError] = []
+        self.warnings: list[SynapseError] = []
         self.max_errors = max_errors
 
     def add_error(self, error: SynapseError):
@@ -313,7 +312,7 @@ class ErrorRecovery:
     """Provides error recovery mechanisms."""
 
     @staticmethod
-    def suggest_fixes(error: SynapseError) -> List[str]:
+    def suggest_fixes(error: SynapseError) -> list[str]:
         """Generate fix suggestions for common errors."""
         suggestions = []
 
@@ -339,21 +338,21 @@ class ErrorRecovery:
         return suggestions
 
     @staticmethod
-    def attempt_recovery(error: SynapseError, context: Dict[str, Any]) -> Optional[Any]:
+    def attempt_recovery(error: SynapseError, context: dict[str, Any]) -> Any | None:
         """Attempt to recover from specific error types."""
         if isinstance(error, TypeError) and "division by zero" in error.message:
             # Return infinity for division by zero
-            return float('inf')
+            return float("inf")
 
         if isinstance(error, UncertaintyError) and "negative uncertainty" in error.message:
             # Use absolute value for uncertainty
-            return abs(context.get('uncertainty_value', 0))
+            return abs(context.get("uncertainty_value", 0))
 
         # No recovery possible
         return None
 
 
-def format_traceback(error: Exception, context: Dict[str, Any] = None) -> str:
+def format_traceback(error: Exception, context: dict[str, Any] = None) -> str:
     """Format enhanced traceback with Synapse context."""
     lines = []
 
@@ -374,7 +373,7 @@ def format_traceback(error: Exception, context: Dict[str, Any] = None) -> str:
     return "\n".join(lines)
 
 
-def handle_error(error: Exception, context: Dict[str, Any] = None, debug: bool = False) -> str:
+def handle_error(error: Exception, context: dict[str, Any] = None, debug: bool = False) -> str:
     """Central error handling function."""
     if isinstance(error, SynapseError):
         # Add suggestions if not already present
@@ -402,15 +401,15 @@ def handle_error(error: Exception, context: Dict[str, Any] = None, debug: bool =
 # Export main components
 __all__ = [
     # Base classes
-    'SynapseError', 'ErrorSeverity', 'ErrorCategory',
-    'SourceLocation', 'ErrorContext',
+    "SynapseError", "ErrorSeverity", "ErrorCategory",
+    "SourceLocation", "ErrorContext",
 
     # Specific error types
-    'SyntaxError', 'SemanticError', 'TypeError', 'RuntimeError',
-    'QuantumError', 'ParallelError', 'UncertaintyError',
-    'SecurityError', 'ResourceError', 'IOError',
+    "SyntaxError", "SemanticError", "TypeError", "RuntimeError",
+    "QuantumError", "ParallelError", "UncertaintyError",
+    "SecurityError", "ResourceError", "IOError",
 
     # Utilities
-    'ErrorCollector', 'ErrorRecovery',
-    'format_traceback', 'handle_error'
+    "ErrorCollector", "ErrorRecovery",
+    "format_traceback", "handle_error"
 ]

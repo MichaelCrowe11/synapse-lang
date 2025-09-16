@@ -1,4 +1,8 @@
-import heapq, math, numpy as np
+import heapq
+
+import numpy as np
+
+
 class Sim:
     def __init__(self, seed=0):
         self.t=0.0; self.q=[]; self.rng=np.random.default_rng(seed); self.trace=[]

@@ -3,18 +3,19 @@ Synapse User Management Service
 Authentication, authorization, and subscription management
 """
 
-from fastapi import FastAPI, HTTPException, Depends, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List, Dict, Any
-import bcrypt
-import jwt
+import os
 import uuid
 from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any
+
+import bcrypt
+import jwt
 import motor.motor_asyncio
 import stripe
-import os
-from enum import Enum
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel, EmailStr, Field
 
 app = FastAPI(
     title="Synapse User Service",
@@ -23,9 +24,9 @@ app = FastAPI(
 )
 
 # Configuration
-JWT_SECRET = os.getenv('JWT_SECRET', 'your-secret-key')
-MONGO_URL = os.getenv('MONGODB_URL', 'mongodb://mongo:27017/users')
-STRIPE_API_KEY = os.getenv('STRIPE_API_KEY')
+JWT_SECRET = os.getenv("JWT_SECRET", "your-secret-key")
+MONGO_URL = os.getenv("MONGODB_URL", "mongodb://mongo:27017/users")
+STRIPE_API_KEY = os.getenv("STRIPE_API_KEY")
 
 # Initialize services
 security = HTTPBearer()
@@ -51,7 +52,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8)
     full_name: str
-    organization: Optional[str] = None
+    organization: str | None = None
     role: UserRole = UserRole.USER
 
 class UserLogin(BaseModel):
@@ -62,11 +63,11 @@ class UserResponse(BaseModel):
     id: str
     email: str
     full_name: str
-    organization: Optional[str]
+    organization: str | None
     role: UserRole
     subscription_tier: SubscriptionTier
     created_at: datetime
-    last_login: Optional[datetime]
+    last_login: datetime | None
     verified: bool
     active: bool
 
@@ -80,7 +81,7 @@ class SubscriptionPlan(BaseModel):
     gpu_access: bool
     hardware_access: bool
     support_level: str
-    features: List[str]
+    features: list[str]
 
 class SubscriptionUpdate(BaseModel):
     tier: SubscriptionTier
@@ -101,11 +102,11 @@ class TeamMember(BaseModel):
 @app.on_event("startup")
 async def startup():
     global mongo_client, db
-    
+
     # Connect to MongoDB
     mongo_client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URL)
     db = mongo_client.users
-    
+
     # Create indices
     await db.users.create_index("email", unique=True)
     await db.teams.create_index("name", unique=True)
@@ -121,18 +122,18 @@ async def shutdown():
 @app.post("/api/v1/auth/register")
 async def register_user(user_data: UserCreate):
     """Register a new user"""
-    
+
     # Check if user already exists
     existing_user = await db.users.find_one({"email": user_data.email})
     if existing_user:
         raise HTTPException(400, "User already exists")
-    
+
     # Hash password
     password_hash = bcrypt.hashpw(
-        user_data.password.encode('utf-8'),
+        user_data.password.encode("utf-8"),
         bcrypt.gensalt()
     )
-    
+
     # Create user document
     user_id = str(uuid.uuid4())
     user_doc = {
@@ -154,7 +155,7 @@ async def register_user(user_data: UserCreate):
             "monthly_usage": 0
         }
     }
-    
+
     # Create Stripe customer
     if STRIPE_API_KEY:
         try:
@@ -166,13 +167,13 @@ async def register_user(user_data: UserCreate):
             user_doc["stripe_customer_id"] = customer.id
         except Exception as e:
             print(f"Failed to create Stripe customer: {e}")
-    
+
     # Insert user
     await db.users.insert_one(user_doc)
-    
+
     # Generate JWT token
     token = generate_jwt_token(user_id, user_data.email, user_data.role)
-    
+
     return {
         "user_id": user_id,
         "email": user_data.email,
@@ -184,36 +185,36 @@ async def register_user(user_data: UserCreate):
 @app.post("/api/v1/auth/login")
 async def login_user(login_data: UserLogin):
     """Authenticate user and return JWT token"""
-    
+
     # Find user
     user = await db.users.find_one({"email": login_data.email})
     if not user:
         raise HTTPException(401, "Invalid credentials")
-    
+
     # Verify password
     if not bcrypt.checkpw(
-        login_data.password.encode('utf-8'),
+        login_data.password.encode("utf-8"),
         user["password_hash"]
     ):
         raise HTTPException(401, "Invalid credentials")
-    
+
     # Check if user is active
     if not user.get("active", True):
         raise HTTPException(403, "Account deactivated")
-    
+
     # Update last login
     await db.users.update_one(
         {"_id": user["_id"]},
         {"$set": {"last_login": datetime.utcnow()}}
     )
-    
+
     # Generate JWT token
     token = generate_jwt_token(
         user["_id"],
         user["email"],
         user["role"]
     )
-    
+
     return {
         "user_id": user["_id"],
         "email": user["email"],
@@ -225,13 +226,13 @@ async def login_user(login_data: UserLogin):
 @app.post("/api/v1/auth/logout")
 async def logout_user(token: str = Depends(verify_token)):
     """Logout user and invalidate token"""
-    
+
     # Add token to blacklist (in Redis in production)
     await db.blacklisted_tokens.insert_one({
         "token": token,
         "blacklisted_at": datetime.utcnow()
     })
-    
+
     return {"message": "Logged out successfully"}
 
 # --- User Management ---
@@ -239,11 +240,11 @@ async def logout_user(token: str = Depends(verify_token)):
 @app.get("/api/v1/users/profile")
 async def get_user_profile(current_user = Depends(get_current_user)):
     """Get current user's profile"""
-    
+
     user = await db.users.find_one({"_id": current_user["user_id"]})
     if not user:
         raise HTTPException(404, "User not found")
-    
+
     return UserResponse(
         id=user["_id"],
         email=user["email"],
@@ -259,40 +260,40 @@ async def get_user_profile(current_user = Depends(get_current_user)):
 
 @app.put("/api/v1/users/profile")
 async def update_user_profile(
-    updates: Dict[str, Any],
+    updates: dict[str, Any],
     current_user = Depends(get_current_user)
 ):
     """Update user profile"""
-    
+
     # Only allow certain fields to be updated
     allowed_fields = {"full_name", "organization"}
     update_data = {k: v for k, v in updates.items() if k in allowed_fields}
-    
+
     if not update_data:
         raise HTTPException(400, "No valid fields to update")
-    
+
     # Update user
     result = await db.users.update_one(
         {"_id": current_user["user_id"]},
         {"$set": update_data}
     )
-    
+
     if result.modified_count == 0:
         raise HTTPException(404, "User not found")
-    
+
     return {"message": "Profile updated successfully"}
 
 @app.delete("/api/v1/users/account")
 async def delete_user_account(current_user = Depends(get_current_user)):
     """Delete user account"""
-    
+
     user_id = current_user["user_id"]
-    
+
     # Get user for Stripe cleanup
     user = await db.users.find_one({"_id": user_id})
     if not user:
         raise HTTPException(404, "User not found")
-    
+
     # Cancel Stripe subscription if exists
     if user.get("stripe_customer_id") and STRIPE_API_KEY:
         try:
@@ -303,7 +304,7 @@ async def delete_user_account(current_user = Depends(get_current_user)):
                 stripe.Subscription.delete(sub.id)
         except Exception as e:
             print(f"Failed to cancel Stripe subscription: {e}")
-    
+
     # Soft delete user
     await db.users.update_one(
         {"_id": user_id},
@@ -315,7 +316,7 @@ async def delete_user_account(current_user = Depends(get_current_user)):
             }
         }
     )
-    
+
     return {"message": "Account deleted successfully"}
 
 # --- Subscription Management ---
@@ -323,7 +324,7 @@ async def delete_user_account(current_user = Depends(get_current_user)):
 @app.get("/api/v1/subscriptions/plans")
 async def get_subscription_plans():
     """Get available subscription plans"""
-    
+
     plans = [
         SubscriptionPlan(
             tier=SubscriptionTier.COMMUNITY,
@@ -397,7 +398,7 @@ async def get_subscription_plans():
             ]
         )
     ]
-    
+
     return {"plans": plans}
 
 @app.post("/api/v1/subscriptions/upgrade")
@@ -406,25 +407,25 @@ async def upgrade_subscription(
     current_user = Depends(get_current_user)
 ):
     """Upgrade user subscription"""
-    
+
     user_id = current_user["user_id"]
-    
+
     # Get user
     user = await db.users.find_one({"_id": user_id})
     if not user:
         raise HTTPException(404, "User not found")
-    
+
     # Check if downgrading
     current_tier = user["subscription_tier"]
     if subscription_data.tier == current_tier:
         raise HTTPException(400, "Already on this subscription tier")
-    
+
     # Create Stripe subscription
     if STRIPE_API_KEY and user.get("stripe_customer_id"):
         try:
             # Get price ID based on tier and billing cycle
             price_id = get_stripe_price_id(subscription_data.tier, subscription_data.billing_cycle)
-            
+
             # Create subscription
             subscription = stripe.Subscription.create(
                 customer=user["stripe_customer_id"],
@@ -434,7 +435,7 @@ async def upgrade_subscription(
                     "tier": subscription_data.tier
                 }
             )
-            
+
             # Update user subscription
             await db.users.update_one(
                 {"_id": user_id},
@@ -446,13 +447,13 @@ async def upgrade_subscription(
                     }
                 }
             )
-            
+
             return {
                 "message": "Subscription upgraded successfully",
                 "subscription_id": subscription.id,
                 "tier": subscription_data.tier
             }
-            
+
         except Exception as e:
             raise HTTPException(500, f"Failed to create subscription: {e}")
     else:
@@ -466,7 +467,7 @@ async def upgrade_subscription(
                 }
             }
         )
-        
+
         return {
             "message": "Subscription updated successfully",
             "tier": subscription_data.tier
@@ -480,17 +481,17 @@ async def create_team(
     current_user = Depends(get_current_user)
 ):
     """Create a new team (Enterprise only)"""
-    
+
     # Check if user has enterprise subscription
     user = await db.users.find_one({"_id": current_user["user_id"]})
     if user["subscription_tier"] != SubscriptionTier.ENTERPRISE:
         raise HTTPException(403, "Enterprise subscription required")
-    
+
     # Check if team name exists
     existing_team = await db.teams.find_one({"name": team_data.name})
     if existing_team:
         raise HTTPException(400, "Team name already exists")
-    
+
     # Create team
     team_id = str(uuid.uuid4())
     team_doc = {
@@ -508,9 +509,9 @@ async def create_team(
             }
         ]
     }
-    
+
     await db.teams.insert_one(team_doc)
-    
+
     return {
         "team_id": team_id,
         "name": team_data.name,
@@ -525,34 +526,34 @@ async def add_team_member(
     current_user = Depends(get_current_user)
 ):
     """Add member to team"""
-    
+
     # Check if user is team admin/owner
     team = await db.teams.find_one({"_id": team_id})
     if not team:
         raise HTTPException(404, "Team not found")
-    
+
     user_role = next(
         (m["role"] for m in team["members"] if m["user_id"] == current_user["user_id"]),
         None
     )
-    
+
     if user_role not in ["owner", "admin"]:
         raise HTTPException(403, "Admin access required")
-    
+
     # Find user to add
     new_member = await db.users.find_one({"email": member_email})
     if not new_member:
         raise HTTPException(404, "User not found")
-    
+
     # Check if already a member
     existing_member = next(
         (m for m in team["members"] if m["user_id"] == new_member["_id"]),
         None
     )
-    
+
     if existing_member:
         raise HTTPException(400, "User is already a team member")
-    
+
     # Add member
     await db.teams.update_one(
         {"_id": team_id},
@@ -566,7 +567,7 @@ async def add_team_member(
             }
         }
     )
-    
+
     return {
         "message": f"Added {member_email} to team",
         "user_id": new_member["_id"],
@@ -577,7 +578,7 @@ async def add_team_member(
 
 def generate_jwt_token(user_id: str, email: str, role: str) -> str:
     """Generate JWT token for user"""
-    
+
     payload = {
         "user_id": user_id,
         "email": email,
@@ -585,24 +586,24 @@ def generate_jwt_token(user_id: str, email: str, role: str) -> str:
         "exp": datetime.utcnow() + timedelta(hours=24),
         "iat": datetime.utcnow()
     }
-    
+
     return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
 async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Verify JWT token"""
-    
+
     token = credentials.credentials
-    
+
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-        
+
         # Check if token is blacklisted
         blacklisted = await db.blacklisted_tokens.find_one({"token": token})
         if blacklisted:
             raise HTTPException(401, "Token has been revoked")
-        
+
         return payload
-        
+
     except jwt.ExpiredSignatureError:
         raise HTTPException(401, "Token has expired")
     except jwt.InvalidTokenError:
@@ -614,7 +615,7 @@ async def get_current_user(token_payload = Depends(verify_token)):
 
 def get_stripe_price_id(tier: SubscriptionTier, billing_cycle: str) -> str:
     """Get Stripe price ID for subscription tier and billing cycle"""
-    
+
     # These would be actual Stripe price IDs
     price_map = {
         (SubscriptionTier.PROFESSIONAL, "monthly"): "price_professional_monthly",
@@ -624,7 +625,7 @@ def get_stripe_price_id(tier: SubscriptionTier, billing_cycle: str) -> str:
         (SubscriptionTier.ACADEMIC, "monthly"): "price_academic_monthly",
         (SubscriptionTier.ACADEMIC, "yearly"): "price_academic_yearly",
     }
-    
+
     return price_map.get((tier, billing_cycle), "default_price")
 
 # --- Health Check ---
@@ -632,11 +633,11 @@ def get_stripe_price_id(tier: SubscriptionTier, billing_cycle: str) -> str:
 @app.get("/api/v1/health")
 async def health_check():
     """Health check endpoint"""
-    
+
     try:
         # Test MongoDB connection
         await db.command("ping")
-        
+
         return {
             "status": "healthy",
             "services": {

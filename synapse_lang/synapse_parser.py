@@ -1,7 +1,6 @@
 """Packaged parser with run/noise additions."""
-from typing import List, Optional, Dict
-from .synapse_lexer import Token, TokenType, Lexer
 from .synapse_ast import *
+from .synapse_lexer import Lexer, Token, TokenType
 
 
 class ParseError(Exception):
@@ -11,7 +10,7 @@ class ParseError(Exception):
 
 
 class Parser:
-    def __init__(self, tokens: List[Token]):
+    def __init__(self, tokens: list[Token]):
         self.tokens = tokens
         self.current = 0
 
@@ -64,7 +63,7 @@ class Parser:
         run_tok = self.advance()
         circuit = self.consume(TokenType.IDENTIFIER, "Expected circuit name after 'run'").value
         backend_name = None
-        options: Dict[str, ASTNode] = {}
+        options: dict[str, ASTNode] = {}
         if self.match(TokenType.WITH):
             self.advance()
             if self.match(TokenType.BACKEND):
@@ -160,7 +159,7 @@ class Parser:
     def parse_quantum_backend(self):
         b_tok = self.advance()
         name = self.consume(TokenType.IDENTIFIER, "Expected backend name").value
-        cfg: Dict[str, ASTNode] = {}
+        cfg: dict[str, ASTNode] = {}
         if self.match(TokenType.LEFT_BRACE):
             self.advance(); self.skip_newlines()
             while not self.check(TokenType.RIGHT_BRACE):
@@ -181,7 +180,7 @@ class Parser:
         a_tok = self.advance()
         name = self.consume(TokenType.IDENTIFIER, "Expected algorithm name").value
         self.consume(TokenType.LEFT_BRACE, "Expected '{'")
-        params: List[ASTNode] = []
+        params: list[ASTNode] = []
         ansatz = QuantumAnsatzNode("default", [], a_tok.line, a_tok.column)
         cost = None
         opt = None

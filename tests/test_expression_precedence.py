@@ -3,14 +3,16 @@ Test suite for Expression Parser with Operator Precedence
 Tests proper handling of mathematical operator precedence
 """
 
-import pytest
-import sys
 import os
+import sys
+
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from synapse_lang.synapse_lexer import Lexer
-from synapse_lang.synapse_parser_minimal import MinimalParser, ParserError
 from synapse_lang.synapse_ast_enhanced import *
+from synapse_lang.synapse_lexer import Lexer
+from synapse_lang.synapse_parser_minimal import MinimalParser
 
 
 class TestExpressionPrecedence:
@@ -166,5 +168,5 @@ class TestExpressionPrecedence:
         assert isinstance(expr.arguments[0], FunctionCallNode)
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

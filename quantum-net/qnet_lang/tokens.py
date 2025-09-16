@@ -1,4 +1,6 @@
 from enum import Enum, auto
+
+
 class Tok(Enum):
     NETWORK=auto(); PROTOCOL=auto(); APP=auto(); NODES=auto(); QLINKS=auto(); CLINKS=auto()
     NODE=auto(); FIBER=auto(); CLASSICAL=auto(); ON=auto(); SEND=auto(); RECV=auto()

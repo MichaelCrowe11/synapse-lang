@@ -3,14 +3,14 @@ Setup configuration for Synapse Language
 Created by Michael Benjamin Crowe
 """
 
-from setuptools import setup, find_packages
-import os
 from pathlib import Path
+
+from setuptools import find_packages, setup
 
 # Read README for long description
 readme_path = Path(__file__).parent / "README.md"
 if readme_path.exists():
-    with open(readme_path, "r", encoding="utf-8") as fh:
+    with open(readme_path, encoding="utf-8") as fh:
         long_description = fh.read()
 else:
     long_description = "Synapse - A language for deep scientific reasoning and parallel thought processing"
@@ -18,7 +18,7 @@ else:
 # Read requirements
 requirements_path = Path(__file__).parent / "requirements.txt"
 if requirements_path.exists():
-    with open(requirements_path, "r", encoding="utf-8") as fh:
+    with open(requirements_path, encoding="utf-8") as fh:
         requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
 else:
     requirements = [

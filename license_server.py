@@ -3,19 +3,19 @@ Synapse-Lang License Server
 Handles license validation, activation, and management
 """
 
-from fastapi import FastAPI, HTTPException, Depends, Header
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, EmailStr
-from typing import Optional, List, Dict, Any
 import datetime
-import hashlib
-import secrets
 import json
+import os
 import sqlite3
 from contextlib import contextmanager
+from typing import Any
+
 import stripe
-import os
-from synapse_licensing import LicenseType, LicenseManager
+from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel, EmailStr
+
+from synapse_licensing import LicenseManager, LicenseType
 
 # Configuration
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "sk_test_...")
@@ -78,7 +78,7 @@ class LicenseActivation(BaseModel):
     license_key: str
     email: EmailStr
     machine_id: str
-    platform: Optional[str] = None
+    platform: str | None = None
 
 class LicenseValidation(BaseModel):
     license_key: str
@@ -88,17 +88,17 @@ class LicenseCreation(BaseModel):
     license_type: str
     owner_name: str
     owner_email: EmailStr
-    organization: Optional[str] = None
-    duration_days: Optional[int] = None
+    organization: str | None = None
+    duration_days: int | None = None
     max_activations: int = 1
 
 class UsageTelemetry(BaseModel):
     license_key: str
     feature_used: str
     duration_seconds: float
-    cpu_cores_used: Optional[int] = None
-    memory_mb_used: Optional[int] = None
-    metadata: Optional[Dict[str, Any]] = None
+    cpu_cores_used: int | None = None
+    memory_mb_used: int | None = None
+    metadata: dict[str, Any] | None = None
 
 # Database connection
 @contextmanager
@@ -140,16 +140,16 @@ async def create_license(
 ):
     """Create a new license"""
     lm = LicenseManager()
-    
+
     # Generate license key
     license_type = LicenseType(license_data.license_type)
     license_key = lm.generate_license_key(license_type)
-    
+
     # Calculate expiry
     expiry_date = None
     if license_data.duration_days:
         expiry_date = datetime.datetime.now() + datetime.timedelta(days=license_data.duration_days)
-    
+
     # Set limits based on type
     limits = {
         LicenseType.COMMUNITY: (4, 30),
@@ -159,7 +159,7 @@ async def create_license(
         LicenseType.TRIAL: (8, 50),
     }
     max_cores, max_qubits = limits.get(license_type, (4, 30))
-    
+
     # Insert into database
     with get_db() as conn:
         try:
@@ -175,7 +175,7 @@ async def create_license(
                 expiry_date, max_cores, max_qubits, license_data.max_activations
             ))
             conn.commit()
-            
+
             return {
                 "license_key": license_key,
                 "license_type": license_data.license_type,
@@ -197,53 +197,53 @@ async def activate_license(activation: LicenseActivation):
             "SELECT * FROM licenses WHERE license_key = ? AND active = 1",
             (activation.license_key,)
         ).fetchone()
-        
+
         if not license_row:
             raise HTTPException(status_code=404, detail="Invalid license key")
-        
+
         # Check email matches
         if license_row["owner_email"] != activation.email:
             raise HTTPException(status_code=403, detail="Email does not match license")
-        
+
         # Check expiry
         if license_row["expiry_date"]:
             expiry = datetime.datetime.fromisoformat(license_row["expiry_date"])
             if datetime.datetime.now() > expiry:
                 raise HTTPException(status_code=403, detail="License has expired")
-        
+
         # Check activation limit
         activation_count = conn.execute(
             "SELECT COUNT(*) as count FROM activations WHERE license_key = ?",
             (activation.license_key,)
         ).fetchone()["count"]
-        
+
         if activation_count >= license_row["max_activations"]:
             # Check if this machine is already activated
             existing = conn.execute(
                 "SELECT * FROM activations WHERE license_key = ? AND machine_id = ?",
                 (activation.license_key, activation.machine_id)
             ).fetchone()
-            
+
             if not existing:
                 raise HTTPException(
                     status_code=403,
                     detail=f"License activation limit reached ({license_row['max_activations']})"
                 )
-        
+
         # Create or update activation
         conn.execute("""
             INSERT OR REPLACE INTO activations (
                 license_key, machine_id, activation_date, last_seen, platform
             ) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?)
         """, (activation.license_key, activation.machine_id, activation.platform))
-        
+
         # Update activation count
         conn.execute(
             "UPDATE licenses SET activation_count = ? WHERE license_key = ?",
             (activation_count + 1, activation.license_key)
         )
         conn.commit()
-        
+
         return {
             "status": "activated",
             "license_type": license_row["license_type"],
@@ -263,23 +263,23 @@ async def validate_license(validation: LicenseValidation):
             JOIN activations a ON l.license_key = a.license_key
             WHERE l.license_key = ? AND a.machine_id = ? AND l.active = 1
         """, (validation.license_key, validation.machine_id)).fetchone()
-        
+
         if not result:
             raise HTTPException(status_code=404, detail="License not found or not activated")
-        
+
         # Check expiry
         if result["expiry_date"]:
             expiry = datetime.datetime.fromisoformat(result["expiry_date"])
             if datetime.datetime.now() > expiry:
                 raise HTTPException(status_code=403, detail="License has expired")
-        
+
         # Update last seen
         conn.execute(
             "UPDATE activations SET last_seen = CURRENT_TIMESTAMP WHERE license_key = ? AND machine_id = ?",
             (validation.license_key, validation.machine_id)
         )
         conn.commit()
-        
+
         return {
             "valid": True,
             "license_type": result["license_type"],
@@ -296,10 +296,10 @@ async def report_usage(telemetry: UsageTelemetry):
             "SELECT license_type FROM licenses WHERE license_key = ?",
             (telemetry.license_key,)
         ).fetchone()
-        
+
         if not license_row or license_row["license_type"] != "enterprise":
             raise HTTPException(status_code=403, detail="Telemetry requires Enterprise license")
-        
+
         # Store telemetry
         conn.execute("""
             INSERT INTO usage_telemetry (
@@ -313,7 +313,7 @@ async def report_usage(telemetry: UsageTelemetry):
             json.dumps(telemetry.metadata) if telemetry.metadata else None
         ))
         conn.commit()
-        
+
         return {"status": "recorded"}
 
 @app.post("/api/v1/stripe/webhook")
@@ -327,7 +327,7 @@ async def stripe_webhook(request: dict, stripe_signature: str = Header(None)):
         raise HTTPException(status_code=400, detail="Invalid payload")
     except stripe.error.SignatureVerificationError:
         raise HTTPException(status_code=400, detail="Invalid signature")
-    
+
     # Handle subscription events
     if event["type"] == "customer.subscription.created":
         handle_subscription_created(event["data"]["object"])
@@ -335,7 +335,7 @@ async def stripe_webhook(request: dict, stripe_signature: str = Header(None)):
         handle_subscription_cancelled(event["data"]["object"])
     elif event["type"] == "customer.subscription.updated":
         handle_subscription_updated(event["data"]["object"])
-    
+
     return {"status": "success"}
 
 def handle_subscription_created(subscription):
@@ -346,16 +346,16 @@ def handle_subscription_created(subscription):
         "price_enterprise_monthly": LicenseType.ENTERPRISE,
         "price_academic_yearly": LicenseType.ACADEMIC,
     }
-    
+
     license_type = plan_to_license.get(subscription["items"]["data"][0]["price"]["id"])
     if not license_type:
         return
-    
+
     # Create license in database
     with get_db() as conn:
         lm = LicenseManager()
         license_key = lm.generate_license_key(license_type)
-        
+
         conn.execute("""
             INSERT INTO licenses (
                 license_key, license_type, owner_email,
@@ -372,7 +372,7 @@ def handle_subscription_created(subscription):
             5 if license_type == LicenseType.ENTERPRISE else 2
         ))
         conn.commit()
-        
+
         # Send license key to customer
         # send_license_email(subscription["customer_email"], license_key)
 
@@ -390,7 +390,7 @@ def handle_subscription_updated(subscription):
     # Update license based on new plan
     pass
 
-def get_features_for_type(license_type: str) -> List[str]:
+def get_features_for_type(license_type: str) -> list[str]:
     """Get feature list for license type"""
     lm = LicenseManager()
     lt = LicenseType(license_type)

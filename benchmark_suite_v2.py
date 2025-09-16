@@ -9,7 +9,6 @@ import argparse
 import json
 import time
 from pathlib import Path
-from typing import Dict
 
 import numpy as np
 
@@ -32,7 +31,7 @@ def timer(fn, *args, repeats: int = 5, **kwargs):
     }
 
 
-def bench_micro() -> Dict:
+def bench_micro() -> dict:
     import math
 
     def kernel(n=2_000_00):  # 200k
@@ -44,7 +43,7 @@ def bench_micro() -> Dict:
     return {"numeric_trig_loop": timer(kernel)}
 
 
-def bench_macro(program: Path) -> Dict:
+def bench_macro(program: Path) -> dict:
     code = program.read_text(encoding="utf8")
     interp = OptimizedInterpreter()
     return {"interpret_program": timer(interp.run, code)}

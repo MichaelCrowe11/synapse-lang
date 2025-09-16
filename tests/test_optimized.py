@@ -1,4 +1,3 @@
-import pytest
 
 from synapse_cache import TTLRUCache
 from synapse_tensor_gpu_v2 import SynapseTensor, available_backend

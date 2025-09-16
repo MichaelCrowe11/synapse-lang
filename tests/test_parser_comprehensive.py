@@ -3,14 +3,16 @@ Comprehensive Parser Test Suite for Synapse Language
 Phase 1, Week 1, Day 1-2
 """
 
-import pytest
-import sys
 import os
+import sys
+
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from synapse_lang.synapse_lexer import Lexer, TokenType
-from synapse_lang.synapse_parser_enhanced import EnhancedParser, ParserError
 from synapse_lang.synapse_ast_enhanced import *
+from synapse_lang.synapse_lexer import Lexer
+from synapse_lang.synapse_parser_enhanced import EnhancedParser, ParserError
 
 
 class TestParserFramework:
@@ -507,8 +509,8 @@ class TestAdvancedFeatures(TestParserFramework):
 
 def run_tests():
     """Run all parser tests"""
-    pytest.main([__file__, '-v'])
+    pytest.main([__file__, "-v"])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_tests()

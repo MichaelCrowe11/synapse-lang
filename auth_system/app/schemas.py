@@ -2,10 +2,12 @@
 Pydantic Schemas for Request/Response Models
 """
 
-from pydantic import BaseModel, EmailStr, Field, validator
-from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
+from typing import Any
+
+from pydantic import BaseModel, EmailStr, Field, validator
+
 
 class UserRole(str, Enum):
     USER = "user"
@@ -24,39 +26,39 @@ class SubscriptionTier(str, Enum):
 class UserBase(BaseModel):
     email: EmailStr
     username: str = Field(..., min_length=3, max_length=50)
-    full_name: Optional[str] = None
+    full_name: str | None = None
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8, max_length=100)
-    
-    @validator('password')
+
+    @validator("password")
     def validate_password(cls, v):
         if not any(char.isdigit() for char in v):
-            raise ValueError('Password must contain at least one digit')
+            raise ValueError("Password must contain at least one digit")
         if not any(char.isupper() for char in v):
-            raise ValueError('Password must contain at least one uppercase letter')
+            raise ValueError("Password must contain at least one uppercase letter")
         if not any(char.islower() for char in v):
-            raise ValueError('Password must contain at least one lowercase letter')
+            raise ValueError("Password must contain at least one lowercase letter")
         return v
 
 class UserUpdate(BaseModel):
-    full_name: Optional[str] = None
-    bio: Optional[str] = None
-    company: Optional[str] = None
-    location: Optional[str] = None
-    website: Optional[str] = None
-    preferences: Optional[Dict[str, Any]] = None
+    full_name: str | None = None
+    bio: str | None = None
+    company: str | None = None
+    location: str | None = None
+    website: str | None = None
+    preferences: dict[str, Any] | None = None
 
 class UserInDB(UserBase):
     id: int
     is_active: bool
     is_verified: bool
     role: UserRole
-    stripe_customer_id: Optional[str]
+    stripe_customer_id: str | None
     subscription_tier: SubscriptionTier
     subscription_status: str
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -67,13 +69,13 @@ class UserResponse(UserInDB):
 # Authentication Schemas
 class Token(BaseModel):
     access_token: str
-    refresh_token: Optional[str]
+    refresh_token: str | None
     token_type: str = "bearer"
 
 class TokenData(BaseModel):
-    user_id: Optional[int] = None
-    username: Optional[str] = None
-    scopes: List[str] = []
+    user_id: int | None = None
+    username: str | None = None
+    scopes: list[str] = []
 
 class LoginRequest(BaseModel):
     username: str  # Can be username or email
@@ -101,18 +103,18 @@ class EmailVerificationRequest(BaseModel):
 # API Key Schemas
 class APIKeyCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    scopes: Optional[List[str]] = []
-    expires_in_days: Optional[int] = None
+    scopes: list[str] | None = []
+    expires_in_days: int | None = None
 
 class APIKeyResponse(BaseModel):
     id: int
     key: str
     name: str
-    scopes: List[str]
+    scopes: list[str]
     is_active: bool
     created_at: datetime
-    last_used: Optional[datetime]
-    
+    last_used: datetime | None
+
     class Config:
         from_attributes = True
 
@@ -135,26 +137,26 @@ class UsageLimits(BaseModel):
 class UsageResponse(BaseModel):
     current_usage: UsageStats
     limits: UsageLimits
-    percentage_used: Dict[str, float]
+    percentage_used: dict[str, float]
 
 # Subscription Schemas
 class SubscriptionUpdate(BaseModel):
     tier: SubscriptionTier
-    payment_method_id: Optional[str]
+    payment_method_id: str | None
 
 class SubscriptionResponse(BaseModel):
     tier: SubscriptionTier
     status: str
-    stripe_subscription_id: Optional[str]
-    current_period_end: Optional[datetime]
+    stripe_subscription_id: str | None
+    current_period_end: datetime | None
     cancel_at_period_end: bool = False
 
 # Session Schemas
 class SessionResponse(BaseModel):
     id: int
-    ip_address: Optional[str]
-    user_agent: Optional[str]
-    device_type: Optional[str]
+    ip_address: str | None
+    user_agent: str | None
+    device_type: str | None
     created_at: datetime
     last_activity: datetime
     is_active: bool
@@ -162,22 +164,22 @@ class SessionResponse(BaseModel):
 # Error Schemas
 class ErrorResponse(BaseModel):
     detail: str
-    code: Optional[str] = None
-    field: Optional[str] = None
+    code: str | None = None
+    field: str | None = None
 
 class ValidationErrorResponse(BaseModel):
-    detail: List[Dict[str, Any]]
+    detail: list[dict[str, Any]]
 
 # Health Check
 class HealthResponse(BaseModel):
     status: str = "healthy"
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     version: str
-    services: Dict[str, str]
+    services: dict[str, str]
 
 # Additional User Schemas
 class UserList(BaseModel):
-    users: List[UserResponse]
+    users: list[UserResponse]
     total: int
     skip: int
     limit: int
@@ -188,14 +190,14 @@ class ChangePasswordRequest(BaseModel):
 
 # Additional API Key Schemas
 class APIKeyList(BaseModel):
-    api_keys: List[APIKeyResponse]
+    api_keys: list[APIKeyResponse]
     total: int
     skip: int
     limit: int
 
 class APIKeyWithSecret(APIKeyResponse):
     message: str
-    expires_at: Optional[datetime] = None
+    expires_at: datetime | None = None
 
 # Subscription Schemas
 class CheckoutSessionRequest(BaseModel):
@@ -220,13 +222,13 @@ class SubscriptionInfo(BaseModel):
     user_id: int
     subscription_tier: str
     subscription_status: str
-    stripe_customer_id: Optional[str]
-    stripe_subscription_id: Optional[str]
-    billing_period_start: Optional[datetime]
-    billing_period_end: Optional[datetime]
+    stripe_customer_id: str | None
+    stripe_subscription_id: str | None
+    billing_period_start: datetime | None
+    billing_period_end: datetime | None
     cancel_at_period_end: bool = False
-    limits: Dict[str, Any]
-    stripe_details: Optional[Dict[str, Any]]
+    limits: dict[str, Any]
+    stripe_details: dict[str, Any] | None
 
 class Invoice(BaseModel):
     id: str
@@ -236,9 +238,9 @@ class Invoice(BaseModel):
     created_at: datetime
     period_start: datetime
     period_end: datetime
-    invoice_pdf: Optional[str]
-    hosted_invoice_url: Optional[str]
+    invoice_pdf: str | None
+    hosted_invoice_url: str | None
 
 class BillingHistory(BaseModel):
-    invoices: List[Invoice]
+    invoices: list[Invoice]
     has_more: bool

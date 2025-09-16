@@ -1,17 +1,17 @@
 """Packaged interpreter with run/noise layer."""
-from typing import List, Dict, Any
-from .synapse_parser import parse
+from typing import Any
+
 from .synapse_ast import *  # includes RunNode alias
+from .synapse_parser import parse
 
 try:
     from .quantum import (
-        QuantumCircuitBuilder,
-        SimulatorBackend,
-        QuantumGate,
-        validate_circuit,
         BackendConfig,
         NoiseConfig,
+        QuantumCircuitBuilder,
         QuantumSemanticError,
+        SimulatorBackend,
+        validate_circuit,
     )
     QUANTUM_CORE_AVAILABLE = True
 except Exception:  # fallback if quantum subpackage missing or partial
@@ -20,9 +20,9 @@ except Exception:  # fallback if quantum subpackage missing or partial
 
 class SynapseInterpreter:
     def __init__(self):
-        self.variables: Dict[str, Any] = {}
+        self.variables: dict[str, Any] = {}
         self._active_backend_name = None
-        self._current_backend_config: Dict[str, Any] = {}
+        self._current_backend_config: dict[str, Any] = {}
 
     def execute(self, source: str):
         ast = parse(source)

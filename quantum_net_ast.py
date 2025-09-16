@@ -3,9 +3,9 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional, Union, Tuple, Set
 from enum import Enum, auto
-import numpy as np
+from typing import Any
+
 
 class NodeType(Enum):
     # Network structure
@@ -15,13 +15,13 @@ class NodeType(Enum):
     CHANNEL = auto()
     ENDPOINT = auto()
     REPEATER = auto()
-    
+
     # Protocols
     PROTOCOL = auto()
     QKD_PROTOCOL = auto()
     TELEPORT_PROTOCOL = auto()
     ENTANGLE_PROTOCOL = auto()
-    
+
     # Operations
     SEND_OP = auto()
     RECEIVE_OP = auto()
@@ -29,24 +29,24 @@ class NodeType(Enum):
     SWAP_OP = auto()
     MEASURE_OP = auto()
     PURIFY_OP = auto()
-    
+
     # Resources
     RESOURCE = auto()
     QUBIT_RESOURCE = auto()
     CHANNEL_RESOURCE = auto()
     MEMORY_RESOURCE = auto()
-    
+
     # Routing
     ROUTE = auto()
     PATH = auto()
     TOPOLOGY = auto()
-    
+
     # Control flow
     IF_ELSE = auto()
     WHILE_LOOP = auto()
     FOR_LOOP = auto()
     AWAIT = auto()
-    
+
     # Expressions
     IDENTIFIER = auto()
     NUMBER = auto()
@@ -62,7 +62,7 @@ class ASTNode(ABC):
     node_type: NodeType
     line: int
     column: int
-    
+
     @abstractmethod
     def accept(self, visitor):
         pass
@@ -74,11 +74,11 @@ class NetworkNode(ASTNode):
     """Represents a quantum network"""
     name: str
     topology: str  # 'mesh', 'star', 'ring', 'tree', 'hybrid'
-    nodes: List['NodeDefinition']
-    links: List['LinkDefinition']
-    protocols: List['ProtocolDefinition']
-    settings: Dict[str, Any] = field(default_factory=dict)
-    
+    nodes: list["NodeDefinition"]
+    links: list["LinkDefinition"]
+    protocols: list["ProtocolDefinition"]
+    settings: dict[str, Any] = field(default_factory=dict)
+
     def accept(self, visitor):
         return visitor.visit_network(self)
 
@@ -87,11 +87,11 @@ class NodeDefinition(ASTNode):
     """Represents a quantum network node"""
     name: str
     node_type: str  # 'endpoint', 'repeater', 'router', 'server'
-    capabilities: Dict[str, Any]
+    capabilities: dict[str, Any]
     qubits: int
-    memory: Optional[int] = None
-    position: Optional[Tuple[float, float, float]] = None  # 3D coordinates
-    
+    memory: int | None = None
+    position: tuple[float, float, float] | None = None  # 3D coordinates
+
     def accept(self, visitor):
         return visitor.visit_node_definition(self)
 
@@ -101,11 +101,11 @@ class LinkDefinition(ASTNode):
     source: str
     target: str
     link_type: str  # 'fiber', 'freespace', 'satellite'
-    distance: Optional[float] = None
-    loss_rate: Optional[float] = None
-    noise_model: Optional[str] = None
-    channels: List['ChannelDefinition'] = field(default_factory=list)
-    
+    distance: float | None = None
+    loss_rate: float | None = None
+    noise_model: str | None = None
+    channels: list["ChannelDefinition"] = field(default_factory=list)
+
     def accept(self, visitor):
         return visitor.visit_link_definition(self)
 
@@ -116,8 +116,8 @@ class ChannelDefinition(ASTNode):
     channel_type: str  # 'quantum', 'classical', 'hybrid'
     capacity: int
     fidelity: float
-    bandwidth: Optional[float] = None
-    
+    bandwidth: float | None = None
+
     def accept(self, visitor):
         return visitor.visit_channel_definition(self)
 
@@ -128,10 +128,10 @@ class ProtocolDefinition(ASTNode):
     """Represents a quantum network protocol"""
     name: str
     protocol_type: str
-    parameters: Dict[str, Any]
-    steps: List[ASTNode]
-    error_handling: Optional[List[ASTNode]] = None
-    
+    parameters: dict[str, Any]
+    steps: list[ASTNode]
+    error_handling: list[ASTNode] | None = None
+
     def accept(self, visitor):
         return visitor.visit_protocol_definition(self)
 
@@ -143,8 +143,8 @@ class QKDProtocolNode(ASTNode):
     bob: str    # Node name
     key_length: int
     security_parameter: float
-    authentication: Optional[str] = None
-    
+    authentication: str | None = None
+
     def accept(self, visitor):
         return visitor.visit_qkd_protocol(self)
 
@@ -154,19 +154,19 @@ class TeleportProtocolNode(ASTNode):
     source_node: str
     target_node: str
     qubit_ref: str
-    entangled_pair: Optional[Tuple[str, str]] = None
-    
+    entangled_pair: tuple[str, str] | None = None
+
     def accept(self, visitor):
         return visitor.visit_teleport_protocol(self)
 
 @dataclass
 class EntangleProtocolNode(ASTNode):
     """Entanglement distribution protocol"""
-    nodes: List[str]
+    nodes: list[str]
     entanglement_type: str  # 'bell', 'ghz', 'w', 'cluster'
     fidelity_threshold: float
     purification: bool = False
-    
+
     def accept(self, visitor):
         return visitor.visit_entangle_protocol(self)
 
@@ -177,9 +177,9 @@ class SendOperation(ASTNode):
     """Send quantum/classical data"""
     data: ASTNode
     destination: str
-    channel: Optional[str] = None
-    protocol: Optional[str] = None
-    
+    channel: str | None = None
+    protocol: str | None = None
+
     def accept(self, visitor):
         return visitor.visit_send_operation(self)
 
@@ -188,18 +188,18 @@ class ReceiveOperation(ASTNode):
     """Receive quantum/classical data"""
     source: str
     variable: str
-    channel: Optional[str] = None
-    timeout: Optional[float] = None
-    
+    channel: str | None = None
+    timeout: float | None = None
+
     def accept(self, visitor):
         return visitor.visit_receive_operation(self)
 
 @dataclass
 class EntangleOperation(ASTNode):
     """Create entanglement between qubits"""
-    qubits: List[str]
+    qubits: list[str]
     entanglement_type: str
-    
+
     def accept(self, visitor):
         return visitor.visit_entangle_operation(self)
 
@@ -209,17 +209,17 @@ class SwapOperation(ASTNode):
     qubit1: str
     qubit2: str
     measure: bool = True
-    
+
     def accept(self, visitor):
         return visitor.visit_swap_operation(self)
 
 @dataclass
 class PurifyOperation(ASTNode):
     """Entanglement purification"""
-    pairs: List[Tuple[str, str]]
+    pairs: list[tuple[str, str]]
     protocol: str  # 'DEJMPS', 'BBPSSW', 'recurrence'
     rounds: int = 1
-    
+
     def accept(self, visitor):
         return visitor.visit_purify_operation(self)
 
@@ -232,8 +232,8 @@ class ResourceAllocation(ASTNode):
     amount: int
     node: str
     priority: int = 0
-    duration: Optional[float] = None
-    
+    duration: float | None = None
+
     def accept(self, visitor):
         return visitor.visit_resource_allocation(self)
 
@@ -241,7 +241,7 @@ class ResourceAllocation(ASTNode):
 class ResourceRelease(ASTNode):
     """Resource release"""
     resource_ref: str
-    
+
     def accept(self, visitor):
         return visitor.visit_resource_release(self)
 
@@ -253,9 +253,9 @@ class RouteDefinition(ASTNode):
     name: str
     source: str
     destination: str
-    path: List[str]  # List of node names
-    metrics: Dict[str, float] = field(default_factory=dict)
-    
+    path: list[str]  # List of node names
+    metrics: dict[str, float] = field(default_factory=dict)
+
     def accept(self, visitor):
         return visitor.visit_route_definition(self)
 
@@ -263,8 +263,8 @@ class RouteDefinition(ASTNode):
 class PathSelection(ASTNode):
     """Path selection strategy"""
     strategy: str  # 'shortest', 'highest_fidelity', 'lowest_latency'
-    constraints: Dict[str, Any] = field(default_factory=dict)
-    
+    constraints: dict[str, Any] = field(default_factory=dict)
+
     def accept(self, visitor):
         return visitor.visit_path_selection(self)
 
@@ -274,9 +274,9 @@ class PathSelection(ASTNode):
 class IfElseNode(ASTNode):
     """Conditional execution"""
     condition: ASTNode
-    then_branch: List[ASTNode]
-    else_branch: Optional[List[ASTNode]] = None
-    
+    then_branch: list[ASTNode]
+    else_branch: list[ASTNode] | None = None
+
     def accept(self, visitor):
         return visitor.visit_if_else(self)
 
@@ -284,8 +284,8 @@ class IfElseNode(ASTNode):
 class WhileLoopNode(ASTNode):
     """While loop"""
     condition: ASTNode
-    body: List[ASTNode]
-    
+    body: list[ASTNode]
+
     def accept(self, visitor):
         return visitor.visit_while_loop(self)
 
@@ -294,8 +294,8 @@ class ForLoopNode(ASTNode):
     """For loop"""
     variable: str
     iterable: ASTNode
-    body: List[ASTNode]
-    
+    body: list[ASTNode]
+
     def accept(self, visitor):
         return visitor.visit_for_loop(self)
 
@@ -303,8 +303,8 @@ class ForLoopNode(ASTNode):
 class AwaitNode(ASTNode):
     """Await asynchronous operation"""
     operation: ASTNode
-    timeout: Optional[float] = None
-    
+    timeout: float | None = None
+
     def accept(self, visitor):
         return visitor.visit_await(self)
 
@@ -314,7 +314,7 @@ class AwaitNode(ASTNode):
 class IdentifierNode(ASTNode):
     """Variable or identifier reference"""
     name: str
-    
+
     def accept(self, visitor):
         return visitor.visit_identifier(self)
 
@@ -322,7 +322,7 @@ class IdentifierNode(ASTNode):
 class NumberNode(ASTNode):
     """Numeric literal"""
     value: float
-    
+
     def accept(self, visitor):
         return visitor.visit_number(self)
 
@@ -330,7 +330,7 @@ class NumberNode(ASTNode):
 class StringNode(ASTNode):
     """String literal"""
     value: str
-    
+
     def accept(self, visitor):
         return visitor.visit_string(self)
 
@@ -340,7 +340,7 @@ class BinaryOpNode(ASTNode):
     operator: str
     left: ASTNode
     right: ASTNode
-    
+
     def accept(self, visitor):
         return visitor.visit_binary_op(self)
 
@@ -349,7 +349,7 @@ class UnaryOpNode(ASTNode):
     """Unary operation"""
     operator: str
     operand: ASTNode
-    
+
     def accept(self, visitor):
         return visitor.visit_unary_op(self)
 
@@ -357,8 +357,8 @@ class UnaryOpNode(ASTNode):
 class CallNode(ASTNode):
     """Function or method call"""
     function: str
-    arguments: List[ASTNode]
-    
+    arguments: list[ASTNode]
+
     def accept(self, visitor):
         return visitor.visit_call(self)
 
@@ -367,7 +367,7 @@ class AccessNode(ASTNode):
     """Member access (dot notation)"""
     object: ASTNode
     member: str
-    
+
     def accept(self, visitor):
         return visitor.visit_access(self)
 
@@ -376,10 +376,10 @@ class AccessNode(ASTNode):
 @dataclass
 class ProgramNode(ASTNode):
     """Root node of the AST"""
-    networks: List[NetworkNode]
-    protocols: List[ProtocolDefinition]
-    statements: List[ASTNode]
-    
+    networks: list[NetworkNode]
+    protocols: list[ProtocolDefinition]
+    statements: list[ASTNode]
+
     def accept(self, visitor):
         return visitor.visit_program(self)
 
@@ -387,90 +387,90 @@ class ProgramNode(ASTNode):
 
 class ASTVisitor(ABC):
     """Visitor pattern for traversing the AST"""
-    
+
     @abstractmethod
     def visit_program(self, node: ProgramNode): pass
-    
+
     @abstractmethod
     def visit_network(self, node: NetworkNode): pass
-    
+
     @abstractmethod
     def visit_node_definition(self, node: NodeDefinition): pass
-    
+
     @abstractmethod
     def visit_link_definition(self, node: LinkDefinition): pass
-    
+
     @abstractmethod
     def visit_channel_definition(self, node: ChannelDefinition): pass
-    
+
     @abstractmethod
     def visit_protocol_definition(self, node: ProtocolDefinition): pass
-    
+
     @abstractmethod
     def visit_qkd_protocol(self, node: QKDProtocolNode): pass
-    
+
     @abstractmethod
     def visit_teleport_protocol(self, node: TeleportProtocolNode): pass
-    
+
     @abstractmethod
     def visit_entangle_protocol(self, node: EntangleProtocolNode): pass
-    
+
     @abstractmethod
     def visit_send_operation(self, node: SendOperation): pass
-    
+
     @abstractmethod
     def visit_receive_operation(self, node: ReceiveOperation): pass
-    
+
     @abstractmethod
     def visit_entangle_operation(self, node: EntangleOperation): pass
-    
+
     @abstractmethod
     def visit_swap_operation(self, node: SwapOperation): pass
-    
+
     @abstractmethod
     def visit_purify_operation(self, node: PurifyOperation): pass
-    
+
     @abstractmethod
     def visit_resource_allocation(self, node: ResourceAllocation): pass
-    
+
     @abstractmethod
     def visit_resource_release(self, node: ResourceRelease): pass
-    
+
     @abstractmethod
     def visit_route_definition(self, node: RouteDefinition): pass
-    
+
     @abstractmethod
     def visit_path_selection(self, node: PathSelection): pass
-    
+
     @abstractmethod
     def visit_if_else(self, node: IfElseNode): pass
-    
+
     @abstractmethod
     def visit_while_loop(self, node: WhileLoopNode): pass
-    
+
     @abstractmethod
     def visit_for_loop(self, node: ForLoopNode): pass
-    
+
     @abstractmethod
     def visit_await(self, node: AwaitNode): pass
-    
+
     @abstractmethod
     def visit_identifier(self, node: IdentifierNode): pass
-    
+
     @abstractmethod
     def visit_number(self, node: NumberNode): pass
-    
+
     @abstractmethod
     def visit_string(self, node: StringNode): pass
-    
+
     @abstractmethod
     def visit_binary_op(self, node: BinaryOpNode): pass
-    
+
     @abstractmethod
     def visit_unary_op(self, node: UnaryOpNode): pass
-    
+
     @abstractmethod
     def visit_call(self, node: CallNode): pass
-    
+
     @abstractmethod
     def visit_access(self, node: AccessNode): pass

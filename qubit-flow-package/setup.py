@@ -3,15 +3,15 @@ Setup configuration for Qubit-Flow Language
 Part of the Quantum Trinity alongside Synapse and Quantum-Net
 """
 
-from setuptools import setup, find_packages
-from pathlib import Path
 import shutil
-import os
+from pathlib import Path
+
+from setuptools import find_packages, setup
 
 # Copy source files from parent directory
 src_files = [
     "qubit_flow_ast.py",
-    "qubit_flow_interpreter.py", 
+    "qubit_flow_interpreter.py",
     "qubit_flow_lexer.py",
     "qubit_flow_parser.py"
 ]
@@ -32,7 +32,7 @@ for src_file in src_files:
 # Read README for long description
 readme_path = Path("..") / "QUBIT_FLOW_README.md"
 if readme_path.exists():
-    with open(readme_path, "r", encoding="utf-8") as fh:
+    with open(readme_path, encoding="utf-8") as fh:
         long_description = fh.read()
 else:
     long_description = "Qubit-Flow - A quantum circuit design and execution language"
@@ -52,7 +52,7 @@ setup(
     ]),
     classifiers=[
         "Development Status :: 4 - Beta",
-        "Intended Audience :: Science/Research", 
+        "Intended Audience :: Science/Research",
         "Intended Audience :: Developers",
         "Topic :: Scientific/Engineering",
         "Topic :: Scientific/Engineering :: Physics",

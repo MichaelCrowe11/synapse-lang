@@ -2,10 +2,13 @@
 Adds minimal noise model stub + validation utilities.
 """
 from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Dict, Any, Optional, Union
+from typing import Any
+
 import numpy as np
+
 
 class QuantumGate(Enum):
     I = "I"; X = "X"; Y = "Y"; Z = "Z"; H = "H"; S = "S"; T = "T"; RX = "RX"; RY = "RY"; RZ = "RZ"
@@ -14,8 +17,8 @@ class QuantumGate(Enum):
 @dataclass
 class QuantumOperation:
     gate: QuantumGate
-    qubits: List[int]
-    parameters: List[float] | None = None
+    qubits: list[int]
+    parameters: list[float] | None = None
     label: str = ""
     def __post_init__(self):
         if self.parameters is None:
@@ -25,12 +28,12 @@ class QuantumCircuitBuilder:
     def __init__(self, num_qubits: int, name: str = "circuit"):
         self.num_qubits = num_qubits
         self.name = name
-        self.operations: List[QuantumOperation] = []
-        self.measurements: Dict[int, int] = {}
+        self.operations: list[QuantumOperation] = []
+        self.measurements: dict[int, int] = {}
         self.classical_bits = 0
 
     # --- gate helpers ---
-    def add_gate(self, gate: QuantumGate, qubits: Union[int, List[int]], parameters: Optional[List[float]] = None):
+    def add_gate(self, gate: QuantumGate, qubits: int | list[int], parameters: list[float] | None = None):
         if isinstance(qubits, int):
             qubits = [qubits]
         for q in qubits:
@@ -59,7 +62,7 @@ class QuantumCircuitBuilder:
             self.measure(i)
         return self
 
-    def _validate_gate(self, gate: QuantumGate, qubits: List[int], params: List[float]):
+    def _validate_gate(self, gate: QuantumGate, qubits: list[int], params: list[float]):
         single={QuantumGate.I,QuantumGate.X,QuantumGate.Y,QuantumGate.Z,QuantumGate.H,QuantumGate.S,QuantumGate.T,QuantumGate.RX,QuantumGate.RY,QuantumGate.RZ}
         two={QuantumGate.CNOT,QuantumGate.CZ,QuantumGate.SWAP}
         three={QuantumGate.TOFFOLI,QuantumGate.FREDKIN}
@@ -74,18 +77,18 @@ class SimulatorBackend:
         self.name = name
         self.max_qubits = 24
 
-    def execute(self, circuit: QuantumCircuitBuilder, shots: int = 1000, noise: Optional[Dict[str, Any]] = None) -> Dict[str,int]:
+    def execute(self, circuit: QuantumCircuitBuilder, shots: int = 1000, noise: dict[str, Any] | None = None) -> dict[str,int]:
         if circuit.num_qubits > self.max_qubits:
             raise ValueError("Too many qubits for simulator")
         state = np.zeros(2**circuit.num_qubits, dtype=complex)
         state[0] = 1.0
         for op in circuit.operations:
             state = self._apply(state, op, circuit.num_qubits)
-        results: Dict[str,int] = {}
+        results: dict[str,int] = {}
         probs = np.abs(state)**2
         for _ in range(shots):
             outcome = np.random.choice(len(probs), p=probs)
-            bit_string = format(outcome, f'0{circuit.num_qubits}b')
+            bit_string = format(outcome, f"0{circuit.num_qubits}b")
             # Apply simple depolarizing noise post-measure if requested
             if noise and noise.get("model") == "depolarizing":
                 p = float(noise.get("p", 0.0))
@@ -94,8 +97,8 @@ class SimulatorBackend:
                     if np.random.rand() < p:
                         idx = np.random.randint(0, circuit.num_qubits)
                         b_list = list(bit_string)
-                        b_list[idx] = '1' if b_list[idx]=='0' else '0'
-                        bit_string = ''.join(b_list)
+                        b_list[idx] = "1" if b_list[idx]=="0" else "0"
+                        bit_string = "".join(b_list)
             results[bit_string] = results.get(bit_string,0)+1
         return results
 
@@ -125,11 +128,11 @@ class SimulatorBackend:
         if op.gate == QuantumGate.FREDKIN:
             return self._fredkin(state, op.qubits[0], op.qubits[1], op.qubits[2], n)
         if op.gate == QuantumGate.RX:
-            return self._rotation(state, op.qubits[0], n, axis='X', theta=op.parameters[0])
+            return self._rotation(state, op.qubits[0], n, axis="X", theta=op.parameters[0])
         if op.gate == QuantumGate.RY:
-            return self._rotation(state, op.qubits[0], n, axis='Y', theta=op.parameters[0])
+            return self._rotation(state, op.qubits[0], n, axis="Y", theta=op.parameters[0])
         if op.gate == QuantumGate.RZ:
-            return self._rotation(state, op.qubits[0], n, axis='Z', theta=op.parameters[0])
+            return self._rotation(state, op.qubits[0], n, axis="Z", theta=op.parameters[0])
         return state
     def _x(self, state, q, n):
         new = np.copy(state); mask = 1 << (n-1-q)
@@ -167,8 +170,8 @@ class SimulatorBackend:
         return new
     def _rotation(self, state, q, n, axis: str, theta: float):
         ct = np.cos(theta/2); st = np.sin(theta/2)
-        if axis=='X': U = np.array([[ct, -1j*st],[-1j*st, ct]])
-        elif axis=='Y': U = np.array([[ct, -st],[st, ct]])
+        if axis=="X": U = np.array([[ct, -1j*st],[-1j*st, ct]])
+        elif axis=="Y": U = np.array([[ct, -st],[st, ct]])
         else: # Z
             U = np.array([[np.exp(-1j*theta/2),0],[0,np.exp(1j*theta/2)]])
         return self._single_unitary(state, q, n, U)

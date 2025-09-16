@@ -11,8 +11,11 @@ Implements key quantum algorithms including:
 """
 
 from __future__ import annotations
-from typing import List, Tuple, Optional, Callable, Dict, Any
+
+from collections.abc import Callable
+
 import numpy as np
+
 from .core import QuantumCircuitBuilder, QuantumGate
 
 
@@ -103,7 +106,7 @@ class QuantumAlgorithms:
         return circuit
 
     @staticmethod
-    def grover_oracle(n_qubits: int, marked_items: List[int]) -> QuantumCircuitBuilder:
+    def grover_oracle(n_qubits: int, marked_items: list[int]) -> QuantumCircuitBuilder:
         """Create Grover oracle for marked items.
 
         Args:
@@ -183,8 +186,8 @@ class QuantumAlgorithms:
         return circuit
 
     @staticmethod
-    def grover_search(n_qubits: int, marked_items: List[int],
-                     iterations: Optional[int] = None) -> QuantumCircuitBuilder:
+    def grover_search(n_qubits: int, marked_items: list[int],
+                     iterations: int | None = None) -> QuantumCircuitBuilder:
         """Implement Grover's search algorithm.
 
         Args:
@@ -225,7 +228,7 @@ class QuantumAlgorithms:
     @staticmethod
     def quantum_phase_estimation(unitary_qubits: int, precision_qubits: int,
                                 unitary_gate: QuantumGate,
-                                eigenstate_prep: Optional[Callable] = None) -> QuantumCircuitBuilder:
+                                eigenstate_prep: Callable | None = None) -> QuantumCircuitBuilder:
         """Implement Quantum Phase Estimation algorithm.
 
         Estimates the phase of an eigenvalue of a unitary operator.
@@ -274,7 +277,7 @@ class QuantumAlgorithms:
         return circuit
 
     @staticmethod
-    def vqe_ansatz(n_qubits: int, depth: int, parameters: List[float]) -> QuantumCircuitBuilder:
+    def vqe_ansatz(n_qubits: int, depth: int, parameters: list[float]) -> QuantumCircuitBuilder:
         """Create a parameterized ansatz for VQE.
 
         Uses RY and CNOT gates in alternating layers.
@@ -290,7 +293,7 @@ class QuantumAlgorithms:
         circuit = QuantumCircuitBuilder(n_qubits, f"vqe_ansatz_d{depth}")
 
         param_idx = 0
-        for d in range(depth):
+        for _d in range(depth):
             # Rotation layer
             for q in range(n_qubits):
                 if param_idx < len(parameters):
@@ -322,7 +325,7 @@ class QuantumAlgorithms:
         return circuit
 
     @staticmethod
-    def qaoa_problem_hamiltonian(n_qubits: int, edges: List[Tuple[int, int]],
+    def qaoa_problem_hamiltonian(n_qubits: int, edges: list[tuple[int, int]],
                                 gamma: float) -> QuantumCircuitBuilder:
         """Create QAOA problem Hamiltonian for MaxCut.
 
@@ -344,8 +347,8 @@ class QuantumAlgorithms:
         return circuit
 
     @staticmethod
-    def qaoa(n_qubits: int, edges: List[Tuple[int, int]],
-            p: int, gammas: List[float], betas: List[float]) -> QuantumCircuitBuilder:
+    def qaoa(n_qubits: int, edges: list[tuple[int, int]],
+            p: int, gammas: list[float], betas: list[float]) -> QuantumCircuitBuilder:
         """Implement QAOA for MaxCut problem.
 
         Args:

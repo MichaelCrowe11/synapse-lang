@@ -3,14 +3,16 @@ Test suite for Minimal Parser
 Basic functionality verification
 """
 
-import pytest
-import sys
 import os
+import sys
+
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from synapse_lang.synapse_ast_enhanced import *
 from synapse_lang.synapse_lexer import Lexer
 from synapse_lang.synapse_parser_minimal import MinimalParser, ParserError
-from synapse_lang.synapse_ast_enhanced import *
 
 
 class TestMinimalParser:
@@ -55,7 +57,7 @@ class TestMinimalParser:
         assert len(ast.body) == 1
         assert isinstance(ast.body[0], AssignmentNode)
         assert isinstance(ast.body[0].value, BooleanNode)
-        assert ast.body[0].value.value == True
+        assert ast.body[0].value.value
 
     def test_uncertain_value(self):
         """Parse uncertain value"""
@@ -63,7 +65,7 @@ class TestMinimalParser:
         assert isinstance(ast, ProgramNode)
         assert len(ast.body) == 1
         assert isinstance(ast.body[0], AssignmentNode)
-        assert ast.body[0].is_uncertain == True
+        assert ast.body[0].is_uncertain
         assert ast.body[0].target == "temp"
         # Value should be a BinaryOpNode representing "300 ± 10"
         assert isinstance(ast.body[0].value, BinaryOpNode)
@@ -198,5 +200,5 @@ result = x + y * z - h"""
         assert isinstance(ast.body[0].value, BinaryOpNode)
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

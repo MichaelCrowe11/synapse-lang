@@ -9,13 +9,13 @@ This module provides a comprehensive type system with support for:
 - Generic types and constraints
 """
 
-from typing import Optional, List, Dict, Any, Union, Tuple, Set, TypeVar, Generic
-from dataclasses import dataclass, field
-from enum import Enum
-from abc import ABC, abstractmethod
 import math
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any
 
-from .errors import TypeError, SemanticError, SourceLocation
+from .errors import SourceLocation, TypeError
 
 
 class TypeKind(Enum):
@@ -50,10 +50,10 @@ class SynapseType(ABC):
     def __init__(self, name: str, kind: TypeKind):
         self.name = name
         self.kind = kind
-        self.constraints: List[TypeConstraint] = []
+        self.constraints: list[TypeConstraint] = []
 
     @abstractmethod
-    def is_assignable_from(self, other: 'SynapseType') -> bool:
+    def is_assignable_from(self, other: "SynapseType") -> bool:
         """Check if this type can accept values of another type."""
         pass
 
@@ -66,7 +66,7 @@ class SynapseType(ABC):
         """Add a constraint to this type."""
         self.constraints.append(constraint)
 
-    def check_constraints(self, value: Any) -> List[str]:
+    def check_constraints(self, value: Any) -> list[str]:
         """Check all constraints and return violation messages."""
         violations = []
         for constraint in self.constraints:
@@ -117,7 +117,7 @@ class UncertainType(SynapseType):
         # Add constraint for positive uncertainty
         self.add_constraint(TypeConstraint(
             "positive_uncertainty",
-            lambda v: hasattr(v, 'uncertainty') and v.uncertainty >= 0,
+            lambda v: hasattr(v, "uncertainty") and v.uncertainty >= 0,
             "Uncertainty must be non-negative"
         ))
 
@@ -134,7 +134,7 @@ class UncertainType(SynapseType):
 class TensorType(SynapseType):
     """Type for multi-dimensional arrays."""
 
-    def __init__(self, element_type: SynapseType, shape: Optional[Tuple[int, ...]] = None):
+    def __init__(self, element_type: SynapseType, shape: tuple[int, ...] | None = None):
         shape_str = f"[{','.join(map(str, shape))}]" if shape else "[?]"
         super().__init__(f"tensor<{element_type.name}>{shape_str}", TypeKind.SCIENTIFIC)
         self.element_type = element_type
@@ -144,7 +144,7 @@ class TensorType(SynapseType):
         if shape:
             self.add_constraint(TypeConstraint(
                 "valid_shape",
-                lambda v: hasattr(v, 'shape') and v.shape == shape,
+                lambda v: hasattr(v, "shape") and v.shape == shape,
                 f"Tensor must have shape {shape}"
             ))
 
@@ -175,7 +175,7 @@ class QuantumType(SynapseType):
 class QubitType(QuantumType):
     """Type for quantum bits."""
 
-    def __init__(self, num_qubits: Optional[int] = None):
+    def __init__(self, num_qubits: int | None = None):
         name = f"qubit[{num_qubits}]" if num_qubits else "qubit"
         super().__init__(name)
         self.num_qubits = num_qubits
@@ -195,7 +195,7 @@ class QubitType(QuantumType):
 class CircuitType(QuantumType):
     """Type for quantum circuits."""
 
-    def __init__(self, num_qubits: Optional[int] = None):
+    def __init__(self, num_qubits: int | None = None):
         name = f"circuit[{num_qubits}]" if num_qubits else "circuit"
         super().__init__(name)
         self.num_qubits = num_qubits
@@ -249,7 +249,7 @@ class DictType(SynapseType):
 class FunctionType(SynapseType):
     """Type for functions."""
 
-    def __init__(self, param_types: List[SynapseType], return_type: SynapseType):
+    def __init__(self, param_types: list[SynapseType], return_type: SynapseType):
         param_str = ", ".join(t.name for t in param_types)
         super().__init__(f"({param_str}) -> {return_type.name}", TypeKind.FUNCTION)
         self.param_types = param_types
@@ -260,7 +260,7 @@ class FunctionType(SynapseType):
             if len(self.param_types) != len(other.param_types):
                 return False
             # Check parameter compatibility (contravariant)
-            for self_param, other_param in zip(self.param_types, other.param_types):
+            for self_param, other_param in zip(self.param_types, other.param_types, strict=False):
                 if not other_param.is_assignable_from(self_param):
                     return False
             # Check return type compatibility (covariant)
@@ -274,12 +274,12 @@ class FunctionType(SynapseType):
 class GenericType(SynapseType):
     """Generic/parametric type."""
 
-    def __init__(self, name: str, type_params: List[str]):
+    def __init__(self, name: str, type_params: list[str]):
         super().__init__(f"{name}<{', '.join(type_params)}>", TypeKind.GENERIC)
         self.type_params = type_params
-        self.concrete_types: Dict[str, SynapseType] = {}
+        self.concrete_types: dict[str, SynapseType] = {}
 
-    def instantiate(self, type_args: Dict[str, SynapseType]) -> SynapseType:
+    def instantiate(self, type_args: dict[str, SynapseType]) -> SynapseType:
         """Create concrete instance with type arguments."""
         if set(type_args.keys()) != set(self.type_params):
             raise TypeError(f"Generic type {self.name} requires parameters: {self.type_params}")
@@ -309,56 +309,63 @@ class TypeChecker:
     """Static type checker for Synapse programs."""
 
     def __init__(self):
-        self.types: Dict[str, SynapseType] = {}
-        self.variables: Dict[str, SynapseType] = {}
-        self.functions: Dict[str, FunctionType] = {}
-        self.errors: List[TypeError] = []
+        self.types: dict[str, SynapseType] = {}
+        self.variables: dict[str, SynapseType] = {}
+        self.functions: dict[str, FunctionType] = {}
+        self.errors: list[TypeError] = []
 
         # Initialize built-in types
         self._init_builtin_types()
 
     def _init_builtin_types(self):
         """Initialize built-in primitive types."""
-        self.types['int'] = PrimitiveType('int', int)
-        self.types['float'] = PrimitiveType('float', float)
-        self.types['string'] = PrimitiveType('string', str)
-        self.types['bool'] = PrimitiveType('bool', bool)
+        self.types["int"] = PrimitiveType("int", int)
+        self.types["float"] = PrimitiveType("float", float)
+        self.types["string"] = PrimitiveType("string", str)
+        self.types["bool"] = PrimitiveType("bool", bool)
 
         # Scientific types
-        self.types['uncertain_int'] = UncertainType(self.types['int'])
-        self.types['uncertain_float'] = UncertainType(self.types['float'])
+        self.types["uncertain_int"] = UncertainType(self.types["int"])
+        self.types["uncertain_float"] = UncertainType(self.types["float"])
 
         # Quantum types
-        self.types['qubit'] = QubitType()
-        self.types['circuit'] = CircuitType()
+        self.types["qubit"] = QubitType()
+        self.types["circuit"] = CircuitType()
 
     def register_type(self, name: str, type_obj: SynapseType):
         """Register a new type."""
         self.types[name] = type_obj
 
-    def get_type(self, name: str) -> Optional[SynapseType]:
+    def get_type(self, name: str) -> SynapseType | None:
         """Get type by name."""
         return self.types.get(name)
 
-    def infer_type(self, node: Any) -> Optional[SynapseType]:
+    def infer_type(self, node: Any) -> SynapseType | None:
         """Infer type of an AST node."""
         from .ast_consolidated import (
-            NumberNode, StringNode, BooleanNode, IdentifierNode,
-            BinaryOpNode, UnaryOpNode, UncertainValueNode,
-            QuantumCircuitNode, ListNode, DictNode
+            BinaryOpNode,
+            BooleanNode,
+            DictNode,
+            IdentifierNode,
+            ListNode,
+            NumberNode,
+            QuantumCircuitNode,
+            StringNode,
+            UnaryOpNode,
+            UncertainValueNode,
         )
 
         if isinstance(node, NumberNode):
             if isinstance(node.value, int):
-                return self.types['int']
+                return self.types["int"]
             else:
-                return self.types['float']
+                return self.types["float"]
 
         elif isinstance(node, StringNode):
-            return self.types['string']
+            return self.types["string"]
 
         elif isinstance(node, BooleanNode):
-            return self.types['bool']
+            return self.types["bool"]
 
         elif isinstance(node, IdentifierNode):
             return self.variables.get(node.name)
@@ -393,7 +400,7 @@ class TypeChecker:
 
         return None
 
-    def _infer_binary_op_type(self, node) -> Optional[SynapseType]:
+    def _infer_binary_op_type(self, node) -> SynapseType | None:
         """Infer type for binary operations."""
         left_type = self.infer_type(node.left)
         right_type = self.infer_type(node.right)
@@ -404,21 +411,21 @@ class TypeChecker:
         op = node.operator
 
         # Arithmetic operations
-        if op in ['+', '-', '*', '/', '%', '**']:
+        if op in ["+", "-", "*", "/", "%", "**"]:
             return self._infer_arithmetic_type(left_type, right_type, op)
 
         # Comparison operations
-        elif op in ['==', '!=', '<', '>', '<=', '>=']:
-            return self.types['bool']
+        elif op in ["==", "!=", "<", ">", "<=", ">="]:
+            return self.types["bool"]
 
         # Logical operations
-        elif op in ['&&', '||']:
-            if left_type == self.types['bool'] and right_type == self.types['bool']:
-                return self.types['bool']
+        elif op in ["&&", "||"]:
+            if left_type == self.types["bool"] and right_type == self.types["bool"]:
+                return self.types["bool"]
 
         return None
 
-    def _infer_arithmetic_type(self, left: SynapseType, right: SynapseType, op: str) -> Optional[SynapseType]:
+    def _infer_arithmetic_type(self, left: SynapseType, right: SynapseType, op: str) -> SynapseType | None:
         """Infer type for arithmetic operations."""
         # Handle uncertain types
         if isinstance(left, UncertainType) or isinstance(right, UncertainType):
@@ -429,18 +436,18 @@ class TypeChecker:
                 return UncertainType(result_base)
 
         # Numeric type promotion
-        if left == self.types['int'] and right == self.types['int']:
-            if op == '/':
-                return self.types['float']  # Division produces float
-            return self.types['int']
+        if left == self.types["int"] and right == self.types["int"]:
+            if op == "/":
+                return self.types["float"]  # Division produces float
+            return self.types["int"]
 
-        elif (left in [self.types['int'], self.types['float']] and
-              right in [self.types['int'], self.types['float']]):
-            return self.types['float']
+        elif (left in [self.types["int"], self.types["float"]] and
+              right in [self.types["int"], self.types["float"]]):
+            return self.types["float"]
 
         return None
 
-    def _infer_unary_op_type(self, node) -> Optional[SynapseType]:
+    def _infer_unary_op_type(self, node) -> SynapseType | None:
         """Infer type for unary operations."""
         operand_type = self.infer_type(node.operand)
         if not operand_type:
@@ -448,18 +455,18 @@ class TypeChecker:
 
         op = node.operator
 
-        if op in ['+', '-']:
-            if operand_type in [self.types['int'], self.types['float']]:
+        if op in ["+", "-"]:
+            if operand_type in [self.types["int"], self.types["float"]]:
                 return operand_type
             elif isinstance(operand_type, UncertainType):
                 return operand_type
 
-        elif op == '!':
-            return self.types['bool']
+        elif op == "!":
+            return self.types["bool"]
 
         return None
 
-    def check_assignment(self, var_name: str, value_type: SynapseType, location: Optional[SourceLocation] = None):
+    def check_assignment(self, var_name: str, value_type: SynapseType, location: SourceLocation | None = None):
         """Check if assignment is type-safe."""
         if var_name in self.variables:
             current_type = self.variables[var_name]
@@ -474,7 +481,7 @@ class TypeChecker:
             # New variable declaration
             self.variables[var_name] = value_type
 
-    def check_function_call(self, func_name: str, arg_types: List[SynapseType], location: Optional[SourceLocation] = None) -> Optional[SynapseType]:
+    def check_function_call(self, func_name: str, arg_types: list[SynapseType], location: SourceLocation | None = None) -> SynapseType | None:
         """Check function call type safety and return result type."""
         if func_name not in self.functions:
             self.errors.append(TypeError(
@@ -493,7 +500,7 @@ class TypeChecker:
             return None
 
         # Check parameter types
-        for i, (expected, actual) in enumerate(zip(func_type.param_types, arg_types)):
+        for i, (expected, actual) in enumerate(zip(func_type.param_types, arg_types, strict=False)):
             if not expected.is_assignable_from(actual):
                 self.errors.append(TypeError(
                     f"Argument {i+1} of function '{func_name}' expects {expected.name}, got {actual.name}",
@@ -504,7 +511,7 @@ class TypeChecker:
 
         return func_type.return_type
 
-    def check_program(self, ast_node) -> List[TypeError]:
+    def check_program(self, ast_node) -> list[TypeError]:
         """Check types for entire program."""
         self.errors = []
         self._check_node(ast_node)
@@ -517,7 +524,7 @@ class TypeChecker:
         self.infer_type(node)
 
         # Recursively check child nodes
-        if hasattr(node, 'children'):
+        if hasattr(node, "children"):
             for child in node.children:
                 if child:
                     self._check_node(child)
@@ -529,9 +536,9 @@ class TypeChecker:
 
 # Export main components
 __all__ = [
-    'SynapseType', 'TypeKind', 'TypeConstraint',
-    'PrimitiveType', 'UncertainType', 'TensorType',
-    'QuantumType', 'QubitType', 'CircuitType',
-    'ListType', 'DictType', 'FunctionType', 'GenericType',
-    'TypeChecker'
+    "SynapseType", "TypeKind", "TypeConstraint",
+    "PrimitiveType", "UncertainType", "TensorType",
+    "QuantumType", "QubitType", "CircuitType",
+    "ListType", "DictType", "FunctionType", "GenericType",
+    "TypeChecker"
 ]

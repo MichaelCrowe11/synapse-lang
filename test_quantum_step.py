@@ -3,18 +3,19 @@
 Test quantum syntax step by step
 """
 
-from synapse_parser import parse
 from synapse_interpreter import SynapseInterpreter
+from synapse_parser import parse
+
 
 def test_quantum_keyword():
     """Test quantum keyword parsing"""
     print("Testing quantum keyword...")
-    
+
     code = """
 quantum circuit test {
 }
 """
-    
+
     try:
         ast = parse(code)
         print("✓ Quantum circuit parsed successfully!")
@@ -29,14 +30,14 @@ quantum circuit test {
 def test_quantum_execution():
     """Test quantum execution"""
     print("\nTesting quantum execution...")
-    
+
     code = """
 quantum circuit bell(2) {
     h(0)
     cnot(0, 1)
 }
 """
-    
+
     try:
         interpreter = SynapseInterpreter()
         result = interpreter.execute(code)
@@ -52,10 +53,10 @@ quantum circuit bell(2) {
 if __name__ == "__main__":
     print("Quantum Syntax Step-by-Step Test")
     print("=" * 40)
-    
+
     success1 = test_quantum_keyword()
     success2 = test_quantum_execution()
-    
+
     if success1 and success2:
         print("\n🎉 All quantum tests passed!")
     else:

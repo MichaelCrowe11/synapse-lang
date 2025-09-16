@@ -1,10 +1,12 @@
 import pytest
+
 from synapse_lang.quantum import (
-    QuantumSemanticError,
-    validate_circuit,
     BackendConfig,
     NoiseConfig,
+    QuantumSemanticError,
+    validate_circuit,
 )
+
 
 def _ops(seq):
     return [{"gate": g, "qubits": qs, "params": ps} for (g, qs, ps) in seq]

@@ -5,18 +5,17 @@ Provides human-friendly diagnostics with source excerpts and carets.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
 class SourceLoc:
     line: int
     col: int
-    line_text: Optional[str] = None
+    line_text: str | None = None
 
 
 class SynapseError(Exception):
-    def __init__(self, message: str, loc: Optional[SourceLoc] = None):
+    def __init__(self, message: str, loc: SourceLoc | None = None):
         super().__init__(message)
         self.loc = loc
 

@@ -6,7 +6,7 @@ Unified API via SynapseTensor.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Union
 
 # Backend detection
 _backend = "numpy"
@@ -15,13 +15,13 @@ try:  # Prefer CuPy when present
     _backend = "cupy"
 except Exception:
     try:
-        import torch  # type: ignore
         import numpy as np
+        import torch  # type: ignore
         xp = np  # type: ignore
         _backend = "torch"
     except Exception:
-        import numpy as xp  # type: ignore
         import numpy as np
+        import numpy as xp  # type: ignore
         _backend = "numpy"
 
 
@@ -34,12 +34,12 @@ class SynapseTensor:
     backend: str = _backend
 
     @staticmethod
-    def from_array(x: Any) -> "SynapseTensor":
+    def from_array(x: Any) -> SynapseTensor:
         if isinstance(x, SynapseTensor):
             return x
         return SynapseTensor(data=x)
 
-    def to(self, device: str = "cpu") -> "SynapseTensor":
+    def to(self, device: str = "cpu") -> SynapseTensor:
         if self.backend == "torch":
             import torch  # type: ignore
             t = self.data
@@ -54,7 +54,7 @@ class SynapseTensor:
         return self
 
     # Basic ops
-    def matmul(self, other: ArrayLike) -> "SynapseTensor":
+    def matmul(self, other: ArrayLike) -> SynapseTensor:
         other = SynapseTensor.from_array(other)
         if self.backend == "torch":
             import torch  # type: ignore
@@ -63,7 +63,7 @@ class SynapseTensor:
             return SynapseTensor(a @ b, backend="torch")
         return SynapseTensor(xp.matmul(self.data, other.data), backend=self.backend)
 
-    def dot(self, other: ArrayLike) -> "SynapseTensor":
+    def dot(self, other: ArrayLike) -> SynapseTensor:
         other = SynapseTensor.from_array(other)
         if self.backend == "torch":
             import torch  # type: ignore
@@ -72,7 +72,7 @@ class SynapseTensor:
             return SynapseTensor(torch.dot(a.flatten(), b.flatten()), backend="torch")
         return SynapseTensor(xp.dot(self.data, other.data), backend=self.backend)
 
-    def einsum(self, subscripts: str, *operands: ArrayLike) -> "SynapseTensor":
+    def einsum(self, subscripts: str, *operands: ArrayLike) -> SynapseTensor:
         ops = [SynapseTensor.from_array(o).data for o in operands]
         if self.backend == "torch":
             import torch  # type: ignore

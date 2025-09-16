@@ -2,22 +2,26 @@
 Subscription and Billing Management Endpoints
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
-from sqlalchemy.orm import Session
-from typing import Optional, Dict, Any
 from datetime import datetime
 
-from app.core.database import get_db
-from app.models import User, SubscriptionTier
-from app.schemas import (
-    SubscriptionInfo, SubscriptionUpdate,
-    CheckoutSessionRequest, CheckoutSessionResponse,
-    PortalSessionRequest, PortalSessionResponse,
-    BillingHistory, Invoice
-)
-from app.api.dependencies import get_current_verified_user, RateLimiter
-from app.services import stripe_service
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+
+from app.api.dependencies import RateLimiter, get_current_verified_user
 from app.core.config import settings
+from app.core.database import get_db
+from app.models import SubscriptionTier, User
+from app.schemas import (
+    BillingHistory,
+    CheckoutSessionRequest,
+    CheckoutSessionResponse,
+    Invoice,
+    PortalSessionRequest,
+    PortalSessionResponse,
+    SubscriptionInfo,
+    SubscriptionUpdate,
+)
+from app.services import stripe_service
 
 router = APIRouter(prefix="/subscriptions", tags=["subscriptions"])
 
@@ -30,13 +34,13 @@ async def get_current_subscription(
     db: Session = Depends(get_db)
 ):
     """Get current user's subscription information."""
-    
+
     # Get subscription info from Stripe
     stripe_info = await stripe_service.get_subscription_info(current_user)
-    
+
     # Get tier limits
     tier_limits = settings.TIER_LIMITS.get(current_user.subscription_tier.value, {})
-    
+
     return SubscriptionInfo(
         user_id=current_user.id,
         subscription_tier=current_user.subscription_tier.value,
@@ -53,16 +57,16 @@ async def get_current_subscription(
 @router.get("/plans")
 async def get_available_plans():
     """Get all available subscription plans."""
-    
+
     plans = []
-    
+
     for tier in ["starter", "professional", "enterprise", "quantum"]:
         tier_limits = settings.TIER_LIMITS.get(tier, {})
-        
+
         # Get pricing
         monthly_price_id = getattr(settings, f"STRIPE_PRICE_ID_{tier.upper()}_MONTHLY", None)
         yearly_price_id = getattr(settings, f"STRIPE_PRICE_ID_{tier.upper()}_YEARLY", None)
-        
+
         plan = {
             "tier": tier,
             "name": tier.replace("_", " ").title(),
@@ -80,9 +84,9 @@ async def get_available_plans():
             },
             "features": get_tier_features(tier)
         }
-        
+
         plans.append(plan)
-    
+
     return {"plans": plans}
 
 @router.post("/checkout", response_model=CheckoutSessionResponse)
@@ -93,19 +97,19 @@ async def create_checkout_session(
     _: None = Depends(rate_limiter)
 ):
     """Create a Stripe Checkout session for subscription."""
-    
+
     # Get price ID for the requested tier and billing cycle
     price_id = stripe_service.get_price_id_for_tier(
         SubscriptionTier[request.tier.upper()],
         request.billing_cycle
     )
-    
+
     if not price_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid tier or billing cycle"
         )
-    
+
     # Create checkout session
     session = await stripe_service.create_checkout_session(
         user=current_user,
@@ -113,7 +117,7 @@ async def create_checkout_session(
         success_url=request.success_url,
         cancel_url=request.cancel_url
     )
-    
+
     return CheckoutSessionResponse(
         checkout_url=session.url,
         session_id=session.id,
@@ -127,19 +131,19 @@ async def create_portal_session(
     _: None = Depends(rate_limiter)
 ):
     """Create a Stripe Customer Portal session."""
-    
+
     if not current_user.stripe_customer_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No billing account found"
         )
-    
+
     # Create portal session
     session = await stripe_service.create_customer_portal_session(
         user=current_user,
         return_url=request.return_url
     )
-    
+
     return PortalSessionResponse(
         portal_url=session.url,
         session_id=session.id
@@ -153,7 +157,7 @@ async def upgrade_subscription(
     _: None = Depends(rate_limiter)
 ):
     """Upgrade or downgrade subscription."""
-    
+
     # Check if upgrading or downgrading
     tier_hierarchy = {
         "free": 0,
@@ -162,35 +166,35 @@ async def upgrade_subscription(
         "enterprise": 3,
         "quantum": 4
     }
-    
+
     current_level = tier_hierarchy.get(current_user.subscription_tier.value, 0)
     new_level = tier_hierarchy.get(request.tier, 0)
-    
+
     if current_level == new_level:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Already on this subscription tier"
         )
-    
+
     # Get price ID
     price_id = stripe_service.get_price_id_for_tier(
         SubscriptionTier[request.tier.upper()],
         request.billing_cycle
     )
-    
+
     if not price_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid tier or billing cycle"
         )
-    
+
     # Update subscription
     await stripe_service.update_subscription(
         user=current_user,
         new_price_id=price_id,
         db=db
     )
-    
+
     # Return updated subscription info
     return await get_current_subscription(current_user, db)
 
@@ -201,16 +205,16 @@ async def cancel_subscription(
     _: None = Depends(rate_limiter)
 ):
     """Cancel subscription at period end."""
-    
+
     if not current_user.stripe_subscription_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No active subscription found"
         )
-    
+
     # Cancel subscription
     result = await stripe_service.cancel_subscription(current_user, db)
-    
+
     return {
         "message": "Subscription will be canceled at the end of the billing period",
         "cancel_at": result.get("cancel_at_period_end")
@@ -223,35 +227,35 @@ async def reactivate_subscription(
     _: None = Depends(rate_limiter)
 ):
     """Reactivate a canceled subscription."""
-    
+
     if not current_user.stripe_subscription_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No subscription found"
         )
-    
+
     if current_user.subscription_status != "canceling":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Subscription is not scheduled for cancellation"
         )
-    
+
     # Reactivate via Stripe
     import stripe
     stripe.api_key = settings.STRIPE_API_KEY
-    
+
     try:
-        subscription = stripe.Subscription.modify(
+        stripe.Subscription.modify(
             current_user.stripe_subscription_id,
             cancel_at_period_end=False
         )
-        
+
         # Update user status
         current_user.subscription_status = "active"
         db.commit()
-        
+
         return {"message": "Subscription reactivated successfully"}
-    
+
     except stripe.error.StripeError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -264,20 +268,20 @@ async def get_billing_history(
     current_user: User = Depends(get_current_verified_user)
 ):
     """Get billing history and invoices."""
-    
+
     if not current_user.stripe_customer_id:
         return BillingHistory(invoices=[], has_more=False)
-    
+
     import stripe
     stripe.api_key = settings.STRIPE_API_KEY
-    
+
     try:
         # Get invoices from Stripe
         invoices = stripe.Invoice.list(
             customer=current_user.stripe_customer_id,
             limit=limit
         )
-        
+
         invoice_list = []
         for inv in invoices.data:
             invoice_list.append(Invoice(
@@ -291,12 +295,12 @@ async def get_billing_history(
                 invoice_pdf=inv.invoice_pdf,
                 hosted_invoice_url=inv.hosted_invoice_url
             ))
-        
+
         return BillingHistory(
             invoices=invoice_list,
             has_more=invoices.has_more
         )
-    
+
     except stripe.error.StripeError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -312,19 +316,19 @@ async def report_usage(
     db: Session = Depends(get_db)
 ):
     """Report usage for metered billing."""
-    
+
     # Record usage in database
     from app.models import UsageRecord
-    
+
     usage = UsageRecord(
         user_id=current_user.id,
         metric=metric,
         quantity=quantity
     )
-    
+
     db.add(usage)
     db.commit()
-    
+
     # Report to Stripe if on metered plan
     if current_user.subscription_tier in [SubscriptionTier.ENTERPRISE, SubscriptionTier.QUANTUM]:
         background_tasks.add_task(
@@ -333,12 +337,12 @@ async def report_usage(
             quantity,
             metric
         )
-    
+
     return {"message": "Usage recorded", "metric": metric, "quantity": quantity}
 
 def get_tier_features(tier: str) -> list:
     """Get features for a subscription tier."""
-    
+
     features_map = {
         "starter": [
             "10,000 API calls per month",
@@ -382,5 +386,5 @@ def get_tier_features(tier: str) -> list:
             "Custom deployment options"
         ]
     }
-    
+
     return features_map.get(tier, [])

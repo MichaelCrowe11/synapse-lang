@@ -11,31 +11,19 @@ This module provides extensive testing coverage including:
 - Memory usage tests
 """
 
-import unittest
-import time
-import threading
 import gc
-import sys
-import os
-from typing import List, Any
-import tempfile
 import json
+import os
+import sys
+import time
+import unittest
 
 # Add parent directory to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from synapse_lang import (
-    Lexer, EnhancedParser, Interpreter, parse, execute,
-    UncertainValue, uncertain, QuantumCircuit
-)
-from synapse_lang.errors import (
-    SynapseError, SyntaxError, TypeError, RuntimeError,
-    QuantumError, ParallelError, ErrorCollector
-)
-from synapse_lang.type_system import (
-    TypeChecker, PrimitiveType, UncertainType, QubitType,
-    ListType, FunctionType
-)
+from synapse_lang import Interpreter, execute, parse
+from synapse_lang.errors import ParallelError, RuntimeError, SyntaxError, TypeError
+from synapse_lang.type_system import FunctionType, TypeChecker, UncertainType
 
 
 class TestCore(unittest.TestCase):
@@ -114,8 +102,8 @@ class TestUncertaintyComputation(unittest.TestCase):
         result = execute(code, sandbox=False)
 
         # Check that result is uncertain and has correct propagated uncertainty
-        self.assertTrue(hasattr(result, 'value'))
-        self.assertTrue(hasattr(result, 'uncertainty'))
+        self.assertTrue(hasattr(result, "value"))
+        self.assertTrue(hasattr(result, "uncertainty"))
         self.assertAlmostEqual(result.value, 30.0)
         # Uncertainty should be √(0.5² + 1.0²) ≈ 1.118
         self.assertAlmostEqual(result.uncertainty, 1.118, places=2)
@@ -271,16 +259,16 @@ class TestParallelExecution(unittest.TestCase):
             execute(sequential_code, sandbox=False)
             sequential_time = time.time() - start
         except:
-            sequential_time = float('inf')
+            sequential_time = float("inf")
 
         start = time.time()
         try:
             execute(parallel_code, sandbox=False)
             parallel_time = time.time() - start
         except:
-            parallel_time = float('inf')
+            parallel_time = float("inf")
 
-        if parallel_time < float('inf') and sequential_time < float('inf'):
+        if parallel_time < float("inf") and sequential_time < float("inf"):
             # Parallel should be faster (allowing for some overhead)
             self.assertLess(parallel_time, sequential_time * 0.8)
 
@@ -300,7 +288,7 @@ class TestErrorHandling(unittest.TestCase):
         for code in bad_syntax_cases:
             with self.subTest(code=code):
                 try:
-                    result = execute(code, sandbox=False)
+                    execute(code, sandbox=False)
                     self.fail(f"Expected syntax error for: {code}")
                 except (SyntaxError, Exception) as e:
                     self.assertIsNotNone(e)
@@ -309,14 +297,14 @@ class TestErrorHandling(unittest.TestCase):
         """Test type error detection."""
         type_error_cases = [
             '"hello" + 42',      # String + number
-            'true * false',      # Boolean multiplication
+            "true * false",      # Boolean multiplication
             '10 / "zero"',       # Division by string
         ]
 
         for code in type_error_cases:
             with self.subTest(code=code):
                 try:
-                    result = execute(code, sandbox=False)
+                    execute(code, sandbox=False)
                     # May succeed with dynamic typing, check result type
                 except (TypeError, Exception) as e:
                     self.assertIsNotNone(e)
@@ -335,7 +323,7 @@ class TestErrorHandling(unittest.TestCase):
                     result = execute(code, sandbox=False)
                     if code == "result = 10 / 0":
                         # Should handle division by zero gracefully
-                        self.assertTrue(result == float('inf') or isinstance(result, Exception))
+                        self.assertTrue(result == float("inf") or isinstance(result, Exception))
                 except (RuntimeError, Exception) as e:
                     self.assertIsNotNone(e)
 
@@ -352,7 +340,7 @@ class TestErrorHandling(unittest.TestCase):
         try:
             result = execute(code_with_recovery, sandbox=False)
             # Should recover from division by zero
-            self.assertIn(result, [float('inf'), "infinity"])
+            self.assertIn(result, [float("inf"), "infinity"])
         except Exception as e:
             self.skipTest(f"Error recovery not implemented: {e}")
 
@@ -403,8 +391,8 @@ class TestTypeSystem(unittest.TestCase):
 
     def test_type_compatibility(self):
         """Test type compatibility checking."""
-        int_type = self.type_checker.types['int']
-        float_type = self.type_checker.types['float']
+        int_type = self.type_checker.types["int"]
+        float_type = self.type_checker.types["float"]
         uncertain_int = UncertainType(int_type)
 
         # Test assignability
@@ -415,24 +403,24 @@ class TestTypeSystem(unittest.TestCase):
     def test_function_type_checking(self):
         """Test function type checking."""
         add_func = FunctionType([
-            self.type_checker.types['int'],
-            self.type_checker.types['int']
-        ], self.type_checker.types['int'])
+            self.type_checker.types["int"],
+            self.type_checker.types["int"]
+        ], self.type_checker.types["int"])
 
-        self.type_checker.functions['add'] = add_func
+        self.type_checker.functions["add"] = add_func
 
         # Test valid call
-        result_type = self.type_checker.check_function_call('add', [
-            self.type_checker.types['int'],
-            self.type_checker.types['int']
+        result_type = self.type_checker.check_function_call("add", [
+            self.type_checker.types["int"],
+            self.type_checker.types["int"]
         ])
-        self.assertEqual(result_type.name, 'int')
+        self.assertEqual(result_type.name, "int")
 
         # Test invalid call
         self.type_checker.errors = []
-        result_type = self.type_checker.check_function_call('add', [
-            self.type_checker.types['string'],
-            self.type_checker.types['int']
+        result_type = self.type_checker.check_function_call("add", [
+            self.type_checker.types["string"],
+            self.type_checker.types["int"]
         ])
         self.assertTrue(len(self.type_checker.errors) > 0)
 
@@ -452,7 +440,7 @@ class TestPerformance(unittest.TestCase):
             with self.subTest(name=name):
                 start_time = time.time()
                 try:
-                    result = execute(code, sandbox=False)
+                    execute(code, sandbox=False)
                     execution_time = time.time() - start_time
 
                     # Performance assertion (should complete within reasonable time)
@@ -475,7 +463,7 @@ class TestPerformance(unittest.TestCase):
         """
 
         try:
-            result = execute(code, sandbox=False)
+            execute(code, sandbox=False)
 
             # Measure memory after
             peak_memory = self._get_memory_usage()
@@ -505,7 +493,7 @@ class TestPerformance(unittest.TestCase):
 
         start_time = time.time()
         try:
-            ast = parse(large_program)
+            parse(large_program)
             compilation_time = time.time() - start_time
 
             self.assertLess(compilation_time, 2.0, f"Compilation too slow: {compilation_time:.2f}s")
@@ -532,7 +520,7 @@ class TestEdgeCases(unittest.TestCase):
                     result = execute(code, sandbox=False)
                     self.assertIsNotNone(result)
                     self.assertTrue(isinstance(result, (int, float)))
-                except (OverflowError, Exception) as e:
+                except (OverflowError, Exception):
                     # May overflow, which is acceptable
                     pass
 
@@ -549,7 +537,7 @@ class TestEdgeCases(unittest.TestCase):
         try:
             result = execute(code, sandbox=False)
             self.assertTrue(result > 0)
-        except (RecursionError, Exception) as e:
+        except (RecursionError, Exception):
             # May hit recursion limit, which is acceptable
             pass
 
@@ -581,9 +569,9 @@ class TestEdgeCases(unittest.TestCase):
         for code in cases:
             with self.subTest(code=code):
                 try:
-                    result = execute(code, sandbox=False)
+                    execute(code, sandbox=False)
                     # Should handle gracefully, possibly returning None
-                except Exception as e:
+                except Exception:
                     # Empty input handling varies, both outcomes acceptable
                     pass
 
@@ -612,7 +600,7 @@ class TestIntegration(unittest.TestCase):
         try:
             result = execute(code, sandbox=False)
             # Should be approximately π
-            if hasattr(result, 'value'):
+            if hasattr(result, "value"):
                 self.assertAlmostEqual(result.value, 3.14159, places=1)
             else:
                 self.assertAlmostEqual(result, 3.14159, places=1)
@@ -675,9 +663,9 @@ def run_benchmarks():
 
     # Create benchmark results file
     results = {
-        'timestamp': time.time(),
-        'python_version': sys.version,
-        'benchmarks': {}
+        "timestamp": time.time(),
+        "python_version": sys.version,
+        "benchmarks": {}
     }
 
     # Run performance tests
@@ -685,27 +673,27 @@ def run_benchmarks():
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(performance_suite)
 
-    results['benchmarks']['performance'] = {
-        'tests_run': result.testsRun,
-        'failures': len(result.failures),
-        'errors': len(result.errors)
+    results["benchmarks"]["performance"] = {
+        "tests_run": result.testsRun,
+        "failures": len(result.failures),
+        "errors": len(result.errors)
     }
 
     # Save results
-    with open('benchmark_results.json', 'w') as f:
+    with open("benchmark_results.json", "w") as f:
         json.dump(results, f, indent=2)
 
-    print(f"\nBenchmark results saved to benchmark_results.json")
+    print("\nBenchmark results saved to benchmark_results.json")
     return results
 
 
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description='Synapse Language Test Suite')
-    parser.add_argument('--benchmark', action='store_true', help='Run performance benchmarks')
-    parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
-    parser.add_argument('--pattern', '-p', help='Run tests matching pattern')
+    parser = argparse.ArgumentParser(description="Synapse Language Test Suite")
+    parser.add_argument("--benchmark", action="store_true", help="Run performance benchmarks")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+    parser.add_argument("--pattern", "-p", help="Run tests matching pattern")
 
     args = parser.parse_args()
 
@@ -729,18 +717,18 @@ if __name__ == "__main__":
         result = runner.run(suite)
 
         # Print summary
-        print(f"\nTest Summary:")
+        print("\nTest Summary:")
         print(f"Tests run: {result.testsRun}")
         print(f"Failures: {len(result.failures)}")
         print(f"Errors: {len(result.errors)}")
 
         if result.failures:
-            print(f"\nFailures:")
+            print("\nFailures:")
             for test, traceback in result.failures:
                 print(f"- {test}: {traceback}")
 
         if result.errors:
-            print(f"\nErrors:")
+            print("\nErrors:")
             for test, traceback in result.errors:
                 print(f"- {test}: {traceback}")
 

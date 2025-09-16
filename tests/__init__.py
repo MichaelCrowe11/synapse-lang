@@ -8,8 +8,8 @@ Ensures code quality, validates examples, and maintains reliability.
 __version__ = "1.0.0"
 __all__ = ["run_all_tests", "validate_examples", "benchmark_performance"]
 
-import sys
 import os
+import sys
 from pathlib import Path
 
 # Add project root to path

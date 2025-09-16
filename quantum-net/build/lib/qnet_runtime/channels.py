@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+
+
 @dataclass
 class Fiber:
     length_km: float; loss_db_km: float; dark_hz: float=0.0; latency_ms: float=0.5

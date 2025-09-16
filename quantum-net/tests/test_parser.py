@@ -1,8 +1,10 @@
 import unittest
+
+from qnet_lang.ast import LinkDefNode, NetworkNode, NodeDefNode, ProgramNode
 from qnet_lang.lexer import Lexer
 from qnet_lang.parser import Parser
-from qnet_lang.ast import ProgramNode, NetworkNode, NodeDefNode, LinkDefNode, ParamNode
 from qnet_lang.tokens import Tok
+
 
 class TestParser(unittest.TestCase):
 
@@ -18,7 +20,7 @@ class TestParser(unittest.TestCase):
         """
         lexer = Lexer(code)
         tokens = lexer.lex()
-        
+
         # We need to filter out the token objects and just pass the types for now
         # This is a temporary fix until the parser is more robust
         # token_tuples = [(t.type, t.value) for t in tokens]
@@ -61,5 +63,5 @@ class TestParser(unittest.TestCase):
         self.assertEqual(classical_link.params[0].name, "delay")
         self.assertEqual(classical_link.params[0].value, 5)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

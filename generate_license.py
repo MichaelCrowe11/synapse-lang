@@ -4,20 +4,19 @@ Synapse Language - License Key Generator
 For internal use only - generates license keys for customers
 """
 
+import argparse
 import hashlib
 import json
-import time
-from datetime import datetime, timedelta
-import argparse
 import secrets
-import base64
+from datetime import datetime, timedelta
+
 
 class LicenseGenerator:
     """Generate license keys for Synapse Language"""
-    
+
     # Secret key for signing (in production, use proper key management)
     SECRET_KEY = "SYNAPSE-2024-SECRET-KEY-REPLACE-IN-PRODUCTION"
-    
+
     LICENSE_TYPES = {
         "evaluation": 30,  # 30 days
         "personal": 365,  # 1 year
@@ -25,27 +24,27 @@ class LicenseGenerator:
         "enterprise": 365,  # 1 year
         "academic": 365,  # 1 year
     }
-    
+
     def __init__(self):
         self.generated_licenses = []
-    
-    def generate_key(self, license_type: str, email: str, 
+
+    def generate_key(self, license_type: str, email: str,
                      machine_id: Optional[str] = None,
                      days: Optional[int] = None) -> Dict:
         """Generate a license key"""
-        
+
         if license_type not in self.LICENSE_TYPES:
             raise ValueError(f"Invalid license type: {license_type}")
-        
+
         # Calculate expiration
         days = days or self.LICENSE_TYPES[license_type]
         expires = datetime.now() + timedelta(days=days)
         expires_timestamp = int(expires.timestamp())
-        
+
         # Generate license components
         license_id = secrets.token_hex(8)
         machine = machine_id or "ANY"
-        
+
         # Create license key
         key_parts = [
             license_type.upper()[:4],
@@ -53,14 +52,14 @@ class LicenseGenerator:
             license_id[:8],
             machine[:8] if machine != "ANY" else "ANY00000",
         ]
-        
+
         # Generate signature
         signature_data = f"{license_type}{expires_timestamp}{license_id}{machine}{self.SECRET_KEY}"
         signature = hashlib.sha256(signature_data.encode()).hexdigest()[:8].upper()
         key_parts.append(signature)
-        
+
         license_key = "-".join(key_parts)
-        
+
         # Store license info
         license_info = {
             "key": license_key,
@@ -71,11 +70,11 @@ class LicenseGenerator:
             "created": datetime.now().isoformat(),
             "license_id": license_id,
         }
-        
+
         self.generated_licenses.append(license_info)
-        
+
         return license_info
-    
+
     def generate_batch(self, license_type: str, count: int) -> List[Dict]:
         """Generate multiple license keys"""
         licenses = []
@@ -84,13 +83,13 @@ class LicenseGenerator:
             license_info = self.generate_key(license_type, email)
             licenses.append(license_info)
         return licenses
-    
+
     def save_licenses(self, filename: str = "licenses.json"):
         """Save generated licenses to file"""
-        with open(filename, 'w') as f:
+        with open(filename, "w") as f:
             json.dump(self.generated_licenses, f, indent=2)
         print(f"Saved {len(self.generated_licenses)} licenses to {filename}")
-    
+
     def format_license_email(self, license_info: Dict) -> str:
         """Format license information for customer email"""
         return f"""
@@ -130,7 +129,7 @@ Thank you for choosing Synapse Language!
 Best regards,
 The Synapse Team
 """
-    
+
     def _get_features_text(self, license_type: str) -> str:
         """Get features text for license type"""
         features = {
@@ -186,23 +185,23 @@ def main():
     parser.add_argument("--batch", type=int, help="Generate multiple licenses")
     parser.add_argument("--save", action="store_true", help="Save licenses to file")
     parser.add_argument("--format-email", action="store_true", help="Format as customer email")
-    
+
     args = parser.parse_args()
-    
+
     generator = LicenseGenerator()
-    
+
     if args.batch:
         licenses = generator.generate_batch(args.type, args.batch)
         for license_info in licenses:
             print(f"Generated: {license_info['key']}")
     else:
         license_info = generator.generate_key(
-            args.type, 
+            args.type,
             args.email,
             args.machine,
             args.days
         )
-        
+
         if args.format_email:
             print(generator.format_license_email(license_info))
         else:
@@ -210,7 +209,7 @@ def main():
             print(f"Type: {license_info['type']}")
             print(f"Email: {license_info['email']}")
             print(f"Expires: {license_info['expires'][:10]}")
-    
+
     if args.save:
         generator.save_licenses()
 

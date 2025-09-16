@@ -5,7 +5,6 @@ Applies Numba JIT where available with graceful fallback.
 from __future__ import annotations
 
 try:
-    import numba  # type: ignore
     from numba import njit, prange, vectorize
     _have_numba = True
 except Exception:

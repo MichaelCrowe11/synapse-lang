@@ -3,25 +3,23 @@ Synapse Package Registry Service
 Centralized package management for quantum algorithms and libraries
 """
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, BackgroundTasks
-from fastapi.responses import FileResponse, StreamingResponse
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-import asyncio
-import asyncpg
-import aioredis
-import boto3
 import hashlib
-import tarfile
-import zipfile
 import json
 import os
+import tarfile
 import tempfile
-import semver
-from datetime import datetime, timedelta
-import yaml
-import toml
+from datetime import datetime
 from pathlib import Path
+from typing import Any
+
+import aioredis
+import asyncpg
+import boto3
+import toml
+import yaml
+from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse, StreamingResponse
+from pydantic import BaseModel, Field
 
 app = FastAPI(
     title="Synapse Package Registry",
@@ -35,8 +33,8 @@ redis_client = None
 s3_client = None
 
 # Configuration
-PACKAGE_STORAGE_PATH = os.getenv('PACKAGE_STORAGE_PATH', '/app/packages')
-S3_BUCKET = os.getenv('S3_BUCKET', 'synapse-packages')
+PACKAGE_STORAGE_PATH = os.getenv("PACKAGE_STORAGE_PATH", "/app/packages")
+S3_BUCKET = os.getenv("S3_BUCKET", "synapse-packages")
 MAX_PACKAGE_SIZE = 100 * 1024 * 1024  # 100MB
 
 # --- Models ---
@@ -46,29 +44,29 @@ class PackageMetadata(BaseModel):
     version: str
     description: str
     author: str
-    author_email: Optional[str] = None
+    author_email: str | None = None
     license: str = "MIT"
-    homepage: Optional[str] = None
-    repository: Optional[str] = None
-    keywords: List[str] = []
-    classifiers: List[str] = []
-    dependencies: List[str] = []
-    quantum_requirements: Dict[str, Any] = {}
-    
+    homepage: str | None = None
+    repository: str | None = None
+    keywords: list[str] = []
+    classifiers: list[str] = []
+    dependencies: list[str] = []
+    quantum_requirements: dict[str, Any] = {}
+
 class Package(BaseModel):
     id: str
     name: str
     version: str
     description: str
     author: str
-    author_email: Optional[str]
+    author_email: str | None
     license: str
-    homepage: Optional[str]
-    repository: Optional[str]
-    keywords: List[str]
-    classifiers: List[str]
-    dependencies: List[str]
-    quantum_requirements: Dict[str, Any]
+    homepage: str | None
+    repository: str | None
+    keywords: list[str]
+    classifiers: list[str]
+    dependencies: list[str]
+    quantum_requirements: dict[str, Any]
     downloads: int
     stars: int
     created_at: datetime
@@ -81,45 +79,45 @@ class Package(BaseModel):
 
 class PackageSearch(BaseModel):
     query: str
-    category: Optional[str] = None
-    tags: List[str] = []
-    min_qubits: Optional[int] = None
-    max_qubits: Optional[int] = None
-    hardware_compatible: Optional[str] = None
+    category: str | None = None
+    tags: list[str] = []
+    min_qubits: int | None = None
+    max_qubits: int | None = None
+    hardware_compatible: str | None = None
     limit: int = 20
     offset: int = 0
 
 class PackageStats(BaseModel):
-    daily_downloads: List[Dict[str, Any]]
+    daily_downloads: list[dict[str, Any]]
     total_downloads: int
     unique_users: int
     average_rating: float
-    version_history: List[Dict[str, Any]]
+    version_history: list[dict[str, Any]]
 
 # --- Startup/Shutdown ---
 
 @app.on_event("startup")
 async def startup():
     global postgres_pool, redis_client, s3_client
-    
+
     # PostgreSQL for package metadata
     postgres_pool = await asyncpg.create_pool(
-        'postgresql://synapse:synapse@postgres:5432/packages'
+        "postgresql://synapse:synapse@postgres:5432/packages"
     )
-    
+
     # Redis for caching and search
-    redis_client = await aioredis.create_redis_pool('redis://redis:6379')
-    
+    redis_client = await aioredis.create_redis_pool("redis://redis:6379")
+
     # S3 for package storage
     s3_client = boto3.client(
-        's3',
-        aws_access_key_id=os.getenv('AWS_ACCESS_KEY'),
-        aws_secret_access_key=os.getenv('AWS_SECRET_KEY')
+        "s3",
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_KEY")
     )
-    
+
     # Create tables if not exist
     await create_tables()
-    
+
     # Ensure storage directory exists
     Path(PACKAGE_STORAGE_PATH).mkdir(parents=True, exist_ok=True)
 
@@ -159,7 +157,7 @@ async def create_tables():
                 UNIQUE(name, version)
             )
         """)
-        
+
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS package_versions (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -171,7 +169,7 @@ async def create_tables():
                 yanked BOOLEAN DEFAULT FALSE
             )
         """)
-        
+
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS package_reviews (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -182,7 +180,7 @@ async def create_tables():
                 created_at TIMESTAMP DEFAULT NOW()
             )
         """)
-        
+
         # Create indices
         await conn.execute("CREATE INDEX IF NOT EXISTS idx_package_name ON packages(name)")
         await conn.execute("CREATE INDEX IF NOT EXISTS idx_package_keywords ON packages USING GIN(keywords)")
@@ -196,37 +194,37 @@ async def upload_package(
     background_tasks: BackgroundTasks = BackgroundTasks()
 ):
     """Upload a new package to the registry"""
-    
+
     # Validate file size
     contents = await file.read()
     if len(contents) > MAX_PACKAGE_SIZE:
         raise HTTPException(400, f"Package size exceeds {MAX_PACKAGE_SIZE} bytes")
-    
+
     # Save to temporary file
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.tar.gz') as tmp:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".tar.gz") as tmp:
         tmp.write(contents)
         tmp_path = tmp.name
-    
+
     try:
         # Extract and validate package
         metadata = await extract_package_metadata(tmp_path)
-        
+
         # Check if version already exists
         existing = await get_package(metadata.name, metadata.version)
         if existing:
             raise HTTPException(400, f"Package {metadata.name}@{metadata.version} already exists")
-        
+
         # Calculate checksum
         checksum = hashlib.sha256(contents).hexdigest()
-        
+
         # Store package file
-        package_path = await store_package_file(
+        await store_package_file(
             metadata.name,
             metadata.version,
             contents,
             checksum
         )
-        
+
         # Create database entry
         package_id = await create_package_entry(
             metadata,
@@ -234,12 +232,12 @@ async def upload_package(
             checksum,
             "user_id"  # Would come from auth
         )
-        
+
         # Background tasks
         background_tasks.add_task(scan_package_security, package_id)
         background_tasks.add_task(build_search_index, metadata.name)
         background_tasks.add_task(notify_subscribers, metadata.name, metadata.version)
-        
+
         return {
             "package_id": package_id,
             "name": metadata.name,
@@ -247,44 +245,44 @@ async def upload_package(
             "checksum": checksum,
             "status": "published"
         }
-        
+
     finally:
         os.unlink(tmp_path)
 
 async def extract_package_metadata(package_path: str) -> PackageMetadata:
     """Extract metadata from package archive"""
-    
-    with tarfile.open(package_path, 'r:gz') as tar:
+
+    with tarfile.open(package_path, "r:gz") as tar:
         # Look for package.yaml or package.json
         for member in tar.getmembers():
-            if member.name.endswith('package.yaml'):
+            if member.name.endswith("package.yaml"):
                 f = tar.extractfile(member)
                 data = yaml.safe_load(f.read())
                 return PackageMetadata(**data)
-            elif member.name.endswith('package.json'):
+            elif member.name.endswith("package.json"):
                 f = tar.extractfile(member)
                 data = json.loads(f.read())
                 return PackageMetadata(**data)
-            elif member.name.endswith('pyproject.toml'):
+            elif member.name.endswith("pyproject.toml"):
                 f = tar.extractfile(member)
                 data = toml.loads(f.read().decode())
                 # Extract from pyproject.toml format
-                project = data.get('project', {})
+                project = data.get("project", {})
                 return PackageMetadata(
-                    name=project.get('name'),
-                    version=project.get('version'),
-                    description=project.get('description', ''),
-                    author=project.get('authors', [{}])[0].get('name', 'Unknown'),
-                    dependencies=project.get('dependencies', [])
+                    name=project.get("name"),
+                    version=project.get("version"),
+                    description=project.get("description", ""),
+                    author=project.get("authors", [{}])[0].get("name", "Unknown"),
+                    dependencies=project.get("dependencies", [])
                 )
-    
+
     raise HTTPException(400, "No package metadata found")
 
 async def store_package_file(name: str, version: str, contents: bytes, checksum: str) -> str:
     """Store package file in S3 or local storage"""
-    
+
     filename = f"{name}-{version}.tar.gz"
-    
+
     if s3_client:
         # Store in S3
         s3_client.put_object(
@@ -292,8 +290,8 @@ async def store_package_file(name: str, version: str, contents: bytes, checksum:
             Key=f"packages/{name}/{version}/{filename}",
             Body=contents,
             Metadata={
-                'checksum': checksum,
-                'content-type': 'application/gzip'
+                "checksum": checksum,
+                "content-type": "application/gzip"
             }
         )
         return f"s3://{S3_BUCKET}/packages/{name}/{version}/{filename}"
@@ -301,10 +299,10 @@ async def store_package_file(name: str, version: str, contents: bytes, checksum:
         # Store locally
         package_dir = Path(PACKAGE_STORAGE_PATH) / name / version
         package_dir.mkdir(parents=True, exist_ok=True)
-        
+
         package_file = package_dir / filename
         package_file.write_bytes(contents)
-        
+
         return str(package_file)
 
 async def create_package_entry(
@@ -314,7 +312,7 @@ async def create_package_entry(
     published_by: str
 ) -> str:
     """Create package entry in database"""
-    
+
     async with postgres_pool.acquire() as conn:
         result = await conn.fetchrow("""
             INSERT INTO packages (
@@ -332,15 +330,15 @@ async def create_package_entry(
             json.dumps(metadata.quantum_requirements),
             size_bytes, checksum, published_by
         )
-        
-        return str(result['id'])
+
+        return str(result["id"])
 
 # --- Package Search ---
 
 @app.post("/api/v1/packages/search")
 async def search_packages(search: PackageSearch):
     """Search for packages with advanced filters"""
-    
+
     # Build query
     query = """
         SELECT * FROM packages
@@ -348,78 +346,78 @@ async def search_packages(search: PackageSearch):
     """
     params = []
     param_count = 0
-    
+
     # Text search
     if search.query:
         param_count += 1
         query += f" AND (name ILIKE ${param_count} OR description ILIKE ${param_count})"
         params.append(f"%{search.query}%")
-    
+
     # Category filter
     if search.category:
         param_count += 1
         query += f" AND ${param_count} = ANY(classifiers)"
         params.append(search.category)
-    
+
     # Tag filter
     if search.tags:
         param_count += 1
         query += f" AND keywords && ${param_count}"
         params.append(search.tags)
-    
+
     # Quantum requirements
     if search.min_qubits:
         param_count += 1
         query += f" AND (quantum_requirements->>'min_qubits')::int >= ${param_count}"
         params.append(search.min_qubits)
-    
+
     if search.max_qubits:
         param_count += 1
         query += f" AND (quantum_requirements->>'max_qubits')::int <= ${param_count}"
         params.append(search.max_qubits)
-    
+
     # Order and pagination
     query += " ORDER BY downloads DESC, stars DESC"
     param_count += 1
     query += f" LIMIT ${param_count}"
     params.append(search.limit)
-    
+
     param_count += 1
     query += f" OFFSET ${param_count}"
     params.append(search.offset)
-    
+
     # Execute search
     async with postgres_pool.acquire() as conn:
         rows = await conn.fetch(query, *params)
-        
+
         packages = [
             Package(
-                id=str(row['id']),
-                name=row['name'],
-                version=row['version'],
-                description=row['description'],
-                author=row['author'],
-                author_email=row['author_email'],
-                license=row['license'],
-                homepage=row['homepage'],
-                repository=row['repository'],
-                keywords=row['keywords'],
-                classifiers=row['classifiers'],
-                dependencies=row['dependencies'],
-                quantum_requirements=json.loads(row['quantum_requirements']),
-                downloads=row['downloads'],
-                stars=row['stars'],
-                created_at=row['created_at'],
-                updated_at=row['updated_at'],
-                published_by=row['published_by'],
-                size_bytes=row['size_bytes'],
-                checksum=row['checksum'],
-                verified=row['verified'],
-                deprecated=row['deprecated']
+                id=str(row["id"]),
+                name=row["name"],
+                version=row["version"],
+                description=row["description"],
+                author=row["author"],
+                author_email=row["author_email"],
+                license=row["license"],
+                homepage=row["homepage"],
+                repository=row["repository"],
+                keywords=row["keywords"],
+                classifiers=row["classifiers"],
+                dependencies=row["dependencies"],
+                quantum_requirements=json.loads(row["quantum_requirements"]),
+                downloads=row["downloads"],
+                stars=row["stars"],
+                created_at=row["created_at"],
+                updated_at=row["updated_at"],
+                published_by=row["published_by"],
+                size_bytes=row["size_bytes"],
+                checksum=row["checksum"],
+                verified=row["verified"],
+                deprecated=row["deprecated"]
             )
             for row in rows
         ]
-        
+
         # Get total count
         count_query = "SELECT COUNT(*) FROM packages WHERE deprecated = FALSE"
         if search.query:
@@ -427,7 +425,7 @@ async def search_packages(search: PackageSearch):
             total = await conn.fetchval(count_query, f"%{search.query}%")
         else:
             total = await conn.fetchval(count_query)
-        
+
         return {
             "results": packages,
             "total": total,
@@ -440,18 +438,18 @@ async def search_packages(search: PackageSearch):
 @app.get("/api/v1/packages/{name}/{version}/download")
 async def download_package(name: str, version: str):
     """Download a package"""
-    
+
     # Get package info
     package = await get_package(name, version)
     if not package:
         raise HTTPException(404, f"Package {name}@{version} not found")
-    
+
     # Increment download counter
     await increment_downloads(name, version)
-    
+
     # Get file path
     filename = f"{name}-{version}.tar.gz"
-    
+
     if s3_client:
         # Download from S3
         try:
@@ -460,10 +458,10 @@ async def download_package(name: str, version: str):
                 Key=f"packages/{name}/{version}/{filename}"
             )
             return StreamingResponse(
-                response['Body'],
-                media_type='application/gzip',
+                response["Body"],
+                media_type="application/gzip",
                 headers={
-                    'Content-Disposition': f'attachment; filename="{filename}"'
+                    "Content-Disposition": f'attachment; filename="{filename}"'
                 }
             )
         except Exception as e:
@@ -473,33 +471,33 @@ async def download_package(name: str, version: str):
         file_path = Path(PACKAGE_STORAGE_PATH) / name / version / filename
         if not file_path.exists():
             raise HTTPException(404, "Package file not found")
-        
+
         return FileResponse(
             file_path,
-            media_type='application/gzip',
+            media_type="application/gzip",
             filename=filename
         )
 
 @app.get("/api/v1/packages/{name}/{version}")
 async def get_package_info(name: str, version: str = "latest"):
     """Get package information"""
-    
+
     # Resolve version
     if version == "latest":
         version = await get_latest_version(name)
         if not version:
             raise HTTPException(404, f"Package {name} not found")
-    
+
     package = await get_package(name, version)
     if not package:
         raise HTTPException(404, f"Package {name}@{version} not found")
-    
+
     return package
 
 @app.get("/api/v1/packages/{name}/versions")
 async def list_package_versions(name: str):
     """List all versions of a package"""
-    
+
     async with postgres_pool.acquire() as conn:
         rows = await conn.fetch("""
             SELECT version, created_at, size_bytes, downloads
@@ -507,24 +505,24 @@ async def list_package_versions(name: str):
             WHERE name = $1
             ORDER BY created_at DESC
         """, name)
-        
+
         if not rows:
             raise HTTPException(404, f"Package {name} not found")
-        
+
         versions = [
             {
-                "version": row['version'],
-                "created_at": row['created_at'],
-                "size_bytes": row['size_bytes'],
-                "downloads": row['downloads']
+                "version": row["version"],
+                "created_at": row["created_at"],
+                "size_bytes": row["size_bytes"],
+                "downloads": row["downloads"]
             }
             for row in rows
         ]
-        
+
         return {
             "name": name,
             "versions": versions,
-            "latest": versions[0]['version'] if versions else None
+            "latest": versions[0]["version"] if versions else None
         }
 
 # --- Package Statistics ---
@@ -532,7 +530,7 @@ async def list_package_versions(name: str):
 @app.get("/api/v1/packages/{name}/stats")
 async def get_package_stats(name: str) -> PackageStats:
     """Get package statistics"""
-    
+
     async with postgres_pool.acquire() as conn:
         # Get download history
         downloads = await conn.fetch("""
@@ -543,24 +541,24 @@ async def get_package_stats(name: str) -> PackageStats:
             GROUP BY DATE(created_at)
             ORDER BY date
         """, name)
-        
+
         # Get total downloads
         total = await conn.fetchval("""
             SELECT SUM(downloads) FROM packages WHERE name = $1
         """, name)
-        
+
         # Get unique users
         unique_users = await conn.fetchval("""
             SELECT COUNT(DISTINCT user_id)
             FROM package_downloads
             WHERE package_name = $1
         """, name)
-        
+
         # Get average rating
         avg_rating = await conn.fetchval("""
             SELECT AVG(rating) FROM package_reviews WHERE package_name = $1
         """, name)
-        
+
         # Get version history
         versions = await conn.fetch("""
             SELECT version, created_at, downloads
@@ -568,10 +566,10 @@ async def get_package_stats(name: str) -> PackageStats:
             WHERE name = $1
             ORDER BY created_at DESC
         """, name)
-        
+
         return PackageStats(
             daily_downloads=[
-                {"date": str(row['date']), "downloads": row['downloads']}
+                {"date": str(row["date"]), "downloads": row["downloads"]}
                 for row in downloads
             ],
             total_downloads=total or 0,
@@ -579,9 +577,9 @@ async def get_package_stats(name: str) -> PackageStats:
             average_rating=float(avg_rating) if avg_rating else 0.0,
             version_history=[
                 {
-                    "version": row['version'],
-                    "released": row['created_at'],
-                    "downloads": row['downloads']
+                    "version": row["version"],
+                    "released": row["created_at"],
+                    "downloads": row["downloads"]
                 }
                 for row in versions
             ]
@@ -589,46 +587,46 @@ async def get_package_stats(name: str) -> PackageStats:
 
 # --- Helper Functions ---
 
-async def get_package(name: str, version: str) -> Optional[Package]:
+async def get_package(name: str, version: str) -> Package | None:
     """Get package from database"""
-    
+
     async with postgres_pool.acquire() as conn:
         row = await conn.fetchrow("""
             SELECT * FROM packages
             WHERE name = $1 AND version = $2
         """, name, version)
-        
+
         if not row:
             return None
-        
+
         return Package(
-            id=str(row['id']),
-            name=row['name'],
-            version=row['version'],
-            description=row['description'],
-            author=row['author'],
-            author_email=row['author_email'],
-            license=row['license'],
-            homepage=row['homepage'],
-            repository=row['repository'],
-            keywords=row['keywords'],
-            classifiers=row['classifiers'],
-            dependencies=row['dependencies'],
-            quantum_requirements=json.loads(row['quantum_requirements']),
-            downloads=row['downloads'],
-            stars=row['stars'],
-            created_at=row['created_at'],
-            updated_at=row['updated_at'],
-            published_by=row['published_by'],
-            size_bytes=row['size_bytes'],
-            checksum=row['checksum'],
-            verified=row['verified'],
-            deprecated=row['deprecated']
+            id=str(row["id"]),
+            name=row["name"],
+            version=row["version"],
+            description=row["description"],
+            author=row["author"],
+            author_email=row["author_email"],
+            license=row["license"],
+            homepage=row["homepage"],
+            repository=row["repository"],
+            keywords=row["keywords"],
+            classifiers=row["classifiers"],
+            dependencies=row["dependencies"],
+            quantum_requirements=json.loads(row["quantum_requirements"]),
+            downloads=row["downloads"],
+            stars=row["stars"],
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
+            published_by=row["published_by"],
+            size_bytes=row["size_bytes"],
+            checksum=row["checksum"],
+            verified=row["verified"],
+            deprecated=row["deprecated"]
         )
 
-async def get_latest_version(name: str) -> Optional[str]:
+async def get_latest_version(name: str) -> str | None:
     """Get latest version of a package"""
-    
+
     async with postgres_pool.acquire() as conn:
         version = await conn.fetchval("""
             SELECT version FROM packages
@@ -636,19 +634,19 @@ async def get_latest_version(name: str) -> Optional[str]:
             ORDER BY created_at DESC
             LIMIT 1
         """, name)
-        
+
         return version
 
 async def increment_downloads(name: str, version: str):
     """Increment download counter"""
-    
+
     async with postgres_pool.acquire() as conn:
         await conn.execute("""
             UPDATE packages
             SET downloads = downloads + 1
             WHERE name = $1 AND version = $2
         """, name, version)
-        
+
         # Also track in downloads table for analytics
         await conn.execute("""
             INSERT INTO package_downloads (package_name, version, user_id, created_at)

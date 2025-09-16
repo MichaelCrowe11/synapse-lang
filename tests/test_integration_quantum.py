@@ -1,4 +1,3 @@
-import re
 from synapse_lang.synapse_interpreter import SynapseInterpreter
 
 BELL_SRC = """
@@ -21,8 +20,8 @@ run rot { shots: 128 }
 
 def _find_counts(result_list):
     for item in result_list:
-        if isinstance(item, dict) and 'counts' in item:
-            return item['counts']
+        if isinstance(item, dict) and "counts" in item:
+            return item["counts"]
     return None
 
 def test_bell_circuit_counts():

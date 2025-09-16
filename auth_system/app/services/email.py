@@ -2,11 +2,11 @@
 Email Service for sending notifications
 """
 
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from typing import List, Optional
 import logging
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -15,28 +15,28 @@ async def send_email(
     to_email: str,
     subject: str,
     body: str,
-    html_body: Optional[str] = None
+    html_body: str | None = None
 ):
     """Send an email using SMTP."""
-    
+
     if not settings.SMTP_HOST:
         # If no SMTP configured, just log the email
         logger.info(f"Email would be sent to {to_email}: {subject}")
         logger.debug(f"Email body: {body}")
         return
-    
+
     try:
         # Create message
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = subject
-        msg['From'] = settings.SMTP_FROM_EMAIL
-        msg['To'] = to_email
-        
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = settings.SMTP_FROM_EMAIL
+        msg["To"] = to_email
+
         # Add text and HTML parts
-        msg.attach(MIMEText(body, 'plain'))
+        msg.attach(MIMEText(body, "plain"))
         if html_body:
-            msg.attach(MIMEText(html_body, 'html'))
-        
+            msg.attach(MIMEText(html_body, "html"))
+
         # Send email
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
             if settings.SMTP_TLS:
@@ -44,9 +44,9 @@ async def send_email(
             if settings.SMTP_USER and settings.SMTP_PASSWORD:
                 server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
             server.send_message(msg)
-        
+
         logger.info(f"Email sent successfully to {to_email}")
-    
+
     except Exception as e:
         logger.error(f"Failed to send email to {to_email}: {e}")
         raise
@@ -57,11 +57,11 @@ async def send_verification_email(
     token: str
 ):
     """Send email verification."""
-    
+
     verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
-    
+
     subject = "Verify Your Synapse Account"
-    
+
     body = f"""
 Hello {name},
 
@@ -76,7 +76,7 @@ If you didn't create an account, please ignore this email.
 Best regards,
 The Synapse Team
 """
-    
+
     html_body = f"""
 <!DOCTYPE html>
 <html>
@@ -114,7 +114,7 @@ The Synapse Team
 </body>
 </html>
 """
-    
+
     await send_email(email, subject, body, html_body)
 
 async def send_password_reset_email(
@@ -123,11 +123,11 @@ async def send_password_reset_email(
     token: str
 ):
     """Send password reset email."""
-    
+
     reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
-    
+
     subject = "Reset Your Synapse Password"
-    
+
     body = f"""
 Hello {name},
 
@@ -142,7 +142,7 @@ If you didn't request a password reset, please ignore this email and your passwo
 Best regards,
 The Synapse Team
 """
-    
+
     html_body = f"""
 <!DOCTYPE html>
 <html>
@@ -184,7 +184,7 @@ The Synapse Team
 </body>
 </html>
 """
-    
+
     await send_email(email, subject, body, html_body)
 
 async def send_subscription_confirmation(
@@ -194,9 +194,9 @@ async def send_subscription_confirmation(
     billing_cycle: str
 ):
     """Send subscription confirmation email."""
-    
+
     subject = f"Subscription Confirmed - {tier.title()} Plan"
-    
+
     body = f"""
 Hello {name},
 
@@ -214,7 +214,7 @@ Thank you for choosing Synapse!
 Best regards,
 The Synapse Team
 """
-    
+
     html_body = f"""
 <!DOCTYPE html>
 <html>
@@ -255,5 +255,5 @@ The Synapse Team
 </body>
 </html>
 """
-    
+
     await send_email(email, subject, body, html_body)

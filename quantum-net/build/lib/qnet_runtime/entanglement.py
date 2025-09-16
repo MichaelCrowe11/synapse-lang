@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+
+
 @dataclass
 class EPR:
     a: str; b: str; fidelity: float

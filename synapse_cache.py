@@ -10,8 +10,9 @@ import threading
 import time
 import weakref
 from collections import OrderedDict
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any
 
 
 @dataclass
@@ -28,7 +29,7 @@ class TTLRUCache:
     def __init__(self, maxsize: int = 2048, default_ttl: float = 0.0):
         self.maxsize = maxsize
         self.default_ttl = default_ttl
-        self._data: OrderedDict[str, Tuple[float, Any]] = OrderedDict()
+        self._data: OrderedDict[str, tuple[float, Any]] = OrderedDict()
         self._lock = threading.RLock()
         self.stats = CacheStats()
 
@@ -44,7 +45,7 @@ class TTLRUCache:
             self._data.popitem(last=False)  # LRU
             self.stats.evictions += 1
 
-    def get(self, key: str) -> Tuple[bool, Any]:
+    def get(self, key: str) -> tuple[bool, Any]:
         with self._lock:
             self._purge_expired()
             if key in self._data:
@@ -55,7 +56,7 @@ class TTLRUCache:
             self.stats.misses += 1
             return False, None
 
-    def set(self, key: str, value: Any, ttl: Optional[float] = None):
+    def set(self, key: str, value: Any, ttl: float | None = None):
         with self._lock:
             exp = 0.0
             if ttl is None:
@@ -74,15 +75,15 @@ class TTLRUCache:
             self._data.clear()
             self.stats = CacheStats()
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics"""
         return {
-            'size': len(self._data),
-            'hits': self.stats.hits,
-            'misses': self.stats.misses,
-            'evictions': self.stats.evictions,
-            'sets': self.stats.sets,
-            'hit_rate': self.stats.hits / (self.stats.hits + self.stats.misses) if (self.stats.hits + self.stats.misses) > 0 else 0
+            "size": len(self._data),
+            "hits": self.stats.hits,
+            "misses": self.stats.misses,
+            "evictions": self.stats.evictions,
+            "sets": self.stats.sets,
+            "hit_rate": self.stats.hits / (self.stats.hits + self.stats.misses) if (self.stats.hits + self.stats.misses) > 0 else 0
         }
 
 
@@ -91,18 +92,18 @@ class LRUCache(TTLRUCache):
     """Backward compatible LRU cache"""
     def __init__(self, max_size: int = 1000):
         super().__init__(maxsize=max_size, default_ttl=0.0)
-    
-    def get(self, key: str) -> Optional[Any]:
+
+    def get(self, key: str) -> Any | None:
         hit, val = super().get(key)
         return val if hit else None
-    
+
     def put(self, key: str, value: Any) -> None:
         super().set(key, value)
-    
-    def stats(self) -> Dict[str, Any]:
+
+    def stats(self) -> dict[str, Any]:
         return super().get_stats()
 
-_global_caches: Dict[str, TTLRUCache] = {}
+_global_caches: dict[str, TTLRUCache] = {}
 
 
 def get_cache(slot: str = "default") -> TTLRUCache:
@@ -152,7 +153,7 @@ def memoize_ast(slot: str = "default", ttl: float = 0.0):
 
 class ComputationCache:
     """Cache for expensive computations with TTL support"""
-    
+
     def __init__(self, max_size: int = 500, ttl: float = 3600):
         self.cache = {}
         self.max_size = max_size
@@ -160,16 +161,16 @@ class ComputationCache:
         self.access_times = {}
         self.computation_times = {}
         self.lock = threading.Lock()
-    
+
     def _make_key(self, func_name: str, args: tuple, kwargs: dict) -> str:
         """Create cache key from function call"""
         key_data = (func_name, args, tuple(sorted(kwargs.items())))
         return hashlib.sha256(pickle.dumps(key_data)).hexdigest()
-    
-    def get(self, func_name: str, args: tuple, kwargs: dict) -> Optional[Tuple[Any, float]]:
+
+    def get(self, func_name: str, args: tuple, kwargs: dict) -> tuple[Any, float] | None:
         """Get cached result if available and not expired"""
         key = self._make_key(func_name, args, kwargs)
-        
+
         with self.lock:
             if key in self.cache:
                 timestamp, result = self.cache[key]
@@ -182,11 +183,11 @@ class ComputationCache:
                     if key in self.computation_times:
                         del self.computation_times[key]
         return None
-    
+
     def put(self, func_name: str, args: tuple, kwargs: dict, result: Any, computation_time: float) -> None:
         """Cache computation result"""
         key = self._make_key(func_name, args, kwargs)
-        
+
         with self.lock:
             # Evict oldest if cache is full
             if len(self.cache) >= self.max_size:
@@ -195,16 +196,16 @@ class ComputationCache:
                 del self.access_times[oldest_key]
                 if oldest_key in self.computation_times:
                     del self.computation_times[oldest_key]
-            
+
             self.cache[key] = (time.time(), result)
             self.access_times[key] = time.time()
             self.computation_times[key] = computation_time
 
-def memoize(cache: Optional[LRUCache] = None, key_func: Optional[Callable] = None):
+def memoize(cache: LRUCache | None = None, key_func: Callable | None = None):
     """Decorator for memoizing function results"""
     if cache is None:
         cache = LRUCache(max_size=100)
-    
+
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -213,39 +214,39 @@ def memoize(cache: Optional[LRUCache] = None, key_func: Optional[Callable] = Non
                 cache_key = key_func(*args, **kwargs)
             else:
                 cache_key = str((func.__name__, args, tuple(sorted(kwargs.items()))))
-            
+
             # Check cache
             result = cache.get(cache_key)
             if result is not None:
                 return result
-            
+
             # Compute and cache
             result = func(*args, **kwargs)
             cache.put(cache_key, result)
             return result
-        
+
         wrapper.cache = cache
         return wrapper
     return decorator
 
 class ASTCache:
     """Specialized cache for parsed AST nodes"""
-    
+
     def __init__(self, max_size: int = 100):
         self.cache = LRUCache(max_size)
         self.source_hashes = {}
-    
-    def get_ast(self, source: str) -> Optional[Any]:
+
+    def get_ast(self, source: str) -> Any | None:
         """Get cached AST for source code"""
         source_hash = hashlib.sha256(source.encode()).hexdigest()
         return self.cache.get(source_hash)
-    
+
     def put_ast(self, source: str, ast: Any) -> None:
         """Cache AST for source code"""
         source_hash = hashlib.sha256(source.encode()).hexdigest()
         self.cache.put(source_hash, ast)
         self.source_hashes[source_hash] = len(source)
-    
+
     def invalidate(self, source: str) -> None:
         """Invalidate cache for specific source"""
         source_hash = hashlib.sha256(source.encode()).hexdigest()
@@ -254,38 +255,38 @@ class ASTCache:
 
 class ResultCache:
     """Cache for parallel computation results"""
-    
+
     def __init__(self):
         self.branch_results = {}
         self.synthesis_results = {}
         self.lock = threading.Lock()
-    
+
     def store_branch_result(self, branch_id: str, result: Any) -> None:
         """Store result from parallel branch"""
         with self.lock:
             self.branch_results[branch_id] = (time.time(), result)
-    
-    def get_branch_result(self, branch_id: str) -> Optional[Any]:
+
+    def get_branch_result(self, branch_id: str) -> Any | None:
         """Get result from parallel branch"""
         with self.lock:
             if branch_id in self.branch_results:
                 return self.branch_results[branch_id][1]
         return None
-    
-    def store_synthesis(self, branches: Tuple[str, ...], result: Any) -> None:
+
+    def store_synthesis(self, branches: tuple[str, ...], result: Any) -> None:
         """Store synthesis result from multiple branches"""
         key = tuple(sorted(branches))
         with self.lock:
             self.synthesis_results[key] = (time.time(), result)
-    
-    def get_synthesis(self, branches: Tuple[str, ...]) -> Optional[Any]:
+
+    def get_synthesis(self, branches: tuple[str, ...]) -> Any | None:
         """Get cached synthesis result"""
         key = tuple(sorted(branches))
         with self.lock:
             if key in self.synthesis_results:
                 return self.synthesis_results[key][1]
         return None
-    
+
     def clear_old_results(self, max_age: float = 300) -> None:
         """Clear results older than max_age seconds"""
         current_time = time.time()
@@ -303,14 +304,14 @@ class ResultCache:
 
 class TensorCache:
     """Specialized cache for tensor operations"""
-    
+
     def __init__(self, max_memory_mb: int = 500):
         self.cache = {}
         self.memory_usage = 0
         self.max_memory = max_memory_mb * 1024 * 1024  # Convert to bytes
         self.lock = threading.Lock()
         self.weak_refs = weakref.WeakValueDictionary()
-    
+
     def _estimate_size(self, tensor: Any) -> int:
         """Estimate memory size of tensor"""
         try:
@@ -321,12 +322,12 @@ class TensorCache:
             pass
         # Rough estimate for other objects
         return len(pickle.dumps(tensor))
-    
+
     def cache_operation(self, op_name: str, inputs: tuple, result: Any) -> None:
         """Cache tensor operation result"""
         key = (op_name, tuple(id(x) for x in inputs))
         size = self._estimate_size(result)
-        
+
         with self.lock:
             # Check if we need to evict
             while self.memory_usage + size > self.max_memory and self.cache:
@@ -334,15 +335,15 @@ class TensorCache:
                 oldest_key = next(iter(self.cache))
                 evicted = self.cache.pop(oldest_key)
                 self.memory_usage -= self._estimate_size(evicted)
-            
+
             self.cache[key] = result
             self.memory_usage += size
             self.weak_refs[key] = result
-    
-    def get_operation(self, op_name: str, inputs: tuple) -> Optional[Any]:
+
+    def get_operation(self, op_name: str, inputs: tuple) -> Any | None:
         """Get cached tensor operation result"""
         key = (op_name, tuple(id(x) for x in inputs))
-        
+
         with self.lock:
             # Try strong reference first
             if key in self.cache:
@@ -387,20 +388,20 @@ def clear_all_caches():
     _tensor_cache.cache.clear()
     _tensor_cache.memory_usage = 0
 
-def get_cache_stats() -> Dict[str, Any]:
+def get_cache_stats() -> dict[str, Any]:
     """Get statistics for all caches"""
     return {
-        'ast_cache': _ast_cache.cache.stats(),
-        'computation_cache': {
-            'size': len(_computation_cache.cache),
-            'ttl': _computation_cache.ttl
+        "ast_cache": _ast_cache.cache.stats(),
+        "computation_cache": {
+            "size": len(_computation_cache.cache),
+            "ttl": _computation_cache.ttl
         },
-        'result_cache': {
-            'branches': len(_result_cache.branch_results),
-            'synthesis': len(_result_cache.synthesis_results)
+        "result_cache": {
+            "branches": len(_result_cache.branch_results),
+            "synthesis": len(_result_cache.synthesis_results)
         },
-        'tensor_cache': {
-            'size': len(_tensor_cache.cache),
-            'memory_mb': _tensor_cache.memory_usage / (1024 * 1024)
+        "tensor_cache": {
+            "size": len(_tensor_cache.cache),
+            "memory_mb": _tensor_cache.memory_usage / (1024 * 1024)
         }
     }

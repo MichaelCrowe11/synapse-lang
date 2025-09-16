@@ -4,26 +4,27 @@ __version__ = "2.0.0"
 __author__ = "Synapse Development Team"
 
 # Core language components
-from .synapse_lexer import Lexer, Token, TokenType
-from .parser_enhanced import EnhancedParser
 from .ast_consolidated import *
-from .synapse_interpreter import SynapseInterpreter as Interpreter
 
 # Advanced features
 from .jit_compiler import JITCompiler, compile_synapse_code, synapse_jit
+from .parser_enhanced import EnhancedParser
 from .security import (
-    ExecutionSandbox, 
+    ExecutionSandbox,
     ProcessSandbox,
     SecurityPolicy,
+    create_quantum_sandbox,
+    create_scientific_sandbox,
     sandboxed,
     sandboxed_context,
-    create_scientific_sandbox,
-    create_quantum_sandbox
 )
+from .synapse_interpreter import SynapseInterpreter as Interpreter
+from .synapse_lexer import Lexer, Token, TokenType
 
 # Quantum computing - import only what exists
 try:
-    from .quantum.core import QuantumCircuitBuilder as QuantumCircuit, SimulatorBackend as QuantumSimulator
+    from .quantum.core import QuantumCircuitBuilder as QuantumCircuit
+    from .quantum.core import SimulatorBackend as QuantumSimulator
     from .quantum.semantics import QuantumSemanticError
 except ImportError:
     # Quantum modules may not be fully available
@@ -43,7 +44,7 @@ except ImportError:
     def uncertain(*args, **kwargs): return None
 
 try:
-    from .tensor_ops import TensorEngine, TensorConfig, create_tensor_engine
+    from .tensor_ops import TensorConfig, TensorEngine, create_tensor_engine
     TENSOR_AVAILABLE = True
 except ImportError:
     TENSOR_AVAILABLE = False
@@ -76,13 +77,13 @@ def parse(code: str) -> ASTNode:
 def compile(code: str, optimize: bool = True) -> callable:
     """Compile Synapse code to optimized machine code."""
     from .jit_compiler import CompilationConfig
-    
+
     config = CompilationConfig(
         parallel=optimize,
         fastmath=optimize,
         optimize_level=3 if optimize else 0
     )
-    
+
     return compile_synapse_code(code, config)
 
 
@@ -99,7 +100,7 @@ def execute(code: str, sandbox: bool = True, context: dict = None) -> any:
 
 def run_file(filepath: str, sandbox: bool = True) -> any:
     """Run a Synapse source file."""
-    with open(filepath, 'r') as f:
+    with open(filepath) as f:
         code = f.read()
     return execute(code, sandbox)
 
@@ -107,18 +108,18 @@ def run_file(filepath: str, sandbox: bool = True) -> any:
 # CLI entry point
 def main():
     """Main CLI entry point."""
-    import sys
     import argparse
-    
-    parser = argparse.ArgumentParser(description='Synapse Language Interpreter')
-    parser.add_argument('file', nargs='?', help='Synapse source file to run')
-    parser.add_argument('--compile', action='store_true', help='Compile to optimized code')
-    parser.add_argument('--no-sandbox', action='store_true', help='Disable security sandbox')
-    parser.add_argument('--repl', action='store_true', help='Start interactive REPL')
-    parser.add_argument('--version', action='version', version=f'Synapse {__version__}')
-    
+    import sys
+
+    parser = argparse.ArgumentParser(description="Synapse Language Interpreter")
+    parser.add_argument("file", nargs="?", help="Synapse source file to run")
+    parser.add_argument("--compile", action="store_true", help="Compile to optimized code")
+    parser.add_argument("--no-sandbox", action="store_true", help="Disable security sandbox")
+    parser.add_argument("--repl", action="store_true", help="Start interactive REPL")
+    parser.add_argument("--version", action="version", version=f"Synapse {__version__}")
+
     args = parser.parse_args()
-    
+
     if args.repl or not args.file:
         from .synapse_repl import REPL
         repl = REPL(sandbox=not args.no_sandbox)
@@ -130,7 +131,7 @@ def main():
                 result = compiled()
             else:
                 result = run_file(args.file, sandbox=not args.no_sandbox)
-            
+
             if result is not None:
                 print(result)
         except Exception as e:
@@ -141,24 +142,24 @@ def main():
 # Export main components
 __all__ = [
     # Core
-    'Lexer', 'Token', 'TokenType',
-    'EnhancedParser', 'Interpreter',
-    
+    "Lexer", "Token", "TokenType",
+    "EnhancedParser", "Interpreter",
+
     # AST Nodes
-    'ASTNode', 'ProgramNode', 'NumberNode', 'StringNode',
-    'IdentifierNode', 'BinaryOpNode', 'UnaryOpNode',
-    'HypothesisNode', 'ExperimentNode', 'ParallelNode',
-    'QuantumCircuitNode', 'QuantumGateNode',
-    
+    "ASTNode", "ProgramNode", "NumberNode", "StringNode",
+    "IdentifierNode", "BinaryOpNode", "UnaryOpNode",
+    "HypothesisNode", "ExperimentNode", "ParallelNode",
+    "QuantumCircuitNode", "QuantumGateNode",
+
     # Compilation
-    'JITCompiler', 'compile_synapse_code', 'synapse_jit',
-    
+    "JITCompiler", "compile_synapse_code", "synapse_jit",
+
     # Security
-    'ExecutionSandbox', 'SecurityPolicy', 'sandboxed',
-    
+    "ExecutionSandbox", "SecurityPolicy", "sandboxed",
+
     # High-level API
-    'parse', 'compile', 'execute', 'run_file',
-    
+    "parse", "compile", "execute", "run_file",
+
     # Version
-    '__version__'
+    "__version__"
 ]

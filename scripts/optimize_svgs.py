@@ -3,7 +3,12 @@ Falls back to simple whitespace trimming.
 Run: python scripts/optimize_svgs.py [--check]
 """
 from __future__ import annotations
-import subprocess, shutil, sys, pathlib, re
+
+import pathlib
+import re
+import shutil
+import subprocess
+import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 BRANDING = ROOT / "branding"

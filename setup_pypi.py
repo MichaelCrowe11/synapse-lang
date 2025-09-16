@@ -2,8 +2,9 @@
 Setup configuration for Synapse Language - PyPI Ready
 """
 
-from setuptools import setup, find_packages
 from pathlib import Path
+
+from setuptools import find_packages, setup
 
 # Read version from package
 version_file = Path(__file__).parent / "synapse_lang" / "__version__.py"

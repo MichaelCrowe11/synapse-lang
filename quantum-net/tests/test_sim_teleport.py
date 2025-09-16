@@ -1,6 +1,7 @@
-from qnet_runtime.sim_core import Sim
 from qnet_runtime.channels import Fiber
 from qnet_runtime.entanglement import Entangler
+from qnet_runtime.sim_core import Sim
+
 
 def test_entanglement_success():
     sim=Sim(seed=123)

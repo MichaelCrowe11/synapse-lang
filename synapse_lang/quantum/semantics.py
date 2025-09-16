@@ -18,8 +18,9 @@ Error Codes Implemented:
 NOTE: Keep this list in sync with `QUANTUM_SYNTAX.md` error code table.
 """
 
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple, Union
+
 
 class QuantumSemanticError(ValueError):
     """Raised for static/semantic quantum errors (pre-execution)."""
@@ -28,8 +29,8 @@ class QuantumSemanticError(ValueError):
 class GateSpec:
     name: str
     arity: int
-    n_params: Union[int, Tuple[int, ...]]
-    aliases: Tuple[str, ...] = ()
+    n_params: int | tuple[int, ...]
+    aliases: tuple[str, ...] = ()
     distinct_qubits: bool = True
 
 def _canon(name: str) -> str:
@@ -42,7 +43,7 @@ def normalize_gate_name(name: str) -> str:
             return g.name
     return n
 
-_GATES: List[GateSpec] = [
+_GATES: list[GateSpec] = [
     GateSpec("h", 1, 0),
     GateSpec("x", 1, 0),
     GateSpec("y", 1, 0),
@@ -63,7 +64,7 @@ _GATES: List[GateSpec] = [
     GateSpec("cswap", 3, 0),
 ]
 
-GATE_REGISTRY: Dict[str, GateSpec] = {g.name: g for g in _GATES}
+GATE_REGISTRY: dict[str, GateSpec] = {g.name: g for g in _GATES}
 for g in _GATES:
     for a in g.aliases:
         GATE_REGISTRY[a] = g
@@ -71,17 +72,17 @@ for g in _GATES:
 @dataclass(frozen=True)
 class NoiseConfig:
     kind: str  # 'ideal' or 'depolarizing'
-    p1q: Optional[float] = None
-    p2q: Optional[float] = None
-    readout: Optional[float] = None
+    p1q: float | None = None
+    p2q: float | None = None
+    readout: float | None = None
 
 @dataclass(frozen=True)
 class BackendConfig:
     shots: int = 1
-    seed: Optional[int] = None
+    seed: int | None = None
     noise: NoiseConfig = NoiseConfig(kind="ideal")
 
-def parse_noise_model(model: Union[str, dict]) -> NoiseConfig:
+def parse_noise_model(model: str | dict) -> NoiseConfig:
     if isinstance(model, str):
         kind = _canon(model)
         if kind != "ideal":
@@ -114,7 +115,7 @@ def _ensure_int(i, label: str):
         raise QuantumSemanticError(f"E1101 Non-integer qubit index for {label}: {i!r}")
     return i
 
-def validate_gate_call(gate_name: str, qubits: Sequence[int], params: Sequence[float], n_qubits_total: int, span: Optional[Tuple[int,int]] = None) -> None:
+def validate_gate_call(gate_name: str, qubits: Sequence[int], params: Sequence[float], n_qubits_total: int, span: tuple[int, int] | None = None) -> None:
     nname = normalize_gate_name(gate_name)
     spec = GATE_REGISTRY.get(nname)
     loc = "" if span is None else f" (line {span[0]}, col {span[1]})"
@@ -133,7 +134,7 @@ def validate_gate_call(gate_name: str, qubits: Sequence[int], params: Sequence[f
     if spec.distinct_qubits and len(set(qints)) != len(qints):
         raise QuantumSemanticError(f"E1003 Gate '{spec.name}' requires distinct qubits{loc}")
 
-def validate_circuit(*, n_qubits: int, ops: Iterable[Dict[str, object]], measurements: Optional[List[Sequence[int]]] = None, backend: Optional[BackendConfig] = None) -> None:
+def validate_circuit(*, n_qubits: int, ops: Iterable[dict[str, object]], measurements: list[Sequence[int]] | None = None, backend: BackendConfig | None = None) -> None:
     if not isinstance(n_qubits, int) or n_qubits <= 0:
         raise QuantumSemanticError(f"E1302 circuit qubit count must be positive int, got {n_qubits!r}")
     for op in ops:

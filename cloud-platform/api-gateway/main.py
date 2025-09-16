@@ -3,18 +3,17 @@ Synapse Cloud Platform - API Gateway
 Main entry point for all cloud services
 """
 
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel
-from typing import Optional, Dict, Any, List
-import asyncio
+import uuid
+from datetime import datetime
+from typing import Any
+
 import aioredis
 import asyncpg
 import jwt
-import uuid
-from datetime import datetime, timedelta
-import json
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel
 
 app = FastAPI(
     title="Synapse Quantum Cloud Platform",
@@ -47,7 +46,7 @@ class QuantumCircuitRequest(BaseModel):
     shots: int = 1000
     optimization_level: int = 1
     gpu_enabled: bool = False
-    max_qubits: Optional[int] = 24
+    max_qubits: int | None = 24
 
 class QuantumJob(BaseModel):
     job_id: str
@@ -55,18 +54,18 @@ class QuantumJob(BaseModel):
     status: str
     circuit: QuantumCircuitRequest
     created_at: datetime
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    result: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    result: dict[str, Any] | None = None
+    error: str | None = None
 
 class PackageUpload(BaseModel):
     name: str
     version: str
     description: str
     author: str
-    dependencies: List[str] = []
-    quantum_requirements: Dict[str, Any] = {}
+    dependencies: list[str] = []
+    quantum_requirements: dict[str, Any] = {}
     code: str
 
 class UserSubscription(BaseModel):
@@ -92,9 +91,9 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
 @app.on_event("startup")
 async def startup():
     global redis_client, postgres_pool
-    redis_client = await aioredis.create_redis_pool('redis://redis:6379')
+    redis_client = await aioredis.create_redis_pool("redis://redis:6379")
     postgres_pool = await asyncpg.create_pool(
-        'postgresql://synapse:synapse@postgres:5432/synapse'
+        "postgresql://synapse:synapse@postgres:5432/synapse"
     )
 
 @app.on_event("shutdown")
@@ -130,7 +129,7 @@ async def execute_quantum_circuit(
     """Execute a quantum circuit on the cloud platform"""
 
     # Check user quota
-    subscription = await get_user_subscription(user['user_id'])
+    subscription = await get_user_subscription(user["user_id"])
     if request.max_qubits > subscription.max_qubits:
         raise HTTPException(400, f"Qubit limit exceeded. Your limit: {subscription.max_qubits}")
 
@@ -138,7 +137,7 @@ async def execute_quantum_circuit(
     job_id = str(uuid.uuid4())
     job = QuantumJob(
         job_id=job_id,
-        user_id=user['user_id'],
+        user_id=user["user_id"],
         status="queued",
         circuit=request,
         created_at=datetime.utcnow()
@@ -165,7 +164,7 @@ async def get_job_status(job_id: str, user = Depends(verify_token)):
     if not job:
         raise HTTPException(404, "Job not found")
 
-    if job['user_id'] != user['user_id']:
+    if job["user_id"] != user["user_id"]:
         raise HTTPException(403, "Access denied")
 
     return job
@@ -178,10 +177,10 @@ async def list_user_jobs(
 ):
     """List all jobs for the current user"""
 
-    jobs = await fetch_user_jobs(user['user_id'], limit, offset)
+    jobs = await fetch_user_jobs(user["user_id"], limit, offset)
     return {
         "jobs": jobs,
-        "total": await count_user_jobs(user['user_id'])
+        "total": await count_user_jobs(user["user_id"])
     }
 
 @app.delete("/api/v1/quantum/job/{job_id}")
@@ -192,10 +191,10 @@ async def cancel_job(job_id: str, user = Depends(verify_token)):
     if not job:
         raise HTTPException(404, "Job not found")
 
-    if job['user_id'] != user['user_id']:
+    if job["user_id"] != user["user_id"]:
         raise HTTPException(403, "Access denied")
 
-    if job['status'] not in ['queued', 'running']:
+    if job["status"] not in ["queued", "running"]:
         raise HTTPException(400, "Job cannot be cancelled")
 
     await cancel_quantum_job(job_id)
@@ -215,7 +214,7 @@ async def upload_package(
         raise HTTPException(400, "Package version already exists")
 
     # Store package
-    package_id = await store_package(package, user['user_id'])
+    package_id = await store_package(package, user["user_id"])
 
     # Run security scan
     await scan_package_security(package_id)
@@ -230,7 +229,7 @@ async def upload_package(
 @app.get("/api/v1/packages/search")
 async def search_packages(
     query: str,
-    category: Optional[str] = None,
+    category: str | None = None,
     limit: int = 20
 ):
     """Search for packages in the registry"""
@@ -290,9 +289,9 @@ async def list_courses():
 async def enroll_in_course(course_id: str, user = Depends(verify_token)):
     """Enroll in an educational course"""
 
-    enrollment = await create_enrollment(user['user_id'], course_id)
+    enrollment = await create_enrollment(user["user_id"], course_id)
     return {
-        "enrollment_id": enrollment['id'],
+        "enrollment_id": enrollment["id"],
         "course_id": course_id,
         "status": "enrolled",
         "access_url": f"/learn/{course_id}"
@@ -302,7 +301,7 @@ async def enroll_in_course(course_id: str, user = Depends(verify_token)):
 async def get_course_progress(course_id: str, user = Depends(verify_token)):
     """Get user's progress in a course"""
 
-    progress = await fetch_course_progress(user['user_id'], course_id)
+    progress = await fetch_course_progress(user["user_id"], course_id)
     return progress
 
 # --- Enterprise Features ---
@@ -316,11 +315,11 @@ async def create_team(
     """Create an enterprise team"""
 
     # Check if user has enterprise subscription
-    subscription = await get_user_subscription(user['user_id'])
-    if subscription.tier != 'enterprise':
+    subscription = await get_user_subscription(user["user_id"])
+    if subscription.tier != "enterprise":
         raise HTTPException(403, "Enterprise subscription required")
 
-    team = await create_enterprise_team(name, description, user['user_id'])
+    team = await create_enterprise_team(name, description, user["user_id"])
     return team
 
 @app.post("/api/v1/enterprise/team/{team_id}/members")
@@ -333,7 +332,7 @@ async def add_team_member(
     """Add a member to an enterprise team"""
 
     # Check if user is team admin
-    if not await is_team_admin(user['user_id'], team_id):
+    if not await is_team_admin(user["user_id"], team_id):
         raise HTTPException(403, "Admin access required")
 
     member = await add_member_to_team(team_id, email, role)
@@ -344,11 +343,11 @@ async def get_enterprise_usage(user = Depends(verify_token)):
     """Get enterprise usage statistics"""
 
     # Check enterprise subscription
-    subscription = await get_user_subscription(user['user_id'])
-    if subscription.tier != 'enterprise':
+    subscription = await get_user_subscription(user["user_id"])
+    if subscription.tier != "enterprise":
         raise HTTPException(403, "Enterprise subscription required")
 
-    usage = await fetch_enterprise_usage(user['user_id'])
+    usage = await fetch_enterprise_usage(user["user_id"])
     return usage
 
 # --- Analytics ---
@@ -356,13 +355,13 @@ async def get_enterprise_usage(user = Depends(verify_token)):
 @app.post("/api/v1/analytics/event")
 async def track_event(
     event_type: str,
-    properties: Dict[str, Any],
+    properties: dict[str, Any],
     user = Depends(verify_token)
 ):
     """Track analytics event"""
 
     await store_analytics_event(
-        user_id=user['user_id'],
+        user_id=user["user_id"],
         event_type=event_type,
         properties=properties,
         timestamp=datetime.utcnow()
@@ -375,11 +374,11 @@ async def get_analytics_dashboard(user = Depends(verify_token)):
     """Get user's analytics dashboard"""
 
     return {
-        "total_circuits_run": await count_user_circuits(user['user_id']),
-        "total_compute_time": await get_total_compute_time(user['user_id']),
-        "favorite_algorithms": await get_favorite_algorithms(user['user_id']),
-        "monthly_usage": await get_monthly_usage(user['user_id']),
-        "success_rate": await calculate_success_rate(user['user_id'])
+        "total_circuits_run": await count_user_circuits(user["user_id"]),
+        "total_compute_time": await get_total_compute_time(user["user_id"]),
+        "favorite_algorithms": await get_favorite_algorithms(user["user_id"]),
+        "monthly_usage": await get_monthly_usage(user["user_id"]),
+        "success_rate": await calculate_success_rate(user["user_id"])
     }
 
 # --- Health & Monitoring ---

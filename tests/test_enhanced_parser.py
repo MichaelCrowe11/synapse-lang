@@ -4,14 +4,16 @@ Phase 1, Week 1, Day 1-2
 Tests the enhanced parser with proper syntax
 """
 
-import pytest
-import sys
 import os
+import sys
+
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from synapse_lang.synapse_lexer import Lexer, TokenType
-from synapse_lang.synapse_parser_enhanced import EnhancedParser, ParserError
 from synapse_lang.synapse_ast_enhanced import *
+from synapse_lang.synapse_lexer import Lexer
+from synapse_lang.synapse_parser_enhanced import EnhancedParser, ParserError
 
 
 class TestParserFramework:
@@ -20,8 +22,8 @@ class TestParserFramework:
     def parse_source(self, source: str):
         """Helper to parse source code"""
         # Remove leading indentation from test strings
-        lines = source.strip().split('\n')
-        source = '\n'.join(lines)
+        lines = source.strip().split("\n")
+        source = "\n".join(lines)
 
         lexer = Lexer(source)
         parser = EnhancedParser(lexer)
@@ -77,7 +79,7 @@ class TestUncertainValues(TestParserFramework):
         assert isinstance(ast, ProgramNode)
         assert len(ast.body) == 1
         assert isinstance(ast.body[0], AssignmentNode)
-        assert ast.body[0].is_uncertain == True
+        assert ast.body[0].is_uncertain
 
     def test_uncertain_value_variable(self):
         """Parse uncertain value with variable"""
@@ -564,8 +566,8 @@ explore solution_space:
 
 def run_tests():
     """Run all parser tests"""
-    pytest.main([__file__, '-v'])
+    pytest.main([__file__, "-v"])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_tests()

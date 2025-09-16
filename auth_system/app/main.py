@@ -2,16 +2,17 @@
 Main FastAPI Application for Synapse Authentication System
 """
 
+import logging
+from contextlib import asynccontextmanager
+from datetime import datetime
+
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
-import logging
-from datetime import datetime
 
+from app.api.v1 import api_keys, auth, subscriptions, users
 from app.core.config import settings
 from app.core.database import init_db
-from app.api.v1 import auth, users, api_keys, subscriptions
 from app.schemas import HealthResponse
 
 # Configure logging
@@ -26,16 +27,16 @@ async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown."""
     # Startup
     logger.info("Starting Synapse Authentication System...")
-    
+
     # Initialize database
     try:
         init_db()
         logger.info("Database initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down Synapse Authentication System...")
 
@@ -122,7 +123,7 @@ app.openapi_tags = [
 
 if __name__ == "__main__":
     import uvicorn
-    
+
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",

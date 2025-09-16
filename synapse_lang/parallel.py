@@ -5,31 +5,32 @@ Provides parallel execution, distributed computing, and parameter sweep capabili
 
 import asyncio
 import concurrent.futures
-import multiprocessing as mp
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-import numpy as np
-from functools import partial
 import itertools
+from collections.abc import Callable
 from dataclasses import dataclass
+from functools import partial
+from typing import Any
+
+import numpy as np
 
 
 @dataclass
 class ParallelConfig:
     """Configuration for parallel execution."""
-    max_workers: Optional[int] = None
+    max_workers: int | None = None
     chunk_size: int = 1
     backend: str = "threading"  # "threading", "multiprocessing", or "asyncio"
-    timeout: Optional[float] = None
+    timeout: float | None = None
 
 
 class ParallelBlock:
     """Manages parallel execution of code blocks."""
-    
-    def __init__(self, config: Optional[ParallelConfig] = None):
+
+    def __init__(self, config: ParallelConfig | None = None):
         self.config = config or ParallelConfig()
         self.results = []
-        
-    def execute(self, tasks: List[Callable], *args, **kwargs) -> List[Any]:
+
+    def execute(self, tasks: list[Callable], *args, **kwargs) -> list[Any]:
         """Execute tasks in parallel."""
         if self.config.backend == "threading":
             return self._execute_threaded(tasks, *args, **kwargs)
@@ -39,20 +40,20 @@ class ParallelBlock:
             return asyncio.run(self._execute_async(tasks, *args, **kwargs))
         else:
             raise ValueError(f"Unknown backend: {self.config.backend}")
-    
-    def _execute_threaded(self, tasks: List[Callable], *args, **kwargs) -> List[Any]:
+
+    def _execute_threaded(self, tasks: list[Callable], *args, **kwargs) -> list[Any]:
         """Execute using ThreadPoolExecutor."""
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.config.max_workers) as executor:
             futures = [executor.submit(task, *args, **kwargs) for task in tasks]
             return [f.result(timeout=self.config.timeout) for f in futures]
-    
-    def _execute_multiprocess(self, tasks: List[Callable], *args, **kwargs) -> List[Any]:
+
+    def _execute_multiprocess(self, tasks: list[Callable], *args, **kwargs) -> list[Any]:
         """Execute using ProcessPoolExecutor."""
         with concurrent.futures.ProcessPoolExecutor(max_workers=self.config.max_workers) as executor:
             futures = [executor.submit(task, *args, **kwargs) for task in tasks]
             return [f.result(timeout=self.config.timeout) for f in futures]
-    
-    async def _execute_async(self, tasks: List[Callable], *args, **kwargs) -> List[Any]:
+
+    async def _execute_async(self, tasks: list[Callable], *args, **kwargs) -> list[Any]:
         """Execute using asyncio."""
         async_tasks = []
         for task in tasks:
@@ -66,18 +67,18 @@ class ParallelBlock:
 
 class ParameterSweep:
     """Performs parameter sweeps for scientific computing."""
-    
-    def __init__(self, function: Callable, parallel_config: Optional[ParallelConfig] = None):
+
+    def __init__(self, function: Callable, parallel_config: ParallelConfig | None = None):
         self.function = function
         self.parallel_config = parallel_config or ParallelConfig()
-        
-    def sweep(self, **param_ranges) -> Dict[Tuple, Any]:
+
+    def sweep(self, **param_ranges) -> dict[tuple, Any]:
         """
         Perform parameter sweep over given ranges.
-        
+
         Args:
             **param_ranges: Keyword arguments with parameter names and their ranges
-            
+
         Returns:
             Dictionary mapping parameter tuples to results
         """
@@ -85,52 +86,52 @@ class ParameterSweep:
         param_names = list(param_ranges.keys())
         param_values = list(param_ranges.values())
         combinations = list(itertools.product(*param_values))
-        
+
         # Create tasks for each combination
         tasks = []
         for combo in combinations:
-            kwargs = dict(zip(param_names, combo))
+            kwargs = dict(zip(param_names, combo, strict=False))
             tasks.append(partial(self.function, **kwargs))
-        
+
         # Execute in parallel
         block = ParallelBlock(self.parallel_config)
         results = block.execute(tasks)
-        
+
         # Return results mapped to parameter combinations
-        return dict(zip(combinations, results))
-    
-    def sweep_grid(self, param_grid: Dict[str, List]) -> np.ndarray:
+        return dict(zip(combinations, results, strict=False))
+
+    def sweep_grid(self, param_grid: dict[str, list]) -> np.ndarray:
         """
         Perform grid-based parameter sweep.
-        
+
         Args:
             param_grid: Dictionary of parameter names to value lists
-            
+
         Returns:
             N-dimensional array of results
         """
         results_dict = self.sweep(**param_grid)
-        
+
         # Reshape results into grid
         shapes = [len(v) for v in param_grid.values()]
         results_array = np.zeros(shapes)
-        
+
         for combo, result in results_dict.items():
             indices = combo
             results_array[indices] = result
-            
+
         return results_array
 
 
 class ThoughtStream:
     """Represents a parallel thought stream for hypothesis exploration."""
-    
+
     def __init__(self, stream_id: str, hypothesis: Callable):
         self.stream_id = stream_id
         self.hypothesis = hypothesis
         self.result = None
         self.status = "pending"
-        
+
     async def process(self, *args, **kwargs):
         """Process the hypothesis asynchronously."""
         self.status = "processing"
@@ -148,13 +149,13 @@ class ThoughtStream:
 
 class ParallelSynthesizer:
     """Synthesizes results from parallel computations."""
-    
+
     @staticmethod
-    def consensus(results: List[Any], threshold: float = 0.95) -> bool:
+    def consensus(results: list[Any], threshold: float = 0.95) -> bool:
         """Check if results reach consensus."""
         if not results:
             return False
-            
+
         # For numeric results
         if all(isinstance(r, (int, float)) for r in results):
             mean = np.mean(results)
@@ -163,21 +164,21 @@ class ParallelSynthesizer:
                 return True
             cv = std / mean  # Coefficient of variation
             return cv < (1 - threshold)
-        
+
         # For boolean results
         if all(isinstance(r, bool) for r in results):
             agreement = sum(results) / len(results)
             return agreement >= threshold or agreement <= (1 - threshold)
-        
+
         # For other types, check equality
         return len(set(str(r) for r in results)) == 1
-    
+
     @staticmethod
-    def merge(results: List[Any], strategy: str = "mean") -> Any:
+    def merge(results: list[Any], strategy: str = "mean") -> Any:
         """Merge parallel results using specified strategy."""
         if not results:
             return None
-            
+
         if strategy == "mean" and all(isinstance(r, (int, float)) for r in results):
             return np.mean(results)
         elif strategy == "median" and all(isinstance(r, (int, float)) for r in results):
@@ -195,65 +196,65 @@ class ParallelSynthesizer:
 
 # Public API functions
 
-def parallel_block(tasks: Union[List[Callable], Dict[str, Callable], Callable] = None, 
-                  config: Optional[Dict] = None,
-                  function: Optional[Callable] = None,
-                  inputs: Optional[List] = None,
-                  **kwargs) -> Union[List, Dict]:
+def parallel_block(tasks: list[Callable] | dict[str, Callable] | Callable = None,
+                  config: dict | None = None,
+                  function: Callable | None = None,
+                  inputs: list | None = None,
+                  **kwargs) -> list | dict:
     """
     Execute tasks in parallel.
-    
+
     Args:
         tasks: List of functions or dict of named functions
         config: Optional configuration dict
         function: Single function to apply to multiple inputs
         inputs: List of inputs for the function
         **kwargs: Additional keyword arguments
-        
+
     Returns:
         List or dict of results matching input structure
     """
     cfg = ParallelConfig(**config) if config else ParallelConfig()
     block = ParallelBlock(cfg)
-    
+
     # Handle function + inputs pattern (common use case)
     if function is not None and inputs is not None:
         from functools import partial
         task_list = [partial(function, inp) for inp in inputs]
         return block.execute(task_list)
-    
+
     # Handle tasks argument
     if tasks is not None:
         if isinstance(tasks, dict):
             # Named tasks
             task_list = list(tasks.values())
             results = block.execute(task_list)
-            return dict(zip(tasks.keys(), results))
+            return dict(zip(tasks.keys(), results, strict=False))
         elif callable(tasks):
             # Single function
             return block.execute([tasks])[0]
         else:
             # List of tasks
             return block.execute(tasks)
-    
+
     raise ValueError("Must provide either 'tasks' or both 'function' and 'inputs'")
 
 
-def parameter_sweep(function: Callable, 
-                   param_ranges: Dict[str, List] = None,
-                   parameters: Dict[str, List] = None,
+def parameter_sweep(function: Callable,
+                   param_ranges: dict[str, list] = None,
+                   parameters: dict[str, list] = None,
                    parallel: bool = True,
-                   **kwargs) -> Dict[Tuple, Any]:
+                   **kwargs) -> dict[tuple, Any]:
     """
     Perform parameter sweep over given ranges.
-    
+
     Args:
         function: Function to evaluate
         param_ranges: Dictionary of parameter names to value ranges
         parameters: Alternative name for param_ranges
         parallel: Whether to run in parallel
         **kwargs: Additional parameter ranges
-        
+
     Returns:
         Dictionary mapping parameter tuples to results
     """
@@ -262,22 +263,22 @@ def parameter_sweep(function: Callable,
         param_ranges = parameters
     elif param_ranges is None and kwargs:
         param_ranges = kwargs
-    
+
     if param_ranges is None:
         raise ValueError("Must provide parameter ranges")
-    
+
     config = ParallelConfig() if parallel else ParallelConfig(max_workers=1)
     sweeper = ParameterSweep(function, config)
     return sweeper.sweep(**param_ranges)
 
 
-async def thought_streams(hypotheses: Dict[str, Callable]) -> Dict[str, Any]:
+async def thought_streams(hypotheses: dict[str, Callable]) -> dict[str, Any]:
     """
     Process multiple hypotheses as parallel thought streams.
-    
+
     Args:
         hypotheses: Dictionary of stream names to hypothesis functions
-        
+
     Returns:
         Dictionary of stream names to results
     """
@@ -287,19 +288,19 @@ async def thought_streams(hypotheses: Dict[str, Callable]) -> Dict[str, Any]:
     return {stream.stream_id: stream.result for stream in streams}
 
 
-def synthesize(results: List[Any], strategy: str = "consensus") -> Any:
+def synthesize(results: list[Any], strategy: str = "consensus") -> Any:
     """
     Synthesize results from parallel computations.
-    
+
     Args:
         results: List of results to synthesize
         strategy: Synthesis strategy ("consensus", "mean", "median", "vote", "all")
-        
+
     Returns:
         Synthesized result
     """
     synthesizer = ParallelSynthesizer()
-    
+
     if strategy == "consensus":
         return synthesizer.consensus(results)
     else:
@@ -308,7 +309,7 @@ def synthesize(results: List[Any], strategy: str = "consensus") -> Any:
 
 # Additional features for compatibility
 
-def optimize_parallel_execution(tasks: List[Callable], dependencies: Optional[Dict] = None) -> List:
+def optimize_parallel_execution(tasks: list[Callable], dependencies: dict | None = None) -> list:
     """Optimize parallel execution based on task dependencies."""
     # Simple implementation - just run tasks in parallel
     config = ParallelConfig(backend="threading")
@@ -316,7 +317,7 @@ def optimize_parallel_execution(tasks: List[Callable], dependencies: Optional[Di
     return block.execute(tasks)
 
 
-def distributed_compute(func: Callable, data: List, workers: int = None) -> List:
+def distributed_compute(func: Callable, data: list, workers: int = None) -> list:
     """Distributed computation across workers."""
     config = ParallelConfig(max_workers=workers, backend="multiprocessing")
     block = ParallelBlock(config)
@@ -324,7 +325,7 @@ def distributed_compute(func: Callable, data: List, workers: int = None) -> List
     return block.execute(tasks)
 
 
-def parallel_map(func: Callable, iterable, workers: int = None) -> List:
+def parallel_map(func: Callable, iterable, workers: int = None) -> list:
     """Parallel map operation."""
     return distributed_compute(func, list(iterable), workers)
 
@@ -338,20 +339,20 @@ def parallel_reduce(func: Callable, iterable, initial=None) -> Any:
 
 class SharedState:
     """Thread-safe shared state for parallel computations."""
-    
+
     def __init__(self, initial_value=None):
         import threading
         self._value = initial_value
         self._lock = threading.Lock()
-    
+
     def get(self):
         with self._lock:
             return self._value
-    
+
     def set(self, value):
         with self._lock:
             self._value = value
-    
+
     def update(self, func):
         with self._lock:
             self._value = func(self._value)
@@ -378,21 +379,21 @@ class RayBackend:
 
 # Export public API
 __all__ = [
-    'ParallelConfig',
-    'ParallelBlock', 
-    'ParameterSweep',
-    'ThoughtStream',
-    'ParallelSynthesizer',
-    'SharedState',
-    'DaskBackend',
-    'MPIBackend', 
-    'RayBackend',
-    'parallel_block',
-    'parameter_sweep',
-    'thought_streams',
-    'synthesize',
-    'distributed_compute',
-    'parallel_map',
-    'parallel_reduce',
-    'optimize_parallel_execution'
+    "ParallelConfig",
+    "ParallelBlock",
+    "ParameterSweep",
+    "ThoughtStream",
+    "ParallelSynthesizer",
+    "SharedState",
+    "DaskBackend",
+    "MPIBackend",
+    "RayBackend",
+    "parallel_block",
+    "parameter_sweep",
+    "thought_streams",
+    "synthesize",
+    "distributed_compute",
+    "parallel_map",
+    "parallel_reduce",
+    "optimize_parallel_execution"
 ]

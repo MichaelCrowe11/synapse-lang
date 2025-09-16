@@ -3,9 +3,9 @@ Minimal Parser for Synapse Language
 Focuses on core functionality that we can test
 """
 
-from typing import List, Optional, Union
-from synapse_lang.synapse_lexer import Token, TokenType, Lexer
 from synapse_lang.synapse_ast_enhanced import *
+from synapse_lang.synapse_lexer import Lexer, Token, TokenType
+
 
 class ParserError(Exception):
     """Parser error exception"""
@@ -54,8 +54,8 @@ class MinimalParser:
         raise ParserError(message, self.peek())
 
     def skip_newlines(self):
-        """Skip newline tokens"""
-        while self.check(TokenType.NEWLINE):
+        """Skip newline and indent/dedent tokens"""
+        while self.check(TokenType.NEWLINE) or self.check(TokenType.INDENT) or self.check(TokenType.DEDENT):
             self.advance()
 
     def parse(self) -> ProgramNode:
@@ -72,7 +72,7 @@ class MinimalParser:
 
         return ProgramNode(statements)
 
-    def parse_statement(self) -> Optional[ASTNode]:
+    def parse_statement(self) -> ASTNode | None:
         """Parse a single statement"""
         self.skip_newlines()
 
@@ -147,6 +147,11 @@ class MinimalParser:
 
         # Parse qubits declaration
         self.skip_newlines()
+
+        # Skip indent if present
+        if self.check(TokenType.INDENT):
+            self.advance()
+
         self.consume(TokenType.IDENTIFIER, "Expected 'qubits'")
         self.consume(TokenType.COLON, "Expected ':'")
         qubits = int(self.consume(TokenType.NUMBER, "Expected number of qubits").value)
@@ -262,6 +267,10 @@ class MinimalParser:
         branches = []
         self.skip_newlines()
 
+        # Skip indent if present
+        if self.check(TokenType.INDENT):
+            self.advance()
+
         # Parse branches
         while self.check(TokenType.BRANCH):
             self.advance()
@@ -285,6 +294,10 @@ class MinimalParser:
         predictions = []
 
         self.skip_newlines()
+
+        # Skip indent if present
+        if self.check(TokenType.INDENT):
+            self.advance()
 
         # Parse assume
         if self.check(TokenType.ASSUME):

@@ -3,8 +3,8 @@ Complete Abstract Syntax Tree (AST) nodes for Synapse language
 """
 
 from dataclasses import dataclass
-from typing import List, Optional, Any, Union
-from enum import Enum
+from typing import Any, Optional
+
 
 class ASTNode:
     """Base class for all AST nodes"""
@@ -25,29 +25,29 @@ class TypeNode(ASTNode):
 @dataclass
 class ProgramNode(ASTNode):
     """Root node of the AST"""
-    statements: List[ASTNode]
+    statements: list[ASTNode]
 
 @dataclass
 class HypothesisNode(StatementNode):
     """Hypothesis construct"""
     name: str
-    assume: Optional[ExpressionNode]
-    predict: Optional[ExpressionNode]
-    validate: Optional[ExpressionNode]
+    assume: ExpressionNode | None
+    predict: ExpressionNode | None
+    validate: ExpressionNode | None
 
 @dataclass
 class ExperimentNode(StatementNode):
     """Experiment construct"""
     name: str
-    setup: Optional[ExpressionNode]
-    parallel_block: Optional['ParallelNode']
-    synthesize: Optional[ExpressionNode]
+    setup: ExpressionNode | None
+    parallel_block: Optional["ParallelNode"]
+    synthesize: ExpressionNode | None
 
 @dataclass
 class ParallelNode(StatementNode):
     """Parallel execution block"""
-    branches: List['BranchNode']
-    factor: Optional[Union[int, str]]  # Can be number or "auto"
+    branches: list["BranchNode"]
+    factor: int | str | None  # Can be number or "auto"
 
 @dataclass
 class BranchNode(ASTNode):
@@ -65,14 +65,14 @@ class StreamNode(StatementNode):
 class PipelineNode(StatementNode):
     """Pipeline construct"""
     name: str
-    stages: List['StageNode']
+    stages: list["StageNode"]
 
 @dataclass
 class StageNode(ASTNode):
     """Pipeline stage"""
     name: str
-    operations: List[ASTNode]
-    parallel_factor: Optional[Union[int, str]]
+    operations: list[ASTNode]
+    parallel_factor: int | str | None
 
 @dataclass
 class StageOperationNode(ASTNode):
@@ -83,7 +83,7 @@ class StageOperationNode(ASTNode):
 @dataclass
 class ForkNode(ASTNode):
     """Fork construct for parallel paths"""
-    paths: List['PathNode']
+    paths: list["PathNode"]
 
 @dataclass
 class PathNode(ASTNode):
@@ -95,9 +95,9 @@ class PathNode(ASTNode):
 class ReasonChainNode(StatementNode):
     """Reasoning chain"""
     name: str
-    premises: List['PremiseNode']
-    derivations: List['DerivationNode']
-    conclusion: Optional[ExpressionNode]
+    premises: list["PremiseNode"]
+    derivations: list["DerivationNode"]
+    conclusion: ExpressionNode | None
 
 @dataclass
 class PremiseNode(ASTNode):
@@ -109,17 +109,17 @@ class PremiseNode(ASTNode):
 class DerivationNode(ASTNode):
     """Derivation in reasoning chain"""
     id: str
-    source_ids: List[str]
+    source_ids: list[str]
     text: ExpressionNode
 
 @dataclass
 class ExploreNode(StatementNode):
     """Explore construct with backtracking"""
     space_name: str
-    tries: List['TryPathNode']
-    fallbacks: List['FallbackPathNode']
-    accept_condition: Optional[ExpressionNode]
-    reject_condition: Optional[ExpressionNode]
+    tries: list["TryPathNode"]
+    fallbacks: list["FallbackPathNode"]
+    accept_condition: ExpressionNode | None
+    reject_condition: ExpressionNode | None
 
 @dataclass
 class TryPathNode(ASTNode):
@@ -136,75 +136,75 @@ class FallbackPathNode(ASTNode):
 @dataclass
 class SymbolicNode(StatementNode):
     """Symbolic mathematics block"""
-    bindings: List['LetBindingNode']
-    operations: List[ASTNode]
+    bindings: list["LetBindingNode"]
+    operations: list[ASTNode]
 
 @dataclass
 class LetBindingNode(ASTNode):
     """Let binding for symbolic math"""
     name: str
-    params: List[str]
+    params: list[str]
     expression: ExpressionNode
 
 @dataclass
 class SolveNode(ASTNode):
     """Solve operation"""
     equation: ExpressionNode
-    variable: Optional[str]
+    variable: str | None
 
 @dataclass
 class ProveNode(ASTNode):
     """Prove operation"""
     statement: ExpressionNode
-    domain: Optional[ExpressionNode]
+    domain: ExpressionNode | None
 
 @dataclass
 class UncertainDeclarationNode(StatementNode):
     """Uncertain value declaration"""
     name: str
     value: ExpressionNode
-    uncertainty: Optional[ExpressionNode]
-    value_type: Optional[str]
+    uncertainty: ExpressionNode | None
+    value_type: str | None
 
 @dataclass
 class ConstrainNode(StatementNode):
     """Constrain declaration"""
     variable: str
     var_type: str
-    constraint: Optional[ExpressionNode]
+    constraint: ExpressionNode | None
 
 @dataclass
 class EvolveNode(StatementNode):
     """Evolve declaration"""
     variable: str
     var_type: str
-    initial: Optional[ExpressionNode]
+    initial: ExpressionNode | None
 
 @dataclass
 class ObserveNode(StatementNode):
     """Observe declaration"""
     variable: str
     var_type: str
-    condition: Optional[ExpressionNode]
+    condition: ExpressionNode | None
 
 @dataclass
 class TensorDeclarationNode(StatementNode):
     """Tensor declaration"""
     name: str
-    dimensions: List[ExpressionNode]
-    initializer: Optional[ExpressionNode]
+    dimensions: list[ExpressionNode]
+    initializer: ExpressionNode | None
 
 @dataclass
 class PropagateNode(StatementNode):
     """Propagate uncertainty block"""
-    operations: List[ASTNode]
+    operations: list[ASTNode]
 
 @dataclass
 class StructureNode(StatementNode):
     """Structure definition"""
     name: str
-    fields: List['FieldNode']
-    invariants: List[ExpressionNode]
+    fields: list["FieldNode"]
+    invariants: list[ExpressionNode]
 
 @dataclass
 class FieldNode(ASTNode):
@@ -216,8 +216,8 @@ class FieldNode(ASTNode):
 class TheoryNode(StatementNode):
     """Theory definition"""
     name: str
-    components: List['ComponentNode']
-    invariants: List[ExpressionNode]
+    components: list["ComponentNode"]
+    invariants: list[ExpressionNode]
 
 @dataclass
 class ComponentNode(ASTNode):
@@ -240,7 +240,7 @@ class ChannelSendNode(StatementNode):
 @dataclass
 class BlockNode(ExpressionNode):
     """Block of statements"""
-    statements: List[ASTNode]
+    statements: list[ASTNode]
 
 @dataclass
 class BinaryOpNode(ExpressionNode):
@@ -265,13 +265,13 @@ class ImplicationNode(ExpressionNode):
 class FunctionCallNode(ExpressionNode):
     """Function call"""
     function: ExpressionNode
-    arguments: List[ExpressionNode]
+    arguments: list[ExpressionNode]
 
 @dataclass
 class IndexAccessNode(ExpressionNode):
     """Array/tensor index access"""
     object: ExpressionNode
-    indices: List[ExpressionNode]
+    indices: list[ExpressionNode]
 
 @dataclass
 class NumberNode(ExpressionNode):
@@ -297,30 +297,30 @@ class SimpleTypeNode(TypeNode):
 class ParameterizedTypeNode(TypeNode):
     """Parameterized type (e.g., Graph<Atom>)"""
     name: str
-    parameters: List[TypeNode]
+    parameters: list[TypeNode]
 
 @dataclass
 class TensorTypeNode(TypeNode):
     """Tensor type with dimensions"""
     base_type: str
-    dimensions: List[ExpressionNode]
+    dimensions: list[ExpressionNode]
 
 class ASTVisitor:
     """Visitor pattern for traversing AST"""
-    
+
     def visit(self, node: ASTNode) -> Any:
         """Visit a node and dispatch to appropriate method"""
-        method_name = f'visit_{node.__class__.__name__}'
+        method_name = f"visit_{node.__class__.__name__}"
         visitor = getattr(self, method_name, self.generic_visit)
         return visitor(node)
-    
+
     def generic_visit(self, node: ASTNode) -> Any:
         """Default visitor for unhandled nodes"""
         raise NotImplementedError(f"No visitor method for {node.__class__.__name__}")
 
 class ASTTransformer(ASTVisitor):
     """Transformer for modifying AST"""
-    
+
     def generic_visit(self, node: ASTNode) -> ASTNode:
         """Default transformer - returns node unchanged"""
         return node
@@ -328,12 +328,12 @@ class ASTTransformer(ASTVisitor):
 def print_ast(node: ASTNode, indent: int = 0) -> None:
     """Pretty print AST structure"""
     prefix = "  " * indent
-    
+
     if isinstance(node, ProgramNode):
         print(f"{prefix}Program:")
         for stmt in node.statements:
             print_ast(stmt, indent + 1)
-    
+
     elif isinstance(node, HypothesisNode):
         print(f"{prefix}Hypothesis '{node.name}':")
         if node.assume:
@@ -345,7 +345,7 @@ def print_ast(node: ASTNode, indent: int = 0) -> None:
         if node.validate:
             print(f"{prefix}  Validate:")
             print_ast(node.validate, indent + 2)
-    
+
     elif isinstance(node, ExperimentNode):
         print(f"{prefix}Experiment '{node.name}':")
         if node.setup:
@@ -356,28 +356,28 @@ def print_ast(node: ASTNode, indent: int = 0) -> None:
         if node.synthesize:
             print(f"{prefix}  Synthesize:")
             print_ast(node.synthesize, indent + 2)
-    
+
     elif isinstance(node, ParallelNode):
         factor_str = f" (factor={node.factor})" if node.factor else ""
         print(f"{prefix}Parallel{factor_str}:")
         for branch in node.branches:
             print_ast(branch, indent + 1)
-    
+
     elif isinstance(node, BranchNode):
         print(f"{prefix}Branch '{node.name}':")
         print_ast(node.body, indent + 1)
-    
+
     elif isinstance(node, PipelineNode):
         print(f"{prefix}Pipeline '{node.name}':")
         for stage in node.stages:
             print_ast(stage, indent + 1)
-    
+
     elif isinstance(node, StageNode):
         factor_str = f" (parallel={node.parallel_factor})" if node.parallel_factor else ""
         print(f"{prefix}Stage '{node.name}'{factor_str}:")
         for op in node.operations:
             print_ast(op, indent + 1)
-    
+
     elif isinstance(node, ReasonChainNode):
         print(f"{prefix}ReasonChain '{node.name}':")
         for premise in node.premises:
@@ -389,7 +389,7 @@ def print_ast(node: ASTNode, indent: int = 0) -> None:
         if node.conclusion:
             print(f"{prefix}  Conclude:")
             print_ast(node.conclusion, indent + 2)
-    
+
     elif isinstance(node, UncertainDeclarationNode):
         print(f"{prefix}Uncertain '{node.name}':")
         print(f"{prefix}  Value:")
@@ -397,22 +397,22 @@ def print_ast(node: ASTNode, indent: int = 0) -> None:
         if node.uncertainty:
             print(f"{prefix}  Uncertainty:")
             print_ast(node.uncertainty, indent + 2)
-    
+
     elif isinstance(node, BinaryOpNode):
         print(f"{prefix}BinaryOp ({node.operator}):")
         print(f"{prefix}  Left:")
         print_ast(node.left, indent + 2)
         print(f"{prefix}  Right:")
         print_ast(node.right, indent + 2)
-    
+
     elif isinstance(node, NumberNode):
         print(f"{prefix}Number: {node.value}")
-    
+
     elif isinstance(node, StringNode):
         print(f"{prefix}String: '{node.value}'")
-    
+
     elif isinstance(node, IdentifierNode):
         print(f"{prefix}Identifier: {node.name}")
-    
+
     else:
         print(f"{prefix}{node.__class__.__name__}")

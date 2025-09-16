@@ -11,20 +11,20 @@ Execution layer (current in-core reference simulator):
  - SimulatorBackend
  - QuantumGate / QuantumAlgorithms
 """
+from .algorithms import QuantumAlgorithms
+from .core import QuantumCircuitBuilder, QuantumGate, SimulatorBackend
 from .semantics import (
-    QuantumSemanticError,
-    GateSpec,
     GATE_REGISTRY,
-    normalize_gate_name,
-    validate_gate_call,
-    validate_circuit,
-    NoiseConfig,
     BackendConfig,
+    GateSpec,
+    NoiseConfig,
+    QuantumSemanticError,
+    normalize_gate_name,
     parse_noise_model,
     validate_backend_config,
+    validate_circuit,
+    validate_gate_call,
 )
-from .core import QuantumCircuitBuilder, SimulatorBackend, QuantumGate
-from .algorithms import QuantumAlgorithms
 
 __all__ = [
     # semantics

@@ -3,9 +3,9 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Dict, Any, Optional, Union
 from enum import Enum, auto
-import numpy as np
+from typing import Any
+
 
 class NodeType(Enum):
     # Quantum-specific node types
@@ -17,24 +17,24 @@ class NodeType(Enum):
     ENTANGLEMENT = auto()
     SUPERPOSITION = auto()
     TELEPORTATION = auto()
-    
+
     # Quantum algorithms
     GROVERS = auto()
     SHORS = auto()
     VQE = auto()
     QAOA = auto()
     QFT = auto()
-    
+
     # Error correction
     SYNDROME = auto()
     ERROR_CORRECTION = auto()
     STABILIZER = auto()
-    
+
     # Classical control
     IF_QUANTUM = auto()
     WHILE_QUANTUM = auto()
     FOR_QUANTUM = auto()
-    
+
     # Basic nodes
     IDENTIFIER = auto()
     NUMBER = auto()
@@ -43,13 +43,13 @@ class NodeType(Enum):
     ASSIGNMENT = auto()
     BINARY_OP = auto()
     UNARY_OP = auto()
-    
+
     # Quantum state nodes
     KET_STATE = auto()
     BRA_STATE = auto()
     BRAKET = auto()
     TENSOR_PRODUCT = auto()
-    
+
     # Program structure
     PROGRAM = auto()
     BLOCK = auto()
@@ -62,11 +62,11 @@ class ASTNode(ABC):
 
 @dataclass
 class ProgramNode(ASTNode):
-    def __init__(self, statements: List[ASTNode], line: int = 1, column: int = 1):
+    def __init__(self, statements: list[ASTNode], line: int = 1, column: int = 1):
         super().__init__(NodeType.PROGRAM, line, column)
         self.statements = statements
 
-@dataclass 
+@dataclass
 class IdentifierNode(ASTNode):
     def __init__(self, name: str, line: int, column: int):
         super().__init__(NodeType.IDENTIFIER, line, column)
@@ -84,20 +84,20 @@ class ComplexNumberNode(ASTNode):
         super().__init__(NodeType.COMPLEX_NUMBER, line, column)
         self.real = real
         self.imag = imag
-        
+
     def to_complex(self) -> complex:
         return complex(self.real, self.imag)
 
 @dataclass
 class QubitNode(ASTNode):
-    def __init__(self, name: str, initial_state: Optional[ASTNode] = None, line: int = 1, column: int = 1):
+    def __init__(self, name: str, initial_state: ASTNode | None = None, line: int = 1, column: int = 1):
         super().__init__(NodeType.QUBIT, line, column)
         self.name = name
         self.initial_state = initial_state  # |0⟩, |1⟩, or superposition
 
 @dataclass
 class QuditleNode(ASTNode):
-    def __init__(self, name: str, dimension: int, initial_state: Optional[ASTNode] = None, line: int = 1, column: int = 1):
+    def __init__(self, name: str, dimension: int, initial_state: ASTNode | None = None, line: int = 1, column: int = 1):
         super().__init__(NodeType.QUDIT, line, column)
         self.name = name
         self.dimension = dimension
@@ -105,7 +105,7 @@ class QuditleNode(ASTNode):
 
 @dataclass
 class QuantumCircuitNode(ASTNode):
-    def __init__(self, name: str, qubits: List[str], gates: List[ASTNode], line: int = 1, column: int = 1):
+    def __init__(self, name: str, qubits: list[str], gates: list[ASTNode], line: int = 1, column: int = 1):
         super().__init__(NodeType.CIRCUIT, line, column)
         self.name = name
         self.qubits = qubits
@@ -113,7 +113,7 @@ class QuantumCircuitNode(ASTNode):
 
 @dataclass
 class QuantumGateNode(ASTNode):
-    def __init__(self, gate_type: str, qubits: List[str], parameters: List[ASTNode] = None, line: int = 1, column: int = 1):
+    def __init__(self, gate_type: str, qubits: list[str], parameters: list[ASTNode] = None, line: int = 1, column: int = 1):
         super().__init__(NodeType.QUANTUM_GATE, line, column)
         self.gate_type = gate_type
         self.qubits = qubits
@@ -121,7 +121,7 @@ class QuantumGateNode(ASTNode):
 
 @dataclass
 class MeasurementNode(ASTNode):
-    def __init__(self, qubit: str, classical_bit: Optional[str] = None, line: int = 1, column: int = 1):
+    def __init__(self, qubit: str, classical_bit: str | None = None, line: int = 1, column: int = 1):
         super().__init__(NodeType.MEASUREMENT, line, column)
         self.qubit = qubit
         self.classical_bit = classical_bit
@@ -154,21 +154,21 @@ class TensorProductNode(ASTNode):
 
 @dataclass
 class EntanglementNode(ASTNode):
-    def __init__(self, qubits: List[str], entanglement_type: str = "bell", line: int = 1, column: int = 1):
+    def __init__(self, qubits: list[str], entanglement_type: str = "bell", line: int = 1, column: int = 1):
         super().__init__(NodeType.ENTANGLEMENT, line, column)
         self.qubits = qubits
         self.entanglement_type = entanglement_type  # "bell", "ghz", "w", etc.
 
 @dataclass
 class SuperpositionNode(ASTNode):
-    def __init__(self, qubit: str, amplitudes: Dict[str, ComplexNumberNode], line: int = 1, column: int = 1):
+    def __init__(self, qubit: str, amplitudes: dict[str, ComplexNumberNode], line: int = 1, column: int = 1):
         super().__init__(NodeType.SUPERPOSITION, line, column)
         self.qubit = qubit
         self.amplitudes = amplitudes  # {"0": amplitude_0, "1": amplitude_1}
 
 @dataclass
 class QuantumTeleportationNode(ASTNode):
-    def __init__(self, source: str, entangled_pair: List[str], target: str, line: int = 1, column: int = 1):
+    def __init__(self, source: str, entangled_pair: list[str], target: str, line: int = 1, column: int = 1):
         super().__init__(NodeType.TELEPORTATION, line, column)
         self.source = source
         self.entangled_pair = entangled_pair
@@ -176,7 +176,7 @@ class QuantumTeleportationNode(ASTNode):
 
 @dataclass
 class GroversAlgorithmNode(ASTNode):
-    def __init__(self, search_space: int, oracle: ASTNode, iterations: Optional[int] = None, line: int = 1, column: int = 1):
+    def __init__(self, search_space: int, oracle: ASTNode, iterations: int | None = None, line: int = 1, column: int = 1):
         super().__init__(NodeType.GROVERS, line, column)
         self.search_space = search_space
         self.oracle = oracle
@@ -198,7 +198,7 @@ class VQENode(ASTNode):
 
 @dataclass
 class QFTNode(ASTNode):
-    def __init__(self, qubits: List[str], inverse: bool = False, line: int = 1, column: int = 1):
+    def __init__(self, qubits: list[str], inverse: bool = False, line: int = 1, column: int = 1):
         super().__init__(NodeType.QFT, line, column)
         self.qubits = qubits
         self.inverse = inverse
@@ -220,7 +220,7 @@ class BinaryOpNode(ASTNode):
 
 @dataclass
 class IfQuantumNode(ASTNode):
-    def __init__(self, condition: ASTNode, then_block: ASTNode, else_block: Optional[ASTNode] = None, line: int = 1, column: int = 1):
+    def __init__(self, condition: ASTNode, then_block: ASTNode, else_block: ASTNode | None = None, line: int = 1, column: int = 1):
         super().__init__(NodeType.IF_QUANTUM, line, column)
         self.condition = condition
         self.then_block = then_block
@@ -228,7 +228,7 @@ class IfQuantumNode(ASTNode):
 
 @dataclass
 class BlockNode(ASTNode):
-    def __init__(self, statements: List[ASTNode], line: int = 1, column: int = 1):
+    def __init__(self, statements: list[ASTNode], line: int = 1, column: int = 1):
         super().__init__(NodeType.BLOCK, line, column)
         self.statements = statements
 
@@ -240,51 +240,51 @@ class ASTVisitor(ABC):
 class ASTPrinter(ASTVisitor):
     def __init__(self, indent: int = 0):
         self.indent_level = indent
-        
+
     def _indent(self) -> str:
         return "  " * self.indent_level
-    
+
     def visit(self, node: ASTNode) -> str:
         method_name = f"visit_{node.node_type.name.lower()}"
         if hasattr(self, method_name):
             return getattr(self, method_name)(node)
         else:
             return f"{self._indent()}{node.node_type.name}({getattr(node, 'name', '')})"
-    
+
     def visit_program(self, node: ProgramNode) -> str:
         self.indent_level += 1
         statements = "\n".join(self.visit(stmt) for stmt in node.statements)
         self.indent_level -= 1
         return f"Program\n{statements}"
-    
+
     def visit_circuit(self, node: QuantumCircuitNode) -> str:
         self.indent_level += 1
         qubits = ", ".join(node.qubits)
         gates = "\n".join(self.visit(gate) for gate in node.gates)
         self.indent_level -= 1
         return f"{self._indent()}Circuit({node.name}) qubits=[{qubits}]\n{gates}"
-    
+
     def visit_qubit(self, node: QubitNode) -> str:
         initial = f" = {self.visit(node.initial_state)}" if node.initial_state else ""
         return f"{self._indent()}Qubit({node.name}){initial}"
-    
+
     def visit_quantum_gate(self, node: QuantumGateNode) -> str:
         qubits = ", ".join(node.qubits)
         params = f"({', '.join(self.visit(p) for p in node.parameters)})" if node.parameters else ""
         return f"{self._indent()}{node.gate_type}{params}[{qubits}]"
-    
+
     def visit_ket_state(self, node: KetStateNode) -> str:
         return f"|{node.state}⟩"
-    
+
     def visit_measurement(self, node: MeasurementNode) -> str:
         classical = f" -> {node.classical_bit}" if node.classical_bit else ""
         return f"{self._indent()}Measure({node.qubit}){classical}"
-    
+
     def visit_identifier(self, node: IdentifierNode) -> str:
         return node.name
-    
+
     def visit_number(self, node: NumberNode) -> str:
         return str(node.value)
-    
+
     def visit_complex_number(self, node: ComplexNumberNode) -> str:
         return f"{node.real}{'+' if node.imag >= 0 else ''}{node.imag}i"

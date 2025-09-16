@@ -3,6 +3,7 @@
 
 from synapse_interpreter import SynapseInterpreter
 
+
 def test_circuit():
     interpreter = SynapseInterpreter()
     code = """

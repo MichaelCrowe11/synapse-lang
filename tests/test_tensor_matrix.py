@@ -3,14 +3,16 @@ Test suite for Tensor and Matrix Literal Parsing
 Tests parsing of tensor declarations and matrix literals
 """
 
-import pytest
-import sys
 import os
+import sys
+
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from synapse_lang.synapse_lexer import Lexer
-from synapse_lang.synapse_parser_minimal import MinimalParser, ParserError
 from synapse_lang.synapse_ast_enhanced import *
+from synapse_lang.synapse_lexer import Lexer
+from synapse_lang.synapse_parser_minimal import MinimalParser
 
 
 class TestTensorMatrixParsing:
@@ -203,5 +205,5 @@ class TestTensorMatrixParsing:
         assert matrix.rows[0][0].value == 42.0
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

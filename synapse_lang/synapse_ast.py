@@ -1,6 +1,5 @@
 """Packaged AST with Run/Noise model nodes added."""
 from dataclasses import dataclass
-from typing import Any, List, Optional, Dict
 from enum import Enum
 
 
@@ -87,25 +86,25 @@ class UncertainNode(ASTNode):
 
 @dataclass
 class ListNode(ASTNode):
-    elements: List[ASTNode]
-    def __init__(self, elements: List[ASTNode], line: int, column: int):
+    elements: list[ASTNode]
+    def __init__(self, elements: list[ASTNode], line: int, column: int):
         super().__init__(NodeType.LIST, line, column)
         self.elements = elements
 
 
 @dataclass
 class MatrixNode(ASTNode):
-    rows: List[List[ASTNode]]
-    def __init__(self, rows: List[List[ASTNode]], line: int, column: int):
+    rows: list[list[ASTNode]]
+    def __init__(self, rows: list[list[ASTNode]], line: int, column: int):
         super().__init__(NodeType.MATRIX, line, column)
         self.rows = rows
 
 
 @dataclass
 class TensorNode(ASTNode):
-    dimensions: List[int]
-    values: List[ASTNode]
-    def __init__(self, dimensions: List[int], values: List[ASTNode], line: int, column: int):
+    dimensions: list[int]
+    values: list[ASTNode]
+    def __init__(self, dimensions: list[int], values: list[ASTNode], line: int, column: int):
         super().__init__(NodeType.TENSOR, line, column)
         self.dimensions = dimensions
         self.values = values
@@ -115,9 +114,9 @@ class TensorNode(ASTNode):
 class QuantumCircuitNode(ASTNode):
     name: str
     qubits: int
-    gates: List['QuantumGateNode']
-    measurements: List['QuantumMeasureNode']
-    def __init__(self, name: str, qubits: int, gates: List['QuantumGateNode'], measurements: List['QuantumMeasureNode'], line: int, column: int):
+    gates: list["QuantumGateNode"]
+    measurements: list["QuantumMeasureNode"]
+    def __init__(self, name: str, qubits: int, gates: list["QuantumGateNode"], measurements: list["QuantumMeasureNode"], line: int, column: int):
         super().__init__(NodeType.QUANTUM_CIRCUIT, line, column)
         self.name = name
         self.qubits = qubits
@@ -128,9 +127,9 @@ class QuantumCircuitNode(ASTNode):
 @dataclass
 class QuantumGateNode(ASTNode):
     gate_type: str
-    qubits: List[ASTNode]
-    parameters: List[ASTNode]
-    def __init__(self, gate_type: str, qubits: List[ASTNode], parameters: List[ASTNode], line: int, column: int):
+    qubits: list[ASTNode]
+    parameters: list[ASTNode]
+    def __init__(self, gate_type: str, qubits: list[ASTNode], parameters: list[ASTNode], line: int, column: int):
         super().__init__(NodeType.QUANTUM_GATE, line, column)
         self.gate_type = gate_type
         self.qubits = qubits
@@ -139,9 +138,9 @@ class QuantumGateNode(ASTNode):
 
 @dataclass
 class QuantumMeasureNode(ASTNode):
-    qubits: List[ASTNode]
-    classical_bits: List[ASTNode]
-    def __init__(self, qubits: List[ASTNode], classical_bits: List[ASTNode], line: int, column: int):
+    qubits: list[ASTNode]
+    classical_bits: list[ASTNode]
+    def __init__(self, qubits: list[ASTNode], classical_bits: list[ASTNode], line: int, column: int):
         super().__init__(NodeType.QUANTUM_MEASURE, line, column)
         self.qubits = qubits
         self.classical_bits = classical_bits
@@ -150,8 +149,8 @@ class QuantumMeasureNode(ASTNode):
 @dataclass
 class QuantumBackendNode(ASTNode):
     name: str
-    config: Dict[str, ASTNode]
-    def __init__(self, name: str, config: Dict[str, ASTNode], line: int, column: int):
+    config: dict[str, ASTNode]
+    def __init__(self, name: str, config: dict[str, ASTNode], line: int, column: int):
         super().__init__(NodeType.QUANTUM_BACKEND, line, column)
         self.name = name
         self.config = config
@@ -160,11 +159,11 @@ class QuantumBackendNode(ASTNode):
 @dataclass
 class QuantumAlgorithmNode(ASTNode):
     name: str
-    parameters: List[ASTNode]
-    ansatz: 'QuantumAnsatzNode'
+    parameters: list[ASTNode]
+    ansatz: "QuantumAnsatzNode"
     cost_function: ASTNode
     optimizer: ASTNode
-    def __init__(self, name: str, parameters: List[ASTNode], ansatz: 'QuantumAnsatzNode', cost_function: ASTNode, optimizer: ASTNode, line: int, column: int):
+    def __init__(self, name: str, parameters: list[ASTNode], ansatz: "QuantumAnsatzNode", cost_function: ASTNode, optimizer: ASTNode, line: int, column: int):
         super().__init__(NodeType.QUANTUM_ALGORITHM, line, column)
         self.name = name
         self.parameters = parameters
@@ -176,8 +175,8 @@ class QuantumAlgorithmNode(ASTNode):
 @dataclass
 class QuantumAnsatzNode(ASTNode):
     name: str
-    layers: List[ASTNode]
-    def __init__(self, name: str, layers: List[ASTNode], line: int, column: int):
+    layers: list[ASTNode]
+    def __init__(self, name: str, layers: list[ASTNode], line: int, column: int):
         super().__init__(NodeType.QUANTUM_ANSATZ, line, column)
         self.name = name
         self.layers = layers
@@ -188,10 +187,10 @@ class QuantumRunNode(ASTNode):
     Represents: run <circuit> [with backend <backend>] { shots: N, noise_model: depolarizing, p1q: 0.001, ... }
     """
     circuit_name: str
-    backend_name: Optional[str]
-    config: Dict[str, ASTNode]
+    backend_name: str | None
+    config: dict[str, ASTNode]
 
-    def __init__(self, circuit_name: str, backend_name: Optional[str], config: Dict[str, ASTNode], line: int, column: int):
+    def __init__(self, circuit_name: str, backend_name: str | None, config: dict[str, ASTNode], line: int, column: int):
         super().__init__(NodeType.QUANTUM_RUN, line, column)
         self.circuit_name = circuit_name
         self.backend_name = backend_name
@@ -242,8 +241,8 @@ class AssignmentNode(ASTNode):
 @dataclass
 class FunctionCallNode(ASTNode):
     function: IdentifierNode
-    arguments: List[ASTNode]
-    def __init__(self, function: IdentifierNode, arguments: List[ASTNode], line: int, column: int):
+    arguments: list[ASTNode]
+    def __init__(self, function: IdentifierNode, arguments: list[ASTNode], line: int, column: int):
         super().__init__(NodeType.FUNCTION_CALL, line, column)
         self.function = function
         self.arguments = arguments
@@ -251,9 +250,9 @@ class FunctionCallNode(ASTNode):
 
 @dataclass
 class ParallelNode(ASTNode):
-    branches: List['BranchNode']
-    num_workers: Optional[int]
-    def __init__(self, branches: List['BranchNode'], line: int, column: int, num_workers: Optional[int] = None):
+    branches: list["BranchNode"]
+    num_workers: int | None
+    def __init__(self, branches: list["BranchNode"], line: int, column: int, num_workers: int | None = None):
         super().__init__(NodeType.PARALLEL, line, column)
         self.branches = branches
         self.num_workers = num_workers
@@ -272,8 +271,8 @@ class BranchNode(ASTNode):
 @dataclass
 class StreamNode(ASTNode):
     name: str
-    body: 'BlockNode'
-    def __init__(self, name: str, body: 'BlockNode', line: int, column: int):
+    body: "BlockNode"
+    def __init__(self, name: str, body: "BlockNode", line: int, column: int):
         super().__init__(NodeType.STREAM, line, column)
         self.name = name
         self.body = body
@@ -282,10 +281,10 @@ class StreamNode(ASTNode):
 @dataclass
 class HypothesisNode(ASTNode):
     name: str
-    assumptions: List[ASTNode]
-    predictions: List[ASTNode]
-    validations: List[ASTNode]
-    def __init__(self, name: str, assumptions: List[ASTNode], predictions: List[ASTNode], validations: List[ASTNode], line: int, column: int):
+    assumptions: list[ASTNode]
+    predictions: list[ASTNode]
+    validations: list[ASTNode]
+    def __init__(self, name: str, assumptions: list[ASTNode], predictions: list[ASTNode], validations: list[ASTNode], line: int, column: int):
         super().__init__(NodeType.HYPOTHESIS, line, column)
         self.name = name
         self.assumptions = assumptions
@@ -296,10 +295,10 @@ class HypothesisNode(ASTNode):
 @dataclass
 class ExperimentNode(ASTNode):
     name: str
-    setup: Optional[ASTNode]
+    setup: ASTNode | None
     procedure: ASTNode
-    analysis: Optional[ASTNode]
-    def __init__(self, name: str, procedure: ASTNode, line: int, column: int, setup: Optional[ASTNode] = None, analysis: Optional[ASTNode] = None):
+    analysis: ASTNode | None
+    def __init__(self, name: str, procedure: ASTNode, line: int, column: int, setup: ASTNode | None = None, analysis: ASTNode | None = None):
         super().__init__(NodeType.EXPERIMENT, line, column)
         self.name = name
         self.setup = setup
@@ -310,10 +309,10 @@ class ExperimentNode(ASTNode):
 @dataclass
 class ReasonChainNode(ASTNode):
     name: str
-    premises: List['PremiseNode']
-    derivations: List['DeriveNode']
-    conclusion: 'ConcludeNode'
-    def __init__(self, name: str, premises: List['PremiseNode'], derivations: List['DeriveNode'], conclusion: 'ConcludeNode', line: int, column: int):
+    premises: list["PremiseNode"]
+    derivations: list["DeriveNode"]
+    conclusion: "ConcludeNode"
+    def __init__(self, name: str, premises: list["PremiseNode"], derivations: list["DeriveNode"], conclusion: "ConcludeNode", line: int, column: int):
         super().__init__(NodeType.REASON_CHAIN, line, column)
         self.name = name
         self.premises = premises
@@ -356,8 +355,8 @@ class ConcludeNode(ASTNode):
 @dataclass
 class PipelineNode(ASTNode):
     name: str
-    stages: List['StageNode']
-    def __init__(self, name: str, stages: List['StageNode'], line: int, column: int):
+    stages: list["StageNode"]
+    def __init__(self, name: str, stages: list["StageNode"], line: int, column: int):
         super().__init__(NodeType.PIPELINE, line, column)
         self.name = name
         self.stages = stages
@@ -367,8 +366,8 @@ class PipelineNode(ASTNode):
 class StageNode(ASTNode):
     name: str
     body: ASTNode
-    parallel_count: Optional[int]
-    def __init__(self, name: str, body: ASTNode, line: int, column: int, parallel_count: Optional[int] = None):
+    parallel_count: int | None
+    def __init__(self, name: str, body: ASTNode, line: int, column: int, parallel_count: int | None = None):
         super().__init__(NodeType.STAGE, line, column)
         self.name = name
         self.body = body
@@ -378,11 +377,11 @@ class StageNode(ASTNode):
 @dataclass
 class ExploreNode(ASTNode):
     name: str
-    tries: List['TryNode']
-    fallbacks: List['FallbackNode']
-    accept_condition: Optional[ASTNode]
-    reject_condition: Optional[ASTNode]
-    def __init__(self, name: str, tries: List['TryNode'], fallbacks: List['FallbackNode'], line: int, column: int, accept_condition: Optional[ASTNode] = None, reject_condition: Optional[ASTNode] = None):
+    tries: list["TryNode"]
+    fallbacks: list["FallbackNode"]
+    accept_condition: ASTNode | None
+    reject_condition: ASTNode | None
+    def __init__(self, name: str, tries: list["TryNode"], fallbacks: list["FallbackNode"], line: int, column: int, accept_condition: ASTNode | None = None, reject_condition: ASTNode | None = None):
         super().__init__(NodeType.EXPLORE, line, column)
         self.name = name
         self.tries = tries
@@ -424,8 +423,8 @@ class PropagateNode(ASTNode):
 @dataclass
 class ProveNode(ASTNode):
     statement: ASTNode
-    method: Optional[ASTNode]
-    def __init__(self, statement: ASTNode, method: Optional[ASTNode], line: int, column: int):
+    method: ASTNode | None
+    def __init__(self, statement: ASTNode, method: ASTNode | None, line: int, column: int):
         super().__init__(NodeType.PROVE, line, column)
         self.statement = statement
         self.method = method
@@ -434,9 +433,9 @@ class ProveNode(ASTNode):
 @dataclass
 class RunNode(ASTNode):
     circuit_name: str
-    backend_name: Optional[str]
-    options: Dict[str, ASTNode]
-    def __init__(self, circuit_name: str, backend_name: Optional[str], options: Dict[str, ASTNode], line: int, column: int):
+    backend_name: str | None
+    options: dict[str, ASTNode]
+    def __init__(self, circuit_name: str, backend_name: str | None, options: dict[str, ASTNode], line: int, column: int):
         super().__init__(NodeType.RUN, line, column)
         self.circuit_name = circuit_name
         self.backend_name = backend_name
@@ -445,16 +444,16 @@ class RunNode(ASTNode):
 
 @dataclass
 class BlockNode(ASTNode):
-    statements: List[ASTNode]
-    def __init__(self, statements: List[ASTNode], line: int, column: int):
+    statements: list[ASTNode]
+    def __init__(self, statements: list[ASTNode], line: int, column: int):
         super().__init__(NodeType.BLOCK, line, column)
         self.statements = statements
 
 
 @dataclass
 class ProgramNode(ASTNode):
-    body: List[ASTNode]
-    def __init__(self, body: List[ASTNode]):
+    body: list[ASTNode]
+    def __init__(self, body: list[ASTNode]):
         super().__init__(NodeType.PROGRAM, 0, 0)
         self.body = body
 

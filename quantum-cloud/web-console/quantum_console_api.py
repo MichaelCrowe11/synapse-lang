@@ -3,29 +3,31 @@ Synapse Quantum Developer Console API
 AWS Management Console equivalent for quantum computing
 """
 
-from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
-from typing import Dict, List, Optional, Any
 import asyncio
 import json
-from datetime import datetime, timedelta
-import uuid
+import os
 
 # Import our quantum services
 import sys
-import os
+from datetime import datetime, timedelta
+from typing import Any
+
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from synapse_quantum_services.core.compute_service import (
-    SynapseQuantumCompute, QuantumInstanceType, QuantumBackendProvider
+    QuantumBackendProvider,
+    QuantumInstanceType,
+    SynapseQuantumCompute,
 )
+from synapse_quantum_services.core.quantum_autoscaling import QuantumAutoScaler
 from synapse_quantum_services.marketplace.quantum_marketplace import (
-    QuantumMarketplace, MarketplaceCategory
-)
-from synapse_quantum_services.core.quantum_autoscaling import (
-    QuantumAutoScaler
+    MarketplaceCategory,
+    QuantumMarketplace,
 )
 
 app = FastAPI(
@@ -49,21 +51,21 @@ quantum_marketplace = QuantumMarketplace()
 quantum_autoscaler = QuantumAutoScaler()
 
 # WebSocket connections for real-time updates
-active_connections: List[WebSocket] = []
+active_connections: list[WebSocket] = []
 
 # Models for API requests
 class DashboardFilters(BaseModel):
     time_range: str = "24h"  # "1h", "24h", "7d", "30d"
-    region: Optional[str] = None
-    service: Optional[str] = None
+    region: str | None = None
+    service: str | None = None
 
 class JobSubmissionRequest(BaseModel):
     circuit_code: str
     language: str = "synapse"
     instance_type: str = "sq.small.8q"
     shots: int = 1000
-    backend_preference: List[str] = ["auto"]
-    tags: Dict[str, str] = {}
+    backend_preference: list[str] = ["auto"]
+    tags: dict[str, str] = {}
 
 # Startup event
 @app.on_event("startup")
@@ -95,24 +97,24 @@ async def websocket_endpoint(websocket: WebSocket):
 @app.get("/api/dashboard/overview")
 async def get_dashboard_overview():
     """Get main dashboard overview data"""
-    
+
     return await get_dashboard_data("24h")
 
-async def get_dashboard_data(time_range: str) -> Dict[str, Any]:
+async def get_dashboard_data(time_range: str) -> dict[str, Any]:
     """Get comprehensive dashboard data"""
-    
+
     # Get quantum compute metrics
     compute_metrics = await get_compute_metrics(time_range)
-    
+
     # Get marketplace metrics
     marketplace_metrics = await get_marketplace_metrics()
-    
+
     # Get cost metrics
     cost_metrics = await get_cost_metrics(time_range)
-    
+
     # Get scaling metrics
     scaling_metrics = await get_scaling_metrics()
-    
+
     return {
         "timestamp": datetime.utcnow().isoformat(),
         "time_range": time_range,
@@ -123,12 +125,12 @@ async def get_dashboard_data(time_range: str) -> Dict[str, Any]:
         "alerts": await get_active_alerts()
     }
 
-async def get_compute_metrics(time_range: str) -> Dict[str, Any]:
+async def get_compute_metrics(time_range: str) -> dict[str, Any]:
     """Get quantum compute service metrics"""
-    
+
     # Simulate metrics (in real system, would query actual data)
     import random
-    
+
     return {
         "active_jobs": random.randint(15, 50),
         "queued_jobs": random.randint(5, 25),
@@ -153,13 +155,13 @@ async def get_compute_metrics(time_range: str) -> Dict[str, Any]:
         }
     }
 
-async def get_marketplace_metrics() -> Dict[str, Any]:
+async def get_marketplace_metrics() -> dict[str, Any]:
     """Get quantum marketplace metrics"""
-    
+
     # Get real marketplace data
     featured_items = await quantum_marketplace.get_featured_items()
     categories = await quantum_marketplace.get_categories()
-    
+
     return {
         "total_items": len(quantum_marketplace.items),
         "featured_items": featured_items[:3],  # Top 3 featured
@@ -173,13 +175,13 @@ async def get_marketplace_metrics() -> Dict[str, Any]:
         ]
     }
 
-async def get_cost_metrics(time_range: str) -> Dict[str, Any]:
+async def get_cost_metrics(time_range: str) -> dict[str, Any]:
     """Get cost and billing metrics"""
-    
+
     import random
-    
+
     base_cost = random.uniform(500, 2000)
-    
+
     return {
         "current_month_spend": base_cost,
         "projected_month_spend": base_cost * 1.2,
@@ -205,27 +207,27 @@ async def get_cost_metrics(time_range: str) -> Dict[str, Any]:
         ]
     }
 
-async def get_scaling_metrics() -> Dict[str, Any]:
+async def get_scaling_metrics() -> dict[str, Any]:
     """Get auto-scaling metrics"""
-    
+
     targets = await quantum_autoscaler.get_scaling_targets()
     policies = await quantum_autoscaler.get_scaling_policies()
     history = await quantum_autoscaler.get_scaling_history(hours=24)
-    
+
     return {
         "scaling_targets": targets,
-        "active_policies": len([p for p in policies if p['enabled']]),
+        "active_policies": len([p for p in policies if p["enabled"]]),
         "scaling_actions_24h": len(history),
         "recent_actions": history[-5:] if history else []
     }
 
-async def get_active_alerts() -> List[Dict[str, Any]]:
+async def get_active_alerts() -> list[dict[str, Any]]:
     """Get active system alerts"""
-    
+
     import random
-    
+
     alerts = []
-    
+
     # Simulate some alerts
     if random.random() < 0.3:  # 30% chance of high queue alert
         alerts.append({
@@ -236,7 +238,7 @@ async def get_active_alerts() -> List[Dict[str, Any]]:
             "timestamp": (datetime.utcnow() - timedelta(minutes=15)).isoformat(),
             "service": "quantum_compute"
         })
-    
+
     if random.random() < 0.2:  # 20% chance of backend alert
         alerts.append({
             "id": "alert-backend-degraded",
@@ -246,7 +248,7 @@ async def get_active_alerts() -> List[Dict[str, Any]]:
             "timestamp": (datetime.utcnow() - timedelta(minutes=30)).isoformat(),
             "service": "quantum_backends"
         })
-    
+
     if random.random() < 0.1:  # 10% chance of cost alert
         alerts.append({
             "id": "alert-cost-threshold",
@@ -256,7 +258,7 @@ async def get_active_alerts() -> List[Dict[str, Any]]:
             "timestamp": (datetime.utcnow() - timedelta(hours=2)).isoformat(),
             "service": "billing"
         })
-    
+
     return alerts
 
 # Quantum Compute Service APIs
@@ -273,7 +275,7 @@ async def list_quantum_backends():
 @app.post("/api/compute/jobs")
 async def submit_quantum_job(request: JobSubmissionRequest):
     """Submit a new quantum job"""
-    
+
     try:
         # Convert backend preferences
         backend_enums = []
@@ -282,7 +284,7 @@ async def submit_quantum_job(request: JobSubmissionRequest):
                 backend_enums.append(QuantumBackendProvider(pref))
             except ValueError:
                 backend_enums.append(QuantumBackendProvider.AUTO)
-        
+
         job = await quantum_compute.run_quantum_job(
             circuit_code=request.circuit_code,
             language=request.language,
@@ -291,33 +293,33 @@ async def submit_quantum_job(request: JobSubmissionRequest):
             backend_preference=backend_enums,
             tags=request.tags
         )
-        
+
         return {
             "job_id": job.job_id,
             "status": job.status.value,
             "estimated_cost": float(job.estimated_cost) if job.estimated_cost else None,
             "created_at": job.created_at.isoformat()
         }
-        
+
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/api/compute/jobs")
-async def list_quantum_jobs(status: Optional[str] = None, limit: int = 50):
+async def list_quantum_jobs(status: str | None = None, limit: int = 50):
     """List quantum jobs"""
-    
+
     jobs = []
     for job_id, job in quantum_compute.job_queue.items():
         if not status or job.status.value == status:
             job_data = await quantum_compute.get_job_status(job_id)
             jobs.append(job_data)
-    
+
     return {"jobs": jobs[:limit]}
 
 @app.get("/api/compute/jobs/{job_id}")
 async def get_quantum_job(job_id: str):
     """Get quantum job details"""
-    
+
     try:
         return await quantum_compute.get_job_status(job_id)
     except Exception as e:
@@ -326,7 +328,7 @@ async def get_quantum_job(job_id: str):
 @app.delete("/api/compute/jobs/{job_id}")
 async def cancel_quantum_job(job_id: str):
     """Cancel a quantum job"""
-    
+
     try:
         success = await quantum_compute.cancel_job(job_id)
         return {"success": success}
@@ -336,20 +338,20 @@ async def cancel_quantum_job(job_id: str):
 # Marketplace APIs
 @app.get("/api/marketplace/search")
 async def search_marketplace(
-    query: Optional[str] = None,
-    category: Optional[str] = None,
-    tags: Optional[str] = None,
-    min_rating: Optional[float] = None,
+    query: str | None = None,
+    category: str | None = None,
+    tags: str | None = None,
+    min_rating: float | None = None,
     sort_by: str = "relevance",
     limit: int = 20,
     offset: int = 0
 ):
     """Search quantum marketplace"""
-    
+
     # Convert parameters
     tag_list = tags.split(",") if tags else None
     category_enum = MarketplaceCategory(category) if category else None
-    
+
     return await quantum_marketplace.search_marketplace(
         query=query,
         category=category_enum,
@@ -363,7 +365,7 @@ async def search_marketplace(
 @app.get("/api/marketplace/items/{item_id}")
 async def get_marketplace_item(item_id: str):
     """Get marketplace item details"""
-    
+
     try:
         return await quantum_marketplace.get_item_details(item_id)
     except Exception as e:
@@ -387,7 +389,7 @@ async def get_marketplace_categories():
 @app.post("/api/marketplace/purchase/{item_id}")
 async def purchase_marketplace_item(item_id: str, user_id: str = "current_user"):
     """Purchase a marketplace item"""
-    
+
     try:
         return await quantum_marketplace.purchase_item(item_id, user_id)
     except Exception as e:
@@ -422,18 +424,18 @@ async def estimate_cost(
     circuit_complexity: int = 1
 ):
     """Estimate cost for quantum job"""
-    
+
     from synapse_quantum_services.core.compute_service import QuantumPricingCalculator
-    
+
     calculator = QuantumPricingCalculator()
-    
+
     try:
         cost = calculator.estimate_cost(
             instance_type=QuantumInstanceType(instance_type),
             shots=shots,
             circuit_complexity=circuit_complexity
         )
-        
+
         return {
             "instance_type": instance_type,
             "shots": shots,
@@ -441,7 +443,7 @@ async def estimate_cost(
             "estimated_cost": float(cost),
             "currency": "USD"
         }
-        
+
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -449,7 +451,7 @@ async def estimate_cost(
 @app.get("/api/status/health")
 async def get_system_health():
     """Get overall system health"""
-    
+
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
@@ -469,9 +471,9 @@ async def get_system_health():
 @app.get("/api/status/metrics")
 async def get_system_metrics():
     """Get system-wide metrics"""
-    
+
     import random
-    
+
     return {
         "requests_per_second": random.uniform(10, 100),
         "average_response_time": random.uniform(50, 200),
@@ -486,7 +488,7 @@ async def get_system_metrics():
 @app.get("/api/user/profile")
 async def get_user_profile(user_id: str = "current_user"):
     """Get user profile"""
-    
+
     # Simulate user profile
     return {
         "user_id": user_id,
@@ -547,12 +549,12 @@ async def get_console_home():
                 <a href="#billing">Billing</a>
             </nav>
         </div>
-        
+
         <div class="container">
             <div class="card">
                 <h2>🚀 Welcome to Synapse Quantum Cloud</h2>
                 <p>The AWS of quantum computing - making quantum accessible to everyone.</p>
-                
+
                 <div class="metrics">
                     <div class="metric">
                         <div class="metric-value" id="active-jobs">-</div>
@@ -572,7 +574,7 @@ async def get_console_home():
                     </div>
                 </div>
             </div>
-            
+
             <div class="card">
                 <h3>🎯 Quick Actions</h3>
                 <p>
@@ -582,7 +584,7 @@ async def get_console_home():
                     <button onclick="openDocumentation()">View Documentation</button>
                 </p>
             </div>
-            
+
             <div class="card">
                 <h3>📊 Real-Time Dashboard</h3>
                 <div id="dashboard-data">
@@ -590,21 +592,21 @@ async def get_console_home():
                 </div>
             </div>
         </div>
-        
+
         <script>
             // WebSocket connection for real-time updates
             const ws = new WebSocket('ws://localhost:8000/ws');
-            
+
             ws.onmessage = function(event) {
                 const data = JSON.parse(event.data);
                 updateDashboard(data);
             };
-            
+
             function updateDashboard(data) {
                 document.getElementById('active-jobs').textContent = data.compute.active_jobs;
                 document.getElementById('quantum-utilization').textContent = data.compute.quantum_utilization.toFixed(1) + '%';
                 document.getElementById('monthly-spend').textContent = '$' + data.costs.current_month_spend.toFixed(0);
-                
+
                 // Update dashboard data section
                 const dashboardDiv = document.getElementById('dashboard-data');
                 dashboardDiv.innerHTML = `
@@ -613,22 +615,22 @@ async def get_console_home():
                     <p><strong>Avg Wait Time:</strong> ${data.compute.average_wait_time.toFixed(1)}s</p>
                     <p><strong>Error Rate:</strong> ${data.compute.error_rate.toFixed(1)}%</p>
                     <p><strong>Throughput:</strong> ${data.compute.throughput_per_hour.toFixed(0)} jobs/hour</p>
-                    
+
                     <h4>Backend Status</h4>
-                    ${Object.entries(data.compute.backends_status).map(([backend, status]) => 
+                    ${Object.entries(data.compute.backends_status).map(([backend, status]) =>
                         `<p><strong>${backend}:</strong> <span class="status-${status}">${status}</span></p>`
                     ).join('')}
-                    
+
                     <h4>Recent Alerts</h4>
-                    ${data.alerts.length > 0 ? 
-                        data.alerts.map(alert => 
+                    ${data.alerts.length > 0 ?
+                        data.alerts.map(alert =>
                             `<p class="status-${alert.severity}"><strong>${alert.title}:</strong> ${alert.message}</p>`
-                        ).join('') : 
+                        ).join('') :
                         '<p>No active alerts</p>'
                     }
                 `;
             }
-            
+
             function submitSampleJob() {
                 fetch('/api/compute/jobs', {
                     method: 'POST',
@@ -645,19 +647,19 @@ async def get_console_home():
                 .then(data => alert(`Job submitted! ID: ${data.job_id}`))
                 .catch(error => alert('Error: ' + error));
             }
-            
+
             function openMarketplace() {
                 window.open('/api/marketplace/featured', '_blank');
             }
-            
+
             function viewCosts() {
                 window.open('/api/billing/current', '_blank');
             }
-            
+
             function openDocumentation() {
                 window.open('https://docs.synapse-lang.org', '_blank');
             }
-            
+
             // Load initial data
             fetch('/api/dashboard/overview')
                 .then(response => response.json())
