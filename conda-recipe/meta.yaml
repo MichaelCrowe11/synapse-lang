@@ -1,0 +1,67 @@
+{% set name = "synapse-lang" %}
+{% set version = "2.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: will_be_calculated_after_pypi_upload
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  entry_points:
+    - synapse = synapse_lang.cli:main
+    - syn = synapse_lang.cli:main
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+    - setuptools
+  run:
+    - python >=3.8
+    - numpy >=1.19
+    - scipy >=1.5
+    - pandas >=1.2
+    - matplotlib >=3.3
+
+test:
+  imports:
+    - synapse_lang
+    - synapse_lang.backends
+    - synapse_lang.quantum
+  commands:
+    - python -c "import synapse_lang; print(synapse_lang.__version__)"
+    - python -c "from synapse_lang.backends import auto; print(auto())"
+  requires:
+    - pytest
+
+about:
+  home: https://synapse-lang.org
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Scientific programming language with quantum computing and uncertainty support
+  description: |
+    Synapse is a domain-specific language designed for scientific computing,
+    featuring native support for uncertainty propagation, quantum computing
+    operations, parallel execution, and hypothesis-driven programming.
+
+    Key features:
+    - Native uncertainty types with automatic error propagation
+    - Quantum computing integration (VQE, QAOA)
+    - Parallel execution and GPU acceleration
+    - Scientific methodology constructs
+    - High-performance backend adapters
+
+  doc_url: https://docs.synapse-lang.org
+  dev_url: https://github.com/synapse-lang/synapse-lang
+
+extra:
+  recipe-maintainers:
+    - synapse-team
+    - michaelcrowe

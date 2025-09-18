@@ -1,27 +1,20 @@
-Metadata-Version: 2.4
+Metadata-Version: 2.1
 Name: synapse-lang
 Version: 2.2.0
 Summary: Enterprise quantum computing platform with cloud-native architecture, distributed execution, and comprehensive quantum algorithms
 Home-page: https://github.com/MichaelCrowe11/synapse-lang
 Author: Michael Benjamin Crowe
 Author-email: michaelcrowe11@users.noreply.github.com
-Maintainer: Michael Benjamin Crowe
-License: Proprietary
-Project-URL: Homepage, https://github.com/MichaelCrowe11/synapse-lang
-Project-URL: Documentation, https://github.com/MichaelCrowe11/synapse-lang/blob/master/LANGUAGE_SPEC.md
-Project-URL: Repository, https://github.com/MichaelCrowe11/synapse-lang
-Project-URL: Bug Tracker, https://github.com/MichaelCrowe11/synapse-lang/issues
-Project-URL: Changelog, https://github.com/MichaelCrowe11/synapse-lang/blob/main/CHANGELOG.md
-Keywords: quantum-computing,cloud-platform,microservices,distributed-computing,enterprise-software,quantum-algorithms,scientific-computing,parallel-computing,programming-language,docker,kubernetes,fastapi
+License: UNKNOWN
+Platform: UNKNOWN
 Classifier: Development Status :: 5 - Production/Stable
-Classifier: Intended Audience :: Developers
 Classifier: Intended Audience :: Science/Research
-Classifier: Intended Audience :: Education
+Classifier: Intended Audience :: Developers
 Classifier: Topic :: Scientific/Engineering
 Classifier: Topic :: Scientific/Engineering :: Physics
 Classifier: Topic :: Scientific/Engineering :: Chemistry
-Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
 Classifier: Topic :: Scientific/Engineering :: Bio-Informatics
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
 Classifier: Topic :: Software Development :: Compilers
 Classifier: Topic :: Software Development :: Interpreters
 Classifier: License :: Other/Proprietary License
@@ -32,76 +25,19 @@ Classifier: Programming Language :: Python :: 3.10
 Classifier: Programming Language :: Python :: 3.11
 Classifier: Programming Language :: Python :: 3.12
 Classifier: Operating System :: OS Independent
-Classifier: Natural Language :: English
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
+Provides-Extra: cloud
+Provides-Extra: dev
+Provides-Extra: docs
+Provides-Extra: enterprise
+Provides-Extra: jupyter
+Provides-Extra: quantum
 License-File: LICENSE
 License-File: LICENSE-COMMUNITY
 License-File: LICENSE-DUAL.md
 License-File: LICENSE-PROPRIETARY
-License-File: license_server.py
 License-File: AUTHORS.md
-Requires-Dist: numpy>=1.24.0
-Requires-Dist: scipy>=1.10.0
-Requires-Dist: sympy>=1.12
-Requires-Dist: matplotlib>=3.7.0
-Requires-Dist: colorama>=0.4.6
-Requires-Dist: networkx>=3.0
-Requires-Dist: pandas>=2.0.0
-Provides-Extra: gpu
-Provides-Extra: jit
-Requires-Dist: numba>=0.58; extra == "jit"
-Provides-Extra: quantum
-Requires-Dist: qiskit>=1.0.0; extra == "quantum"
-Requires-Dist: pennylane>=0.35.0; extra == "quantum"
-Requires-Dist: cirq>=1.4.0; extra == "quantum"
-Provides-Extra: cloud
-Requires-Dist: fastapi>=0.104.0; extra == "cloud"
-Requires-Dist: uvicorn[standard]>=0.24.0; extra == "cloud"
-Requires-Dist: aioredis>=2.0.1; extra == "cloud"
-Requires-Dist: asyncpg>=0.29.0; extra == "cloud"
-Requires-Dist: docker>=6.1.0; extra == "cloud"
-Requires-Dist: kubernetes>=27.2.0; extra == "cloud"
-Requires-Dist: pika>=1.3.2; extra == "cloud"
-Provides-Extra: enterprise
-Requires-Dist: stripe>=7.0.0; extra == "enterprise"
-Requires-Dist: boto3>=1.29.0; extra == "enterprise"
-Requires-Dist: motor>=3.3.0; extra == "enterprise"
-Requires-Dist: prometheus-client>=0.19.0; extra == "enterprise"
-Requires-Dist: ray[default]>=2.7.0; extra == "enterprise"
-Provides-Extra: dev
-Requires-Dist: pytest>=8.0; extra == "dev"
-Requires-Dist: pytest-cov>=5.0; extra == "dev"
-Requires-Dist: pytest-asyncio>=0.23; extra == "dev"
-Requires-Dist: black>=24.0; extra == "dev"
-Requires-Dist: ruff>=0.6; extra == "dev"
-Requires-Dist: mypy>=1.11; extra == "dev"
-Requires-Dist: pre-commit>=3.8; extra == "dev"
-Requires-Dist: tox>=4.18; extra == "dev"
-Requires-Dist: flake8>=7.0.0; extra == "dev"
-Requires-Dist: safety>=3.2.0; extra == "dev"
-Requires-Dist: bandit>=1.7.9; extra == "dev"
-Provides-Extra: docs
-Requires-Dist: sphinx>=6.0; extra == "docs"
-Requires-Dist: sphinx-rtd-theme>=1.3; extra == "docs"
-Requires-Dist: sphinx-autodoc-typehints>=1.23; extra == "docs"
-Requires-Dist: myst-parser>=2.0; extra == "docs"
-Provides-Extra: jupyter
-Requires-Dist: jupyterlab>=3.4.0; extra == "jupyter"
-Requires-Dist: ipykernel>=6.15.0; extra == "jupyter"
-Provides-Extra: all
-Requires-Dist: numba>=0.58; extra == "all"
-Requires-Dist: qiskit>=0.34.0; extra == "all"
-Requires-Dist: pennylane>=0.20.0; extra == "all"
-Requires-Dist: cirq>=0.13.0; extra == "all"
-Requires-Dist: pytest>=7.0; extra == "all"
-Requires-Dist: pytest-cov>=4.0; extra == "all"
-Requires-Dist: black>=23.0; extra == "all"
-Requires-Dist: sphinx>=6.0; extra == "all"
-Dynamic: author-email
-Dynamic: home-page
-Dynamic: license-file
-Dynamic: requires-python
 
 # Synapse Programming Language
 
@@ -309,3 +245,5 @@ python -m synapse_lang.scripts.optimize_svgs --check
 ```
 
 Output lists per-file bytes saved plus total.
+
+

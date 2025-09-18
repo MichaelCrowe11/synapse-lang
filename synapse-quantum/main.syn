@@ -1,0 +1,45 @@
+
+// synapse-quantum - Main module
+// Example Synapse package
+
+// Export main functionality
+export function hello() {
+    print("Hello from synapse-quantum!")
+    return "Success"
+}
+
+// Version information
+export function version() {
+    return "0.1.0"
+}
+
+// Example scientific function
+export function calculate(data) {
+    uncertain mean = calculate_mean(data)
+    uncertain std = calculate_std(data)
+
+    return {
+        "mean": mean,
+        "std": std
+    }
+}
+
+function calculate_mean(data) {
+    sum = 0
+    for value in data {
+        sum = sum + value
+    }
+    return sum / len(data)
+}
+
+function calculate_std(data) {
+    mean = calculate_mean(data)
+    sum_sq = 0
+
+    for value in data {
+        diff = value - mean
+        sum_sq = sum_sq + diff * diff
+    }
+
+    return sqrt(sum_sq / len(data))
+}

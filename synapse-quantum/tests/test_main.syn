@@ -1,0 +1,22 @@
+
+// Tests for synapse-quantum
+
+import synapse-quantum
+
+test "hello function works" {
+    result = synapse-quantum.hello()
+    assert result == "Success"
+}
+
+test "version returns correct version" {
+    version = synapse-quantum.version()
+    assert version == "0.1.0"
+}
+
+test "calculate function works" {
+    data = [1, 2, 3, 4, 5]
+    results = synapse-quantum.calculate(data)
+
+    assert results.mean == 3.0
+    assert results.std > 1.0
+}

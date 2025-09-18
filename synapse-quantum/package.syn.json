@@ -1,0 +1,22 @@
+{
+  "name": "synapse-quantum",
+  "version": "0.1.0",
+  "description": "Example Synapse package: synapse-quantum",
+  "main": "main.syn",
+  "scripts": {
+    "synapse-quantum": "main.syn"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/synapse-quantum"
+  },
+  "keywords": [
+    "synapse",
+    "example",
+    "synapse-quantum"
+  ]
+}
