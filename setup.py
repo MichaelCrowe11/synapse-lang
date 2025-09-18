@@ -31,7 +31,7 @@ else:
 
 setup(
     name="synapse-lang",
-    version="2.2.0",
+    version="2.3.0",
     author="Michael Benjamin Crowe",
     author_email="michaelcrowe11@users.noreply.github.com",
     description="Enterprise quantum computing platform with cloud-native architecture, distributed execution, and comprehensive quantum algorithms",

@@ -1,59 +1,28 @@
-# Multi-stage build for Synapse-Lang
-FROM python:3.11-slim as builder
+FROM python:3.10-slim
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    make \
-    cmake \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+LABEL maintainer="synapse-team"
+LABEL version="2.2.0"
+LABEL description="Synapse scientific programming language"
 
-# Set working directory
 WORKDIR /app
 
-# Copy requirements
-COPY requirements.txt .
-
-# Install Python dependencies
-RUN pip install --user --no-cache-dir -r requirements.txt
-
-# Production stage
-FROM python:3.11-slim
-
-# Install runtime dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    libgomp1 \
+    gcc g++ gfortran \
+    libopenblas-dev liblapack-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user
-RUN useradd -m -u 1000 synapse && \
-    mkdir -p /home/synapse/.synapse-lang
+# Copy package
+COPY . .
 
-# Copy Python packages from builder
-COPY --from=builder /root/.local /home/synapse/.local
+# Install Synapse
+RUN pip install --no-cache-dir -e .
 
-# Set working directory
-WORKDIR /app
+# Install optional dependencies
+RUN pip install --no-cache-dir \
+    numpy scipy pandas matplotlib \
+    jupyter notebook
 
-# Copy application files
-COPY --chown=synapse:synapse . .
+EXPOSE 8888
 
-# Set PATH
-ENV PATH=/home/synapse/.local/bin:$PATH
-ENV PYTHONPATH=/app:$PYTHONPATH
-
-# Switch to non-root user
-USER synapse
-
-# Expose port for license server (if running)
-EXPOSE 8000
-
-# Default command - run REPL
-CMD ["python", "synapse_interpreter_enhanced.py"]
-
-# Labels
-LABEL maintainer="Michael Benjamin Crowe <michael@synapse-lang.com>"
-LABEL version="1.0.0"
-LABEL description="Synapse-Lang - Scientific Computing Language with Parallel Execution"
+CMD ["synapse", "--repl"]

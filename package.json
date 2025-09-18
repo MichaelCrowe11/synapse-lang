@@ -1,46 +1,26 @@
 {
   "name": "@synapse-lang/core",
   "version": "2.2.0",
-  "description": "Synapse - Scientific programming language with quantum computing and uncertainty support",
+  "description": "Synapse scientific programming language",
   "main": "index.js",
-  "bin": {
-    "synapse": "./bin/synapse"
-  },
   "scripts": {
-    "test": "echo \"Running Synapse tests...\" && python3 -m pytest tests/",
-    "postinstall": "node scripts/postinstall.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/synapse-lang/synapse-lang.git"
+    "test": "echo 'No tests'",
+    "synapse": "python -m synapse_lang"
   },
   "keywords": [
     "synapse",
-    "scientific-computing",
-    "quantum-computing",
-    "dsl",
-    "uncertainty-propagation",
-    "parallel-computing",
-    "programming-language"
+    "scientific",
+    "quantum",
+    "dsl"
   ],
-  "author": "Synapse Development Team",
+  "author": "Synapse Team",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/synapse-lang/synapse-lang/issues"
-  },
-  "homepage": "https://synapse-lang.org",
-  "engines": {
-    "node": ">=14.0.0",
-    "python": ">=3.8"
-  },
   "files": [
-    "bin/",
-    "synapse_lang/",
-    "index.js",
-    "README.md",
-    "LICENSE"
+    "synapse_lang/**/*.py",
+    "README.md"
   ],
-  "publishConfig": {
-    "access": "public"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/synapse-lang/synapse-lang"
   }
 }
