@@ -1,83 +1,82 @@
 version: '3.8'
 
 services:
-  synapse:
-    build: .
-    image: synapselang/synapse:latest
-    container_name: synapse-lang
-    environment:
-      - SYNAPSE_LICENSE_KEY=${SYNAPSE_LICENSE_KEY}
-      - SYNAPSE_LICENSE_EMAIL=${SYNAPSE_LICENSE_EMAIL}
+  # Main Synapse development environment
+  synapse-dev:
+    image: synapse-lang/synapse-lang:2.3.0
+    container_name: synapse-dev
     volumes:
-      - ./examples:/app/examples
-      - ./data:/app/data
-      - synapse-cache:/home/synapse/.synapse-lang
-    stdin_open: true
-    tty: true
-    networks:
-      - synapse-net
-
-  license-server:
-    build: .
-    image: synapselang/license-server:latest
-    container_name: synapse-license-server
-    command: python license_server.py
-    environment:
-      - API_KEY=${API_KEY}
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
-      - DATABASE_URL=/data/licenses.db
-    volumes:
-      - license-data:/data
+      - ./workspace:/workspace
+      - ./notebooks:/notebooks
     ports:
-      - "8000:8000"
-    networks:
-      - synapse-net
-    restart: unless-stopped
-
-  jupyter:
-    build: .
-    image: synapselang/synapse-jupyter:latest
-    container_name: synapse-jupyter
-    command: jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+      - "8888:8888"  # Jupyter
+      - "5000:5000"  # API server (if needed)
     environment:
-      - JUPYTER_TOKEN=${JUPYTER_TOKEN:-synapse2024}
+      - JUPYTER_ENABLE_LAB=yes
+      - SYNAPSE_ENV=development
+    command: jupyter lab --ip=0.0.0.0 --allow-root --no-browser --notebook-dir=/workspace
+    networks:
+      - synapse-network
+
+  # Distributed computing worker node 1
+  synapse-worker-1:
+    image: synapse-lang/synapse-lang:2.3.0
+    container_name: synapse-worker-1
     volumes:
-      - ./notebooks:/app/notebooks
-      - ./examples:/app/examples
+      - ./workspace:/workspace
+    environment:
+      - WORKER_ID=worker-1
+      - MASTER_HOST=synapse-master
+    depends_on:
+      - synapse-master
+    networks:
+      - synapse-network
+
+  # Distributed computing worker node 2
+  synapse-worker-2:
+    image: synapse-lang/synapse-lang:2.3.0
+    container_name: synapse-worker-2
+    volumes:
+      - ./workspace:/workspace
+    environment:
+      - WORKER_ID=worker-2
+      - MASTER_HOST=synapse-master
+    depends_on:
+      - synapse-master
+    networks:
+      - synapse-network
+
+  # Master node for distributed computing
+  synapse-master:
+    image: synapse-lang/synapse-lang:2.3.0
+    container_name: synapse-master
+    volumes:
+      - ./workspace:/workspace
     ports:
-      - "8888:8888"
-    networks:
-      - synapse-net
-
-  redis:
-    image: redis:7-alpine
-    container_name: synapse-redis
-    volumes:
-      - redis-data:/data
-    networks:
-      - synapse-net
-    restart: unless-stopped
-
-  postgres:
-    image: postgres:15-alpine
-    container_name: synapse-postgres
+      - "8080:8080"  # Master API
     environment:
-      - POSTGRES_DB=synapse
-      - POSTGRES_USER=${POSTGRES_USER:-synapse}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-synapse2024}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - ROLE=master
+      - WORKERS=2
     networks:
-      - synapse-net
-    restart: unless-stopped
+      - synapse-network
 
-volumes:
-  synapse-cache:
-  license-data:
-  redis-data:
-  postgres-data:
+  # Collaboration server
+  synapse-collab:
+    image: synapse-lang/synapse-lang:2.3.0
+    container_name: synapse-collab
+    volumes:
+      - ./workspace:/workspace
+    ports:
+      - "3000:3000"  # WebSocket server
+    environment:
+      - SERVICE=collaboration
+    networks:
+      - synapse-network
 
 networks:
-  synapse-net:
+  synapse-network:
     driver: bridge
+
+volumes:
+  workspace:
+  notebooks:

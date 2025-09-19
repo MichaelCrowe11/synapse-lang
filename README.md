@@ -1,7 +1,7 @@
-# 🧠 Synapse Programming Language v2.3.0
+# 🧠 Synapse Programming Language v2.3.1
 
 <p align="center">
-    <img src="https://img.shields.io/badge/version-2.3.0-blue?style=for-the-badge" alt="Version 2.3.0">
+    <img src="https://img.shields.io/badge/version-2.3.1-blue?style=for-the-badge" alt="Version 2.3.1">
     <img src="https://img.shields.io/badge/status-production--ready-green?style=for-the-badge" alt="Production Ready">
     <img src="https://img.shields.io/badge/platforms-6-orange?style=for-the-badge" alt="6 Platforms">
 </p>
@@ -13,8 +13,8 @@
     <a href="https://www.npmjs.com/package/@synapse-lang/core">
         <img alt="npm" src="https://img.shields.io/npm/v/@synapse-lang/core?color=red&logo=npm" />
     </a>
-    <a href="https://hub.docker.com/r/synapse-lang/synapse-lang">
-        <img alt="Docker" src="https://img.shields.io/docker/v/synapse-lang/synapse-lang?color=blue&logo=docker" />
+    <a href="https://hub.docker.com/r/michaelcrowe11/synapse-lang">
+        <img alt="Docker" src="https://img.shields.io/docker/v/michaelcrowe11/synapse-lang?color=blue&logo=docker" />
     </a>
     <a href="LICENSE">
         <img alt="License" src="https://img.shields.io/github/license/MichaelCrowe11/synapse-lang?color=43E5FF" />
@@ -64,7 +64,7 @@ conda install -c conda-forge synapse-lang
 brew install synapse-lang
 
 # Containerized environments
-docker run -it synapse-lang:2.3.0
+docker run -it michaelcrowe11/synapse-lang:latest
 ```
 
 ### Hello Quantum World

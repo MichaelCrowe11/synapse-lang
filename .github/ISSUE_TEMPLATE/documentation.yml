@@ -1,0 +1,185 @@
+name: Documentation Issue
+description: Report an issue with documentation or request documentation improvements
+title: "[Docs]: "
+labels: ["documentation", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve Synapse Language documentation!
+
+        Please provide details about the documentation issue or improvement you'd like to see.
+
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: Documentation Type
+      description: What type of documentation is this about?
+      options:
+        - README and Getting Started
+        - API Documentation
+        - Language Reference
+        - Tutorials and Examples
+        - Installation Guide
+        - Quantum Computing Features
+        - AI/ML Integration
+        - Cloud Platform
+        - Developer Guide
+        - VS Code Extension
+        - Docker/Deployment
+        - Community Guidelines
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: Issue Type
+      description: What kind of documentation issue is this?
+      options:
+        - Missing Documentation
+        - Incorrect Information
+        - Outdated Content
+        - Unclear/Confusing Content
+        - Typo/Grammar
+        - Broken Links
+        - Missing Examples
+        - Formatting Issues
+        - Translation Request
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Location
+      description: Where is this documentation issue located?
+      placeholder: "e.g., README.md line 45, docs/quantum/index.md, API reference for SynapseInterpreter"
+    validations:
+      required: false
+
+  - type: textarea
+    id: current-content
+    attributes:
+      label: Current Content (if applicable)
+      description: If this is about existing content, please quote or describe what's currently there
+      render: markdown
+      placeholder: |
+        ```
+        Current documentation content that has issues
+        ```
+
+  - type: textarea
+    id: issue-description
+    attributes:
+      label: Issue Description
+      description: Please describe the documentation issue in detail
+      placeholder: |
+        - What is wrong or missing?
+        - What made this confusing or difficult to understand?
+        - What information were you looking for?
+
+  - type: textarea
+    id: suggested-improvement
+    attributes:
+      label: Suggested Improvement
+      description: How do you think this should be improved?
+      render: markdown
+      placeholder: |
+        - What content should be added/changed?
+        - How should it be organized?
+        - What examples would be helpful?
+
+  - type: textarea
+    id: user-story
+    attributes:
+      label: User Story
+      description: Help us understand the context
+      placeholder: |
+        As a [type of user], I was trying to [accomplish what] when I [encountered this issue].
+        I expected to find [what information] but instead [what happened].
+
+  - type: dropdown
+    id: audience
+    attributes:
+      label: Target Audience
+      description: Who would benefit most from this documentation improvement?
+      options:
+        - Beginners (new to Synapse Language)
+        - Intermediate Users
+        - Advanced Users
+        - Quantum Computing Researchers
+        - AI/ML Developers
+        - Enterprise Users
+        - Contributors/Developers
+        - All Users
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this documentation issue?
+      options:
+        - Critical (blocks usage or causes confusion)
+        - High (significantly impacts user experience)
+        - Medium (improvement would be helpful)
+        - Low (minor issue)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: related-areas
+    attributes:
+      label: Related Areas
+      description: What other areas might be affected by this documentation improvement?
+      options:
+        - label: Core language features
+        - label: Quantum computing examples
+        - label: AI/ML integration examples
+        - label: Cloud platform setup
+        - label: Installation instructions
+        - label: API reference
+        - label: Code examples
+        - label: VS Code extension usage
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any other information that would be helpful
+      placeholder: |
+        - Screenshots of confusing interfaces
+        - Links to related discussions
+        - Examples from other projects
+        - Specific use cases this would help
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Are you interested in helping improve this documentation?
+      options:
+        - label: I would be willing to write/update this documentation
+        - label: I would be willing to review proposed changes
+        - label: I can provide examples or use cases
+        - label: I can test the improved documentation
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: I have searched existing issues for similar documentation requests
+          required: true
+        - label: I have checked if this information exists elsewhere in the documentation
+          required: true
+        - label: I have provided specific details about the issue
+          required: true
+        - label: I am willing to help clarify or provide more information if needed
+          required: false

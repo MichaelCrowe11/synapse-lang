@@ -1,26 +1,46 @@
 {
-  "name": "@synapse-lang/core",
-  "version": "2.2.0",
-  "description": "Synapse scientific programming language",
+  "name": "synapse-lang-core",
+  "version": "2.3.2",
+  "description": "Revolutionary scientific programming language with quantum computing, AI assistance, real-time collaboration, and blockchain verification",
   "main": "index.js",
   "scripts": {
-    "test": "echo 'No tests'",
-    "synapse": "python -m synapse_lang"
+    "test": "echo 'Tests coming soon'",
+    "synapse": "python -m synapse_lang",
+    "demo": "python examples/demo_all_features.py"
   },
   "keywords": [
     "synapse",
-    "scientific",
-    "quantum",
-    "dsl"
+    "scientific-computing",
+    "quantum-computing",
+    "programming-language",
+    "dsl",
+    "ai-assistance",
+    "blockchain",
+    "collaboration",
+    "visual-programming",
+    "distributed-computing",
+    "type-inference",
+    "mobile-framework"
   ],
-  "author": "Synapse Team",
+  "author": "Michael Benjamin Crowe",
   "license": "MIT",
   "files": [
     "synapse_lang/**/*.py",
-    "README.md"
+    "examples/*.py",
+    "README.md",
+    "LICENSE",
+    "index.js"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/synapse-lang/synapse-lang"
+    "url": "https://github.com/michaelcrowe11/synapse-lang"
+  },
+  "homepage": "https://github.com/michaelcrowe11/synapse-lang#readme",
+  "bugs": {
+    "url": "https://github.com/michaelcrowe11/synapse-lang/issues"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "python": ">=3.8"
   }
 }

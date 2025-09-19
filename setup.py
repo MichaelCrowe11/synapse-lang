@@ -30,14 +30,14 @@ else:
     ]
 
 setup(
-    name="synapse-lang",
-    version="2.3.0",
+    name="synapse_lang",  # PEP 625 compliant naming (underscore instead of hyphen)
+    version="2.3.2",
     author="Michael Benjamin Crowe",
-    author_email="michaelcrowe11@users.noreply.github.com",
-    description="Enterprise quantum computing platform with cloud-native architecture, distributed execution, and comprehensive quantum algorithms",
+    author_email="michael@crowelogic.com",
+    description="Revolutionary scientific programming language with quantum computing, AI assistance, real-time collaboration, and blockchain verification",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/MichaelCrowe11/synapse-lang",
+    url="https://github.com/michaelcrowe11/synapse-lang",
     packages=find_packages(include=[
         "synapse_lang",
         "synapse_lang.*",

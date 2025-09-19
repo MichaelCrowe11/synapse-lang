@@ -22,11 +22,16 @@ synapse_jit.py
 synapse_parser.py
 synapse_repl.py
 synapse_scientific.py
+.github/FUNDING.yml
 .github/dependabot.yml
+.github/ISSUE_TEMPLATE/bug_report.yml
+.github/ISSUE_TEMPLATE/documentation.yml
+.github/ISSUE_TEMPLATE/feature_request.yml
 .github/workflows/ci.yml
 .github/workflows/deploy-docs.yml
 .github/workflows/deploy-pages.yml
 .github/workflows/deploy.yml
+.github/workflows/docker.yml
 .github/workflows/publish.yml
 docs/DRUG_DISCOVERY_QUICKSTART.md
 docs/index.md

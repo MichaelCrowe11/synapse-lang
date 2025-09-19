@@ -1,39 +1,47 @@
 # Contributing to Synapse Language
 
-Created by Michael Benjamin Crowe
-
-Thank you for your interest in contributing to Synapse! This document provides guidelines and instructions for contributing to the project.
+First off, thank you for considering contributing to Synapse Language! It's people like you that make Synapse such a great tool.
 
 ## Code of Conduct
 
-By participating in this project, you agree to abide by our Code of Conduct:
-- Be respectful and inclusive
-- Welcome newcomers and help them get started
-- Focus on constructive criticism
-- Accept feedback gracefully
+This project and everyone participating in it is governed by the [Synapse Code of Conduct](.github/CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
 
-## How to Contribute
+## How Can I Contribute?
 
-### Reporting Issues
+### Reporting Bugs
 
-1. Check existing issues to avoid duplicates
-2. Use issue templates when available
-3. Provide clear descriptions and reproducible examples
-4. Include system information (OS, Python version, etc.)
+Before creating bug reports, please check existing issues to avoid duplicates. When you create a bug report, please include as many details as possible using our [bug report template](.github/ISSUE_TEMPLATE/bug_report.yml).
 
-### Submitting Pull Requests
+### Suggesting Enhancements
 
-1. **Fork the repository** and create a feature branch
-2. **Write tests** for new functionality
-3. **Follow code style** (use black and flake8)
-4. **Update documentation** as needed
-5. **Sign your commits** with `git commit -s`
+Enhancement suggestions are tracked as GitHub issues. Use our [feature request template](.github/ISSUE_TEMPLATE/feature_request.yml) to provide:
 
-### Development Workflow
+- A clear and descriptive title
+- A detailed description of the proposed feature
+- Examples of how it would be used
+- Why this enhancement would be useful
+
+### Your First Code Contribution
+
+Unsure where to begin? Look for issues labeled:
+
+- `good first issue` - Simple issues perfect for beginners
+- `help wanted` - Issues where we need community help
+- `documentation` - Help improve our docs
+
+### Pull Requests
+
+1. Fork the repo and create your branch from `main`
+2. If you've added code that should be tested, add tests
+3. Ensure the test suite passes
+4. Make sure your code follows our style guidelines
+5. Issue that pull request!
+
+## Development Setup
 
 ```bash
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/synapse-lang.git
+git clone https://github.com/your-username/synapse-lang.git
 cd synapse-lang
 
 # Create virtual environment
@@ -41,190 +49,95 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install in development mode
-pip install -e .
-pip install -r requirements-dev.txt
+pip install -e .[dev]
 
-# Install pre-commit hooks
-pre-commit install
-
-# Create feature branch
-git checkout -b feature/your-feature-name
-
-# Make changes and test
+# Run tests
 pytest
-black .
-flake8 .
 
-# Commit and push
-git add .
-git commit -m "feat: description of your feature"
-git push origin feature/your-feature-name
+# Run linting
+ruff check synapse_lang/
+
+# Run type checking
+mypy synapse_lang/
 ```
 
-## Testing Guidelines
+## Style Guidelines
 
-### Running Tests
+### Python Style
 
+We use:
+- `black` for code formatting (line length: 100)
+- `ruff` for linting
+- `mypy` for type checking
+
+Run formatting before committing:
 ```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=. --cov-report=html
-
-# Run specific test file
-pytest tests/test_core.py
-
-# Run only fast tests
-pytest -m "not slow"
+black synapse_lang/
+ruff check --fix synapse_lang/
 ```
 
-### Writing Tests
+### Commit Messages
 
-- Place tests in `tests/` directory
-- Name test files as `test_*.py`
-- Use descriptive test names
-- Include both positive and negative test cases
-- Test edge cases and error conditions
-
-Example test:
-```python
-def test_uncertain_value_addition():
-    val1 = UncertainValue(10, 0.5)
-    val2 = UncertainValue(20, 1.0)
-    result = val1 + val2
-    
-    assert result.value == 30
-    assert result.uncertainty == pytest.approx(1.118, rel=1e-3)
-```
-
-## Code Style Guidelines
-
-### Python Code
-
-- Follow PEP 8
-- Use black for formatting
-- Maximum line length: 127 characters
-- Use type hints where appropriate
-- Document functions with docstrings
-
-### Synapse Code
-
-- Use 4 spaces for indentation
-- Place opening braces on the same line
-- Use descriptive names for variables and functions
-- Comment complex algorithms
+- Use the present tense ("Add feature" not "Added feature")
+- Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
+- Limit the first line to 72 characters
+- Reference issues and pull requests liberally after the first line
 
 Example:
-```synapse
-hypothesis MyHypothesis {
-    assume: initial_condition
-    predict: expected_outcome
-    validate: experimental_test
-}
+```
+Add quantum state visualization feature
+
+- Implement Bloch sphere representation
+- Add real-time state updates
+- Include measurement probabilities
+
+Fixes #123
 ```
 
-## Documentation
+### Documentation
 
-### Docstring Format
+- Use docstrings for all public functions and classes
+- Follow NumPy docstring style
+- Update README.md if adding new features
+- Add examples for complex functionality
 
-```python
-def function_name(param1: Type, param2: Type) -> ReturnType:
-    """
-    Brief description of function.
-    
-    Longer explanation if needed, describing the algorithm,
-    assumptions, and any important details.
-    
-    Args:
-        param1: Description of first parameter
-        param2: Description of second parameter
-    
-    Returns:
-        Description of return value
-    
-    Raises:
-        ExceptionType: When this exception occurs
-    
-    Example:
-        >>> result = function_name(value1, value2)
-        >>> print(result)
-        expected_output
-    """
+## Testing
+
+- Write unit tests for new functionality
+- Ensure all tests pass before submitting PR
+- Aim for >80% code coverage
+- Test on multiple Python versions if possible
+
+## Project Structure
+
+```
+synapse-lang/
+├── synapse_lang/          # Main package
+│   ├── quantum/           # Quantum computing modules
+│   ├── backends/          # Computation backends
+│   ├── pharmkit/          # Drug discovery toolkit
+│   └── ...
+├── tests/                 # Test suite
+├── docs/                  # Documentation
+├── examples/              # Example scripts
+└── scripts/               # Utility scripts
 ```
 
-### Building Documentation
+## Community
 
-```bash
-cd docs
-make clean
-make html
-# View at docs/build/html/index.html
-```
-
-## Adding Language Features
-
-When adding new language features:
-
-1. **Update the lexer** (`synapse_interpreter.py`)
-   - Add new token types
-   - Update tokenization rules
-
-2. **Update the parser** (`synapse_parser.py`)
-   - Add AST node types
-   - Implement parsing rules
-
-3. **Update the interpreter** (`synapse_interpreter.py`)
-   - Implement execution logic
-   - Handle new constructs
-
-4. **Add tests** (`tests/`)
-   - Unit tests for each component
-   - Integration tests for complete features
-
-5. **Update documentation**
-   - Language specification (`LANGUAGE_SPEC.md`)
-   - Examples (`examples/`)
-   - API documentation
-
-6. **Update VS Code extension**
-   - Syntax highlighting rules
-   - Snippets for new constructs
-
-## Release Process
-
-1. Update version in:
-   - `setup.py`
-   - `vscode-extension/package.json`
-   - `docs/source/conf.py`
-
-2. Update CHANGELOG.md
-
-3. Run full test suite:
-   ```bash
-   tox
-   ```
-
-4. Create release PR
-
-5. After merge, create GitHub release
-
-6. Package will be automatically published to PyPI
-
-## Getting Help
-
-- **GitHub Discussions**: For questions and ideas
-- **Issues**: For bug reports and feature requests
-- **Contact**: Michael Benjamin Crowe
+- **Discord**: Join our [Discord server](https://discord.gg/synapse-lang)
+- **Forums**: Visit [community.synapse-lang.org](https://community.synapse-lang.org)
+- **Twitter**: Follow [@SynapseLang](https://twitter.com/SynapseLang)
 
 ## Recognition
 
-Contributors will be:
-- Listed in AUTHORS.md
-- Mentioned in release notes
-- Given credit in documentation
+Contributors are recognized in:
+- AUTHORS.md file
+- GitHub contributors page
+- Release notes
 
-Thank you for contributing to Synapse!
+## Questions?
 
----
-Developed by Michael Benjamin Crowe
+Feel free to open an issue with the `question` label or reach out on Discord!
+
+Thank you for contributing! 🚀
