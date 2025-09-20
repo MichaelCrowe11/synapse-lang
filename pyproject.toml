@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "synapse_lang"  # PEP 625 compliant naming
-version = "2.3.2"
+version = "2.3.3"
 description = "Revolutionary scientific programming language with quantum computing, AI assistance, real-time collaboration, and blockchain verification"
 readme = "README.md"
 requires-python = ">=3.8"

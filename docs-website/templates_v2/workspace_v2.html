@@ -1,0 +1,838 @@
+{% extends "base_v2.html" %}
+
+{% block title %}Collaborative Workspace - Synapse Language{% endblock %}
+
+{% block extra_css %}
+<style>
+    .workspace-container {
+        display: grid;
+        grid-template-columns: 250px 1fr 300px;
+        height: calc(100vh - 64px);
+        background: var(--bg-secondary);
+    }
+
+    /* Left Sidebar - Users */
+    .users-sidebar {
+        background: var(--bg-primary);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sidebar-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-title {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-tertiary);
+        margin-bottom: 12px;
+    }
+
+    .session-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: var(--bg-secondary);
+        border-radius: 6px;
+        font-size: 13px;
+    }
+
+    .session-indicator {
+        width: 8px;
+        height: 8px;
+        background: var(--success);
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+    }
+
+    /* Users List */
+    .users-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+    }
+
+    .user-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px;
+        border-radius: 6px;
+        margin-bottom: 8px;
+        transition: var(--transition);
+    }
+
+    .user-item:hover {
+        background: var(--bg-secondary);
+    }
+
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 600;
+        color: white;
+    }
+
+    .user-info {
+        flex: 1;
+    }
+
+    .user-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    .user-status {
+        font-size: 12px;
+        color: var(--text-tertiary);
+    }
+
+    .user-cursor {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+    /* Main Editor */
+    .editor-main {
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-primary);
+    }
+
+    .editor-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-secondary);
+    }
+
+    .toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .toolbar-button {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .toolbar-button:hover {
+        background: var(--bg-tertiary);
+    }
+
+    .toolbar-button.active {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+    }
+
+    /* Collaborative Editor */
+    .collab-editor {
+        flex: 1;
+        padding: 32px;
+        overflow-y: auto;
+    }
+
+    .editor-canvas {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        box-shadow: var(--shadow-md);
+        min-height: 600px;
+        padding: 48px;
+        position: relative;
+    }
+
+    [data-theme="dark"] .editor-canvas {
+        background: var(--bg-secondary);
+    }
+
+    .editor-textarea {
+        width: 100%;
+        min-height: 500px;
+        border: none;
+        outline: none;
+        font-family: 'Inter', sans-serif;
+        font-size: 16px;
+        line-height: 1.8;
+        color: var(--text-primary);
+        resize: none;
+        background: transparent;
+    }
+
+    /* Remote Cursors */
+    .remote-cursor {
+        position: absolute;
+        width: 2px;
+        height: 20px;
+        pointer-events: none;
+        transition: all 0.1s ease;
+    }
+
+    .remote-cursor::before {
+        content: attr(data-user);
+        position: absolute;
+        top: -20px;
+        left: 0;
+        padding: 2px 6px;
+        background: inherit;
+        border-radius: 4px;
+        font-size: 11px;
+        color: white;
+        white-space: nowrap;
+    }
+
+    .remote-selection {
+        position: absolute;
+        pointer-events: none;
+        opacity: 0.3;
+    }
+
+    /* Right Sidebar - Chat/Comments */
+    .chat-sidebar {
+        background: var(--bg-primary);
+        border-left: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .tab-switcher {
+        display: flex;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .tab-button {
+        flex: 1;
+        padding: 12px;
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .tab-button:hover {
+        color: var(--text-primary);
+    }
+
+    .tab-button.active {
+        color: var(--text-primary);
+        border-bottom-color: var(--accent);
+    }
+
+    /* Chat Messages */
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+    }
+
+    .message {
+        margin-bottom: 16px;
+    }
+
+    .message-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+    }
+
+    .message-author {
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .message-time {
+        font-size: 11px;
+        color: var(--text-tertiary);
+    }
+
+    .message-content {
+        padding: 8px 12px;
+        background: var(--bg-secondary);
+        border-radius: 6px;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .message-content code {
+        background: var(--bg-tertiary);
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+    }
+
+    /* Chat Input */
+    .chat-input-container {
+        padding: 16px;
+        border-top: 1px solid var(--border);
+    }
+
+    .chat-input {
+        width: 100%;
+        padding: 8px 12px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 13px;
+        outline: none;
+        transition: var(--transition);
+    }
+
+    .chat-input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.1);
+    }
+
+    /* Comments */
+    .comment-thread {
+        padding: 16px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .comment-highlight {
+        background: rgba(99, 102, 241, 0.1);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 13px;
+        margin-bottom: 8px;
+        border-left: 3px solid var(--accent);
+    }
+
+    .comment {
+        margin-top: 8px;
+        padding: 8px;
+        background: var(--bg-secondary);
+        border-radius: 6px;
+        font-size: 13px;
+    }
+
+    /* Presence Indicators */
+    .presence-bar {
+        display: flex;
+        gap: 8px;
+        padding: 8px 20px;
+        background: var(--bg-tertiary);
+        border-bottom: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .presence-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .typing-indicator {
+        display: flex;
+        gap: 2px;
+    }
+
+    .typing-dot {
+        width: 4px;
+        height: 4px;
+        background: var(--text-tertiary);
+        border-radius: 50%;
+        animation: typing 1.4s infinite;
+    }
+
+    .typing-dot:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+
+    .typing-dot:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+
+    @keyframes typing {
+        0%, 60%, 100% {
+            transform: translateY(0);
+        }
+        30% {
+            transform: translateY(-10px);
+        }
+    }
+
+    /* Share Modal */
+    .share-modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 32px;
+        box-shadow: var(--shadow-lg);
+        z-index: 2000;
+        display: none;
+        min-width: 400px;
+    }
+
+    .share-modal.active {
+        display: block;
+    }
+
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1999;
+        display: none;
+    }
+
+    .modal-overlay.active {
+        display: block;
+    }
+
+    .share-link {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+    }
+
+    .share-input {
+        flex: 1;
+        padding: 8px 12px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .workspace-container {
+            grid-template-columns: 1fr;
+        }
+
+        .users-sidebar,
+        .chat-sidebar {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="workspace-container">
+    <!-- Users Sidebar -->
+    <aside class="users-sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">Workspace</div>
+            <div class="session-info">
+                <span class="session-indicator"></span>
+                <span>Live Session</span>
+            </div>
+        </div>
+
+        <div class="users-list">
+            <div class="sidebar-title">Active Users (4)</div>
+
+            <div class="user-item">
+                <div class="user-avatar" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                    You
+                </div>
+                <div class="user-info">
+                    <div class="user-name">You</div>
+                    <div class="user-status">Editing</div>
+                </div>
+                <div class="user-cursor" style="background: #667eea;"></div>
+            </div>
+
+            <div class="user-item">
+                <div class="user-avatar" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                    AM
+                </div>
+                <div class="user-info">
+                    <div class="user-name">Alice Miller</div>
+                    <div class="user-status">Viewing</div>
+                </div>
+                <div class="user-cursor" style="background: #f5576c;"></div>
+            </div>
+
+            <div class="user-item">
+                <div class="user-avatar" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                    BJ
+                </div>
+                <div class="user-info">
+                    <div class="user-name">Bob Johnson</div>
+                    <div class="user-status">Commenting</div>
+                </div>
+                <div class="user-cursor" style="background: #00f2fe;"></div>
+            </div>
+
+            <div class="user-item">
+                <div class="user-avatar" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
+                    CS
+                </div>
+                <div class="user-info">
+                    <div class="user-name">Charlie Smith</div>
+                    <div class="user-status">Typing...</div>
+                </div>
+                <div class="user-cursor" style="background: #38f9d7;"></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Editor -->
+    <main class="editor-main">
+        <div class="presence-bar">
+            <div class="presence-item">
+                <span>Alice is viewing line 42</span>
+            </div>
+            <div class="presence-item">
+                <span>Charlie is typing</span>
+                <div class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="editor-toolbar">
+            <div class="toolbar-left">
+                <select class="toolbar-button">
+                    <option>quantum_circuit.py</option>
+                    <option>entanglement.py</option>
+                    <option>README.md</option>
+                </select>
+
+                <button class="toolbar-button" onclick="formatCode()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor">
+                        <path d="M4 6l4 4 4-4"/>
+                    </svg>
+                    Format
+                </button>
+
+                <button class="toolbar-button" onclick="runCode()">
+                    <svg width="16" height="16" fill="currentColor">
+                        <path d="M5 3l9 5-9 5V3z"/>
+                    </svg>
+                    Run
+                </button>
+            </div>
+
+            <div class="toolbar-right">
+                <button class="toolbar-button" onclick="toggleShare()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor">
+                        <path d="M8.5 11.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                        <path d="M12.5 7.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                        <path d="M4.5 7.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                    </svg>
+                    Share
+                </button>
+
+                <div class="toolbar-button">
+                    <svg width="16" height="16" fill="currentColor">
+                        <circle cx="8" cy="8" r="8" fill="var(--success)"/>
+                    </svg>
+                    Auto-saved
+                </div>
+            </div>
+        </div>
+
+        <div class="collab-editor">
+            <div class="editor-canvas">
+                <!-- Remote cursors -->
+                <div class="remote-cursor" data-user="Alice" style="background: #f5576c; left: 245px; top: 120px;"></div>
+                <div class="remote-cursor" data-user="Charlie" style="background: #38f9d7; left: 380px; top: 200px;"></div>
+
+                <textarea class="editor-textarea" id="collab-textarea" placeholder="Start typing to collaborate...">from synapse_lang.quantum_designer import QuantumCircuit, QuantumSimulator
+import numpy as np
+
+class QuantumTeleportation:
+    """
+    Quantum teleportation protocol implementation
+    Demonstrates entanglement and measurement
+    """
+
+    def __init__(self):
+        self.circuit = QuantumCircuit(3)
+        self.simulator = QuantumSimulator()
+
+    def create_bell_pair(self):
+        """Create Bell state between qubits 1 and 2"""
+        self.circuit.add_gate("H", [1])
+        self.circuit.add_gate("CNOT", [1, 2])
+        print("✓ Bell pair created")
+
+    def encode_message(self, qubit_state):
+        """Encode message on qubit 0"""
+        if qubit_state == '1':
+            self.circuit.add_gate("X", [0])
+        print(f"✓ Message |{qubit_state}⟩ encoded")
+
+    def bell_measurement(self):
+        """Perform Bell measurement on qubits 0 and 1"""
+        self.circuit.add_gate("CNOT", [0, 1])
+        self.circuit.add_gate("H", [0])
+        print("✓ Bell measurement performed")
+
+    def teleport(self, message='0'):
+        """Execute teleportation protocol"""
+        self.encode_message(message)
+        self.create_bell_pair()
+        self.bell_measurement()
+
+        # Simulate and show results
+        result = self.simulator.simulate(self.circuit)
+        print(f"\n📡 Teleportation complete!")
+        print(f"State vector: {result}")
+        return result
+
+# Example usage
+if __name__ == "__main__":
+    teleporter = QuantumTeleportation()
+    teleporter.teleport('1')</textarea>
+            </div>
+        </div>
+    </main>
+
+    <!-- Chat/Comments Sidebar -->
+    <aside class="chat-sidebar">
+        <div class="tab-switcher">
+            <button class="tab-button active" onclick="switchTab('chat')">Chat</button>
+            <button class="tab-button" onclick="switchTab('comments')">Comments</button>
+        </div>
+
+        <!-- Chat Tab -->
+        <div id="chat-tab" class="chat-messages">
+            <div class="message">
+                <div class="message-header">
+                    <span class="message-author" style="color: #f5576c;">Alice Miller</span>
+                    <span class="message-time">2 min ago</span>
+                </div>
+                <div class="message-content">
+                    Should we add error handling for invalid qubit states?
+                </div>
+            </div>
+
+            <div class="message">
+                <div class="message-header">
+                    <span class="message-author" style="color: #00f2fe;">Bob Johnson</span>
+                    <span class="message-time">1 min ago</span>
+                </div>
+                <div class="message-content">
+                    Good idea! Also, let's add a method for <code>apply_corrections()</code>
+                </div>
+            </div>
+
+            <div class="message">
+                <div class="message-header">
+                    <span class="message-author" style="color: #38f9d7;">Charlie Smith</span>
+                    <span class="message-time">Just now</span>
+                </div>
+                <div class="message-content">
+                    I'm working on the classical communication channel now
+                </div>
+            </div>
+        </div>
+
+        <!-- Comments Tab -->
+        <div id="comments-tab" class="chat-messages" style="display: none;">
+            <div class="comment-thread">
+                <div class="comment-highlight">
+                    Line 15: <code>self.circuit.add_gate("H", [1])</code>
+                </div>
+                <div class="comment">
+                    <strong>Alice:</strong> Should we parameterize the qubit indices?
+                </div>
+                <div class="comment">
+                    <strong>You:</strong> Good point, let's make it configurable
+                </div>
+            </div>
+
+            <div class="comment-thread">
+                <div class="comment-highlight">
+                    Line 28: <code>bell_measurement()</code>
+                </div>
+                <div class="comment">
+                    <strong>Bob:</strong> Add docstring about measurement basis
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-input-container">
+            <input type="text" class="chat-input" placeholder="Type a message..." onkeypress="sendMessage(event)">
+        </div>
+    </aside>
+</div>
+
+<!-- Share Modal -->
+<div class="modal-overlay" onclick="toggleShare()"></div>
+<div class="share-modal">
+    <h3 style="margin-bottom: 8px;">Share Workspace</h3>
+    <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">
+        Anyone with this link can join the collaborative session
+    </p>
+    <div class="share-link">
+        <input type="text" class="share-input" value="https://synapse-lang-docs.fly.dev/workspace/abc123" readonly>
+        <button class="button" onclick="copyShareLink()">Copy Link</button>
+    </div>
+</div>
+
+<script>
+// Collaborative editing simulation
+const textarea = document.getElementById('collab-textarea');
+let typingTimer;
+
+textarea.addEventListener('input', () => {
+    // Simulate operational transformation
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => {
+        console.log('Syncing changes...');
+        updatePresence('editing');
+    }, 500);
+});
+
+textarea.addEventListener('selectionchange', () => {
+    // Track cursor position
+    const pos = textarea.selectionStart;
+    console.log('Cursor position:', pos);
+});
+
+function switchTab(tab) {
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    if (tab === 'chat') {
+        document.getElementById('chat-tab').style.display = 'block';
+        document.getElementById('comments-tab').style.display = 'none';
+        event.target.classList.add('active');
+    } else {
+        document.getElementById('chat-tab').style.display = 'none';
+        document.getElementById('comments-tab').style.display = 'block';
+        event.target.classList.add('active');
+    }
+}
+
+function sendMessage(event) {
+    if (event.key === 'Enter') {
+        const input = event.target;
+        const message = input.value.trim();
+
+        if (message) {
+            // Add message to chat
+            const chatMessages = document.getElementById('chat-tab');
+            const messageEl = document.createElement('div');
+            messageEl.className = 'message';
+            messageEl.innerHTML = `
+                <div class="message-header">
+                    <span class="message-author" style="color: #667eea;">You</span>
+                    <span class="message-time">Just now</span>
+                </div>
+                <div class="message-content">${message}</div>
+            `;
+            chatMessages.appendChild(messageEl);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            input.value = '';
+        }
+    }
+}
+
+function toggleShare() {
+    document.querySelector('.share-modal').classList.toggle('active');
+    document.querySelector('.modal-overlay').classList.toggle('active');
+}
+
+function copyShareLink() {
+    const input = document.querySelector('.share-input');
+    input.select();
+    navigator.clipboard.writeText(input.value);
+
+    // Show feedback
+    const button = event.target;
+    button.textContent = 'Copied!';
+    setTimeout(() => {
+        button.textContent = 'Copy Link';
+    }, 2000);
+}
+
+function formatCode() {
+    // Simulate code formatting
+    console.log('Formatting code...');
+    const button = event.target.closest('.toolbar-button');
+    button.style.background = 'var(--success)';
+    setTimeout(() => {
+        button.style.background = '';
+    }, 1000);
+}
+
+function runCode() {
+    console.log('Running code...');
+    // Simulate code execution
+}
+
+function updatePresence(status) {
+    // Update user presence
+    console.log('Updating presence:', status);
+}
+
+// Simulate real-time cursor movements
+setInterval(() => {
+    const cursors = document.querySelectorAll('.remote-cursor');
+    cursors.forEach(cursor => {
+        const currentLeft = parseInt(cursor.style.left);
+        const currentTop = parseInt(cursor.style.top);
+
+        // Random small movements
+        cursor.style.left = currentLeft + (Math.random() * 10 - 5) + 'px';
+        cursor.style.top = currentTop + (Math.random() * 10 - 5) + 'px';
+    });
+}, 3000);
+
+// Auto-save indicator
+setInterval(() => {
+    const indicator = document.querySelector('.toolbar-button svg circle');
+    if (indicator) {
+        indicator.style.fill = '#ffa400';
+        setTimeout(() => {
+            indicator.style.fill = 'var(--success)';
+        }, 500);
+    }
+}, 10000);
+</script>
+{% endblock %}

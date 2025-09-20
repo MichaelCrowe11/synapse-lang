@@ -10,6 +10,7 @@ LICENSE-DUAL.md
 LICENSE-PROPRIETARY
 MANIFEST.in
 README.md
+license_server.py
 pyproject.toml
 requirements-gpu.txt
 requirements-platform.txt
@@ -121,7 +122,9 @@ synapse_lang/quantum/core.py
 synapse_lang/quantum/semantics.py
 tests/__init__.py
 tests/run_tests.py
+tests/test_all.py
 tests/test_backends.py
+tests/test_collaboration.py
 tests/test_comprehensive.py
 tests/test_enhanced_parser.py
 tests/test_expression_precedence.py
@@ -131,8 +134,10 @@ tests/test_minimal_parser.py
 tests/test_optimized.py
 tests/test_parser_comprehensive.py
 tests/test_quantum_circuits.py
+tests/test_quantum_designer.py
 tests/test_quantum_semantics.py
 tests/test_tensor_matrix.py
+tests/test_type_inference.py
 tests/integration/test_examples.py
 tests/unit/test_parallel.py
 tests/unit/test_uncertainty.py

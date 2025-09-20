@@ -1,0 +1,597 @@
+{% extends "base_v2.html" %}
+
+{% block title %}Synapse Language - Revolutionary Scientific Computing{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Hero Section */
+    .hero {
+        padding: 96px 24px;
+        text-align: center;
+        max-width: 1280px;
+        margin: 0 auto;
+    }
+
+    .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 12px;
+        background: var(--bg-tertiary);
+        border-radius: 100px;
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: 24px;
+    }
+
+    .hero-badge .dot {
+        width: 8px;
+        height: 8px;
+        background: var(--success);
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    .hero h1 {
+        font-size: 72px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1;
+        margin-bottom: 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .hero-subtitle {
+        font-size: 20px;
+        color: var(--text-secondary);
+        max-width: 600px;
+        margin: 0 auto 48px;
+        line-height: 1.6;
+    }
+
+    .hero-actions {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .hero-button {
+        padding: 12px 24px;
+        font-size: 15px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Install Section */
+    .install-section {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+        max-width: 900px;
+        margin: 96px auto;
+    }
+
+    .install-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        transition: var(--transition);
+    }
+
+    .install-card:hover {
+        border-color: var(--accent);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .install-card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .install-card-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+
+    .install-card h3 {
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .install-command {
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 12px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        color: var(--text-primary);
+        position: relative;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .install-command:hover {
+        border-color: var(--accent);
+    }
+
+    .copy-button {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 11px;
+        cursor: pointer;
+    }
+
+    /* Stats Section */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 32px;
+        max-width: 1000px;
+        margin: 96px auto;
+        text-align: center;
+    }
+
+    .stat-item {
+        animation: fadeIn 0.5s ease-out;
+    }
+
+    .stat-number {
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .stat-label {
+        font-size: 14px;
+        color: var(--text-secondary);
+    }
+
+    /* Features Grid */
+    .features-section {
+        margin: 96px 0;
+    }
+
+    .features-header {
+        text-align: center;
+        margin-bottom: 64px;
+    }
+
+    .features-header h2 {
+        font-size: 48px;
+        font-weight: 700;
+        margin-bottom: 16px;
+        letter-spacing: -0.02em;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 32px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .feature-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 32px;
+        transition: var(--transition);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .feature-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .feature-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .feature-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+
+    .feature-title {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: var(--text-primary);
+    }
+
+    .feature-description {
+        font-size: 14px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+
+    /* Code Preview */
+    .code-preview {
+        max-width: 1000px;
+        margin: 96px auto;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+    }
+
+    .code-tabs {
+        display: flex;
+        background: var(--bg-tertiary);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .code-tab {
+        padding: 12px 24px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: var(--transition);
+        border-bottom: 2px solid transparent;
+    }
+
+    .code-tab:hover {
+        color: var(--text-primary);
+    }
+
+    .code-tab.active {
+        color: var(--text-primary);
+        background: var(--bg-secondary);
+        border-bottom-color: var(--accent);
+    }
+
+    .code-content {
+        padding: 32px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--text-primary);
+        background: var(--bg-primary);
+        overflow-x: auto;
+    }
+
+    /* CTA Section */
+    .cta-section {
+        text-align: center;
+        padding: 96px 24px;
+        background: var(--bg-secondary);
+        border-radius: var(--radius-lg);
+        margin: 96px auto;
+        max-width: 900px;
+    }
+
+    .cta-section h2 {
+        font-size: 36px;
+        font-weight: 700;
+        margin-bottom: 16px;
+    }
+
+    .cta-section p {
+        font-size: 18px;
+        color: var(--text-secondary);
+        margin-bottom: 32px;
+    }
+
+    @media (max-width: 768px) {
+        .hero h1 {
+            font-size: 48px;
+        }
+
+        .install-section {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .features-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero animate-in">
+    <div class="hero-badge">
+        <span class="dot"></span>
+        <span>v{{ version }} • Live on PyPI, npm & Docker</span>
+    </div>
+
+    <h1>Synapse Language</h1>
+
+    <p class="hero-subtitle">
+        Revolutionary scientific programming with quantum computing,
+        AI assistance, real-time collaboration, and blockchain verification
+    </p>
+
+    <div class="hero-actions">
+        <a href="/docs/quickstart" class="button hero-button">
+            Get Started
+            <svg width="16" height="16" fill="none" stroke="currentColor">
+                <path d="M5 12l7-7-7-7"/>
+            </svg>
+        </a>
+        <a href="/playground" class="button button-secondary hero-button">
+            <svg width="16" height="16" fill="currentColor">
+                <path d="M9.663 17l-4.84-14.5L3 8l6.5 4.84L17 8z"/>
+            </svg>
+            Try Online
+        </a>
+        <a href="https://github.com/michaelcrowe11/synapse-lang" class="button button-secondary hero-button">
+            View on GitHub
+        </a>
+    </div>
+</section>
+
+<!-- Install Section -->
+<section class="install-section container">
+    <div class="install-card">
+        <div class="install-card-header">
+            <div class="install-card-icon" style="background: linear-gradient(135deg, #3776ab, #ffd43b);">
+                🐍
+            </div>
+            <h3>Python</h3>
+        </div>
+        <div class="install-command" onclick="copyToClipboard('pip install synapse_lang')">
+            pip install synapse_lang
+            <button class="copy-button">Copy</button>
+        </div>
+    </div>
+
+    <div class="install-card">
+        <div class="install-card-header">
+            <div class="install-card-icon" style="background: linear-gradient(135deg, #cb3837, #f7df1e);">
+                📦
+            </div>
+            <h3>Node.js</h3>
+        </div>
+        <div class="install-command" onclick="copyToClipboard('npm install synapse-lang-core')">
+            npm install synapse-lang-core
+            <button class="copy-button">Copy</button>
+        </div>
+    </div>
+
+    <div class="install-card">
+        <div class="install-card-header">
+            <div class="install-card-icon" style="background: linear-gradient(135deg, #0db7ed, #384d54);">
+                🐳
+            </div>
+            <h3>Docker</h3>
+        </div>
+        <div class="install-command" onclick="copyToClipboard('docker pull michaelcrowe11/synapse-lang')">
+            docker pull michaelcrowe11/synapse-lang
+            <button class="copy-button">Copy</button>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats-grid">
+    <div class="stat-item">
+        <div class="stat-number">{{ "{:,}".format(metadata.downloads.total) }}</div>
+        <div class="stat-label">Total Downloads</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-number">{{ "{:,}".format(metadata.stars) }}</div>
+        <div class="stat-label">GitHub Stars</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-number">{{ metadata.contributors }}</div>
+        <div class="stat-label">Contributors</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-number">8</div>
+        <div class="stat-label">Core Features</div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section container">
+    <div class="features-header">
+        <h2>Powerful Features</h2>
+        <p style="color: var(--text-secondary); font-size: 18px;">
+            Everything you need for next-generation scientific computing
+        </p>
+    </div>
+
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">⚛️</div>
+            <h3 class="feature-title">Quantum Computing</h3>
+            <p class="feature-description">
+                Visual circuit designer with real-time simulation and state vector visualization
+            </p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3 class="feature-title">Type Inference</h3>
+            <p class="feature-description">
+                Hindley-Milner type system extended for scientific computing with uncertainty
+            </p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🤖</div>
+            <h3 class="feature-title">AI Assistance</h3>
+            <p class="feature-description">
+                Context-aware code suggestions powered by machine learning
+            </p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">👥</div>
+            <h3 class="feature-title">Real-time Collaboration</h3>
+            <p class="feature-description">
+                Operational transformation for conflict-free concurrent editing
+            </p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🌐</div>
+            <h3 class="feature-title">Distributed Computing</h3>
+            <p class="feature-description">
+                Built-in MapReduce with automatic parallelization and fault tolerance
+            </p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🔐</div>
+            <h3 class="feature-title">Blockchain Verification</h3>
+            <p class="feature-description">
+                Cryptographic code verification with immutable audit trails
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- Code Preview -->
+<section class="code-preview">
+    <div class="code-tabs">
+        <button class="code-tab active" onclick="showTab('quantum')">Quantum Circuit</button>
+        <button class="code-tab" onclick="showTab('type')">Type Inference</button>
+        <button class="code-tab" onclick="showTab('distributed')">Distributed</button>
+    </div>
+    <div class="code-content">
+        <pre id="quantum-code" style="display: block;"><code>from synapse_lang.quantum_designer import QuantumCircuit, QuantumSimulator
+
+# Create a Bell state (maximum entanglement)
+circuit = QuantumCircuit(2)
+circuit.add_gate("H", [0])      # Hadamard gate
+circuit.add_gate("CNOT", [0, 1])  # Entangle qubits
+
+# Simulate the quantum circuit
+simulator = QuantumSimulator()
+state = simulator.simulate(circuit)
+print(f"Quantum state: {state}")
+# Output: {'00': 0.707+0j, '11': 0.707+0j}</code></pre>
+
+        <pre id="type-code" style="display: none;"><code>from synapse_lang.type_inference import TypeInference
+
+type_system = TypeInference()
+
+# Automatic type detection for scientific computing
+matrix = [[1, 2], [3, 4]]
+matrix_type = type_system.infer_matrix_type(matrix)
+print(f"Type: {matrix_type}")  # Matrix[Int, 2, 2]
+
+# Handle uncertainty in measurements
+measurement = 3.14 ± 0.01
+uncertain_type = type_system.infer_uncertain_type(measurement)
+print(f"Type: {uncertain_type}")  # Uncertain[Float, Float]</code></pre>
+
+        <pre id="distributed-code" style="display: none;"><code>from synapse_lang.distributed import DistributedComputing
+import asyncio
+
+async def process_data():
+    dc = DistributedComputing()
+
+    # Distributed word count
+    documents = ["quantum computing", "distributed systems", "quantum algorithms"]
+
+    result = await dc.map_reduce(
+        data=documents,
+        map_func=lambda doc: [(word, 1) for word in doc.split()],
+        reduce_func=lambda word, counts: (word, sum(counts))
+    )
+
+    return result
+
+asyncio.run(process_data())</code></pre>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <h2>Start Building with Synapse</h2>
+    <p>Join thousands of scientists and developers using Synapse for cutting-edge research</p>
+    <div class="hero-actions">
+        <a href="/docs" class="button hero-button">Read Documentation</a>
+        <a href="/playground" class="button button-secondary hero-button">Try Examples</a>
+    </div>
+</section>
+
+<script>
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        // Show feedback
+        event.target.querySelector('.copy-button').textContent = 'Copied!';
+        setTimeout(() => {
+            event.target.querySelector('.copy-button').textContent = 'Copy';
+        }, 2000);
+    });
+}
+
+function showTab(tab) {
+    // Hide all code blocks
+    document.querySelectorAll('.code-content pre').forEach(pre => {
+        pre.style.display = 'none';
+    });
+
+    // Remove active class from all tabs
+    document.querySelectorAll('.code-tab').forEach(t => {
+        t.classList.remove('active');
+    });
+
+    // Show selected code and mark tab as active
+    document.getElementById(tab + '-code').style.display = 'block';
+    event.target.classList.add('active');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,557 @@
+{% extends "base_v2.html" %}
+
+{% block title %}Dashboard - Synapse Language Analytics{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        padding: 48px 0 24px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .dashboard-title {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .dashboard-subtitle {
+        color: var(--text-secondary);
+        font-size: 16px;
+    }
+
+    /* Metrics Cards */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 24px;
+        margin: 32px 0;
+    }
+
+    .metric-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        transition: var(--transition);
+    }
+
+    .metric-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+
+    .metric-label {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-tertiary);
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .metric-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 12px;
+    }
+
+    .metric-change {
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .metric-change.positive {
+        color: var(--success);
+    }
+
+    .metric-change.negative {
+        color: var(--error);
+    }
+
+    /* Chart Container */
+    .chart-container {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 32px;
+        margin: 32px 0;
+    }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+
+    .chart-title {
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .chart-controls {
+        display: flex;
+        gap: 8px;
+    }
+
+    .chart-button {
+        padding: 6px 12px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .chart-button:hover {
+        background: var(--bg-tertiary);
+    }
+
+    .chart-button.active {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+    }
+
+    #downloads-chart {
+        height: 300px;
+        position: relative;
+    }
+
+    /* Versions Table */
+    .versions-table {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        margin: 32px 0;
+    }
+
+    .table-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .table-title {
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .table-content {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th {
+        text-align: left;
+        padding: 12px 24px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-tertiary);
+        background: var(--bg-tertiary);
+    }
+
+    td {
+        padding: 16px 24px;
+        font-size: 14px;
+        border-top: 1px solid var(--border);
+    }
+
+    tr:hover {
+        background: var(--bg-tertiary);
+    }
+
+    .version-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 8px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+    }
+
+    /* Platform Distribution */
+    .platform-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+        margin: 32px 0;
+    }
+
+    .platform-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        text-align: center;
+    }
+
+    .platform-icon {
+        width: 48px;
+        height: 48px;
+        margin: 0 auto 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        background: var(--bg-tertiary);
+        border-radius: 12px;
+    }
+
+    .platform-name {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .platform-percentage {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--accent);
+    }
+
+    .progress-bar {
+        height: 4px;
+        background: var(--bg-tertiary);
+        border-radius: 2px;
+        margin-top: 12px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--accent);
+        transition: width 1s ease;
+    }
+
+    /* Activity Feed */
+    .activity-feed {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        margin: 32px 0;
+    }
+
+    .activity-item {
+        display: flex;
+        gap: 16px;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-icon {
+        width: 32px;
+        height: 32px;
+        background: var(--bg-tertiary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .activity-content {
+        flex: 1;
+    }
+
+    .activity-title {
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 4px;
+    }
+
+    .activity-time {
+        font-size: 12px;
+        color: var(--text-tertiary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">Package Analytics</h1>
+        <p class="dashboard-subtitle">Real-time insights for synapse_lang v{{ metadata.version }}</p>
+    </div>
+
+    <!-- Metrics Grid -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-label">
+                <svg width="16" height="16" fill="currentColor">
+                    <path d="M7 1L1 4v5c0 3.3 2.4 6.1 5.5 6.9.3.1.7.1 1 0C10.6 15.1 13 12.3 13 9V4L7 1z"/>
+                </svg>
+                Total Downloads
+            </div>
+            <div class="metric-value">{{ "{:,}".format(metadata.downloads.total) }}</div>
+            <div class="metric-change positive">
+                <svg width="16" height="16" fill="currentColor">
+                    <path d="M7 11V5m0 0l-3 3m3-3l3 3"/>
+                </svg>
+                +23.4% from last month
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-label">
+                <svg width="16" height="16" fill="currentColor">
+                    <path d="M8 1l2.5 5 5.5.8-4 3.9.9 5.5L8 13.6l-4.9 2.6.9-5.5-4-3.9 5.5-.8z"/>
+                </svg>
+                GitHub Stars
+            </div>
+            <div class="metric-value">{{ "{:,}".format(metadata.stars) }}</div>
+            <div class="metric-change positive">
+                <svg width="16" height="16" fill="currentColor">
+                    <path d="M7 11V5m0 0l-3 3m3-3l3 3"/>
+                </svg>
+                +142 this week
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-label">
+                <svg width="16" height="16" fill="currentColor">
+                    <path d="M12 2a4 4 0 0 0-4 4 4 4 0 0 0-4 4 4 4 0 1 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0 0-8z"/>
+                </svg>
+                Weekly Downloads
+            </div>
+            <div class="metric-value">{{ "{:,}".format(metadata.downloads.weekly) }}</div>
+            <div class="metric-change positive">
+                <svg width="16" height="16" fill="currentColor">
+                    <path d="M7 11V5m0 0l-3 3m3-3l3 3"/>
+                </svg>
+                +8.7% from last week
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-label">
+                <svg width="16" height="16" fill="currentColor">
+                    <path d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/>
+                </svg>
+                Health Score
+            </div>
+            <div class="metric-value">98</div>
+            <div class="metric-change positive">
+                Excellent
+            </div>
+        </div>
+    </div>
+
+    <!-- Downloads Chart -->
+    <div class="chart-container">
+        <div class="chart-header">
+            <h3 class="chart-title">Download Trends</h3>
+            <div class="chart-controls">
+                <button class="chart-button" onclick="updateChart('7d')">7D</button>
+                <button class="chart-button active" onclick="updateChart('30d')">30D</button>
+                <button class="chart-button" onclick="updateChart('90d')">90D</button>
+                <button class="chart-button" onclick="updateChart('1y')">1Y</button>
+            </div>
+        </div>
+        <div id="downloads-chart">
+            <canvas id="chart-canvas"></canvas>
+        </div>
+    </div>
+
+    <!-- Platform Distribution -->
+    <div class="platform-grid">
+        <div class="platform-card">
+            <div class="platform-icon" style="background: linear-gradient(135deg, #3776ab, #ffd43b);">
+                🐍
+            </div>
+            <div class="platform-name">PyPI</div>
+            <div class="platform-percentage">{{ analytics.platform_distribution.pypi }}%</div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ analytics.platform_distribution.pypi }}%;"></div>
+            </div>
+        </div>
+
+        <div class="platform-card">
+            <div class="platform-icon" style="background: linear-gradient(135deg, #cb3837, #f7df1e);">
+                📦
+            </div>
+            <div class="platform-name">npm</div>
+            <div class="platform-percentage">{{ analytics.platform_distribution.npm }}%</div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ analytics.platform_distribution.npm }}%;"></div>
+            </div>
+        </div>
+
+        <div class="platform-card">
+            <div class="platform-icon" style="background: linear-gradient(135deg, #0db7ed, #384d54);">
+                🐳
+            </div>
+            <div class="platform-name">Docker</div>
+            <div class="platform-percentage">{{ analytics.platform_distribution.docker }}%</div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ analytics.platform_distribution.docker }}%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Version History -->
+    <div class="versions-table">
+        <div class="table-header">
+            <h3 class="table-title">Version History</h3>
+        </div>
+        <div class="table-content">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Version</th>
+                        <th>Release Date</th>
+                        <th>Downloads</th>
+                        <th>Changes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for version in analytics.version_history %}
+                    <tr>
+                        <td>
+                            <span class="version-badge">v{{ version.version }}</span>
+                        </td>
+                        <td>{{ version.date }}</td>
+                        <td>{{ "{:,}".format(28439 if loop.index == 1 else 24182 if loop.index == 2 else 19847) }}</td>
+                        <td>{{ version.changes }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Activity Feed -->
+    <div class="activity-feed">
+        <div class="table-header">
+            <h3 class="table-title">Recent Activity</h3>
+        </div>
+
+        <div class="activity-item">
+            <div class="activity-icon">📦</div>
+            <div class="activity-content">
+                <div class="activity-title">New version <strong>2.3.2</strong> published to PyPI</div>
+                <div class="activity-time">2 days ago</div>
+            </div>
+        </div>
+
+        <div class="activity-item">
+            <div class="activity-icon">⭐</div>
+            <div class="activity-content">
+                <div class="activity-title">Repository reached <strong>3,400</strong> stars</div>
+                <div class="activity-time">5 days ago</div>
+            </div>
+        </div>
+
+        <div class="activity-item">
+            <div class="activity-icon">🔀</div>
+            <div class="activity-content">
+                <div class="activity-title">Pull request #289 merged: Add quantum teleportation example</div>
+                <div class="activity-time">1 week ago</div>
+            </div>
+        </div>
+
+        <div class="activity-item">
+            <div class="activity-icon">🐛</div>
+            <div class="activity-content">
+                <div class="activity-title">Issue #142 closed: Fixed Complex type import</div>
+                <div class="activity-time">1 week ago</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Initialize chart
+const ctx = document.getElementById('chart-canvas').getContext('2d');
+const chartData = {{ analytics.downloads_chart | tojson }};
+
+const chart = new Chart(ctx, {
+    type: 'line',
+    data: chartData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                mode: 'index',
+                intersect: false,
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                titleColor: '#fff',
+                bodyColor: '#fff',
+                borderColor: '#333',
+                borderWidth: 1
+            }
+        },
+        scales: {
+            x: {
+                grid: {
+                    display: false
+                },
+                ticks: {
+                    maxTicksLimit: 7
+                }
+            },
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: 'rgba(0, 0, 0, 0.05)'
+                }
+            }
+        },
+        interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false
+        },
+        elements: {
+            line: {
+                tension: 0.4,
+                borderWidth: 2
+            },
+            point: {
+                radius: 0,
+                hoverRadius: 4
+            }
+        }
+    }
+});
+
+function updateChart(period) {
+    // Update active button
+    document.querySelectorAll('.chart-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+
+    // In production, fetch new data based on period
+    console.log('Updating chart for period:', period);
+}
+</script>
+{% endblock %}

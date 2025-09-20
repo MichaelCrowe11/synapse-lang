@@ -31,7 +31,7 @@ else:
 
 setup(
     name="synapse_lang",  # PEP 625 compliant naming (underscore instead of hyphen)
-    version="2.3.2",
+    version="2.3.3",
     author="Michael Benjamin Crowe",
     author_email="michael@crowelogic.com",
     description="Revolutionary scientific programming language with quantum computing, AI assistance, real-time collaboration, and blockchain verification",

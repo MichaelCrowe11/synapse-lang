@@ -1,0 +1,22 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install flask-cors
+
+# Copy application files
+COPY app_v2.py .
+COPY templates_v2 templates_v2/
+COPY static_v2 static_v2/
+
+# Create static directories if they don't exist
+RUN mkdir -p static_v2/css static_v2/js
+
+# Expose port
+EXPOSE 8080
+
+# Run with gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "2", "--threads", "4", "app_v2:app"]

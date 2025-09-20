@@ -1,0 +1,834 @@
+{% extends "base_v2.html" %}
+
+{% block title %}Interactive Playground - Synapse Language{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+
+<style>
+    .playground-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        height: calc(100vh - 64px);
+        background: var(--bg-secondary);
+    }
+
+    /* Controls Bar */
+    .controls-bar {
+        grid-column: 1 / -1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 24px;
+        background: var(--bg-primary);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .controls-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .controls-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .example-select {
+        padding: 8px 12px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 13px;
+        color: var(--text-primary);
+        outline: none;
+        cursor: pointer;
+        min-width: 200px;
+    }
+
+    .run-button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: var(--success);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .run-button:hover {
+        background: #0ba25f;
+        transform: translateY(-1px);
+    }
+
+    .run-button:disabled {
+        background: var(--text-tertiary);
+        cursor: not-allowed;
+    }
+
+    .control-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: var(--transition);
+        color: var(--text-secondary);
+    }
+
+    .control-button:hover {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+    }
+
+    /* Editor Panel */
+    .editor-panel {
+        background: var(--bg-primary);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 20px;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .panel-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+    }
+
+    .editor-settings {
+        display: flex;
+        gap: 8px;
+    }
+
+    .CodeMirror {
+        flex: 1;
+        height: 100%;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .CodeMirror-gutters {
+        background: var(--bg-secondary);
+        border-right: 1px solid var(--border);
+    }
+
+    /* Output Panel */
+    .output-panel {
+        background: var(--bg-primary);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .output-tabs {
+        display: flex;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .output-tab {
+        padding: 10px 20px;
+        background: none;
+        border: none;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: var(--transition);
+        border-bottom: 2px solid transparent;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .output-tab:hover {
+        color: var(--text-primary);
+    }
+
+    .output-tab.active {
+        color: var(--text-primary);
+        background: var(--bg-primary);
+        border-bottom-color: var(--accent);
+    }
+
+    .output-content {
+        flex: 1;
+        padding: 20px;
+        overflow: auto;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+    }
+
+    /* Console Output */
+    .console-output {
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 16px;
+        border-radius: 6px;
+        min-height: 100%;
+    }
+
+    .console-line {
+        margin-bottom: 4px;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .console-timestamp {
+        color: #808080;
+        font-size: 11px;
+    }
+
+    .console-log { color: #d4d4d4; }
+    .console-error { color: #f48771; }
+    .console-warning { color: #ffd602; }
+    .console-info { color: #3794ff; }
+    .console-success { color: #4ec9b0; }
+
+    /* Visualization Tab */
+    .visualization-container {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100%;
+    }
+
+    .quantum-circuit-viz {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 32px;
+        box-shadow: var(--shadow-md);
+    }
+
+    [data-theme="dark"] .quantum-circuit-viz {
+        background: var(--bg-secondary);
+    }
+
+    .circuit-svg {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Metrics Tab */
+    .metrics-container {
+        padding: 24px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+    }
+
+    .metric-box {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+    }
+
+    .metric-label {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-tertiary);
+        margin-bottom: 8px;
+    }
+
+    .metric-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--accent);
+    }
+
+    .metric-unit {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin-left: 4px;
+    }
+
+    /* Terminal Tab */
+    .terminal-container {
+        background: #0c0c0c;
+        color: #00ff00;
+        padding: 16px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        height: 100%;
+        overflow-y: auto;
+    }
+
+    .terminal-prompt {
+        color: #00ff00;
+        margin-right: 8px;
+    }
+
+    .terminal-input {
+        background: transparent;
+        border: none;
+        color: #00ff00;
+        outline: none;
+        font-family: inherit;
+        font-size: inherit;
+        width: calc(100% - 100px);
+    }
+
+    /* Status Bar */
+    .status-bar {
+        grid-column: 1 / -1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 20px;
+        background: var(--bg-tertiary);
+        border-top: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .status-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .status-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .status-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+    .status-ready { background: var(--success); }
+    .status-running { background: var(--warning); animation: pulse 1s infinite; }
+    .status-error { background: var(--error); }
+
+    /* Share Button */
+    .share-button {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .share-button:hover {
+        background: var(--bg-primary);
+        border-color: var(--accent);
+    }
+
+    /* Loading Animation */
+    .loading-spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--text-tertiary);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .playground-container {
+            grid-template-columns: 1fr;
+        }
+
+        .editor-panel {
+            border-right: none;
+            border-bottom: 1px solid var(--border);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="playground-container">
+    <!-- Controls Bar -->
+    <div class="controls-bar">
+        <div class="controls-left">
+            <select class="example-select" onchange="loadExample(this.value)">
+                <option value="">-- Choose Example --</option>
+                <optgroup label="Quantum Computing">
+                    <option value="bell-state">Bell State</option>
+                    <option value="teleportation">Quantum Teleportation</option>
+                    <option value="grover">Grover's Algorithm</option>
+                </optgroup>
+                <optgroup label="Type System">
+                    <option value="type-inference">Type Inference Demo</option>
+                    <option value="generics">Generic Types</option>
+                </optgroup>
+                <optgroup label="Distributed">
+                    <option value="mapreduce">MapReduce Word Count</option>
+                    <option value="parallel">Parallel Processing</option>
+                </optgroup>
+                <optgroup label="AI Features">
+                    <option value="ai-complete">AI Code Completion</option>
+                    <option value="ai-refactor">AI Refactoring</option>
+                </optgroup>
+            </select>
+
+            <button class="run-button" onclick="runCode()" id="run-btn">
+                <svg width="16" height="16" fill="currentColor">
+                    <path d="M5 3l9 5-9 5V3z"/>
+                </svg>
+                <span>Run</span>
+            </button>
+
+            <button class="control-button" onclick="stopExecution()" title="Stop">
+                <svg width="16" height="16" fill="currentColor">
+                    <rect x="5" y="5" width="10" height="10"/>
+                </svg>
+            </button>
+
+            <button class="control-button" onclick="clearOutput()" title="Clear">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 5l10 0M5 5v8a2 2 0 002 2h6a2 2 0 002-2V5M8 5V3m4 2V3"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="controls-right">
+            <button class="share-button" onclick="shareCode()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M7 10L12 5M12 5L7 5M12 5V10"/>
+                </svg>
+                Share
+            </button>
+
+            <button class="control-button" onclick="toggleSettings()" title="Settings">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="8" cy="8" r="3"/>
+                    <path d="M8 1v2m0 10v2m7-7h-2M3 8H1"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Editor Panel -->
+    <div class="editor-panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <svg width="16" height="16" fill="currentColor">
+                    <path d="M14.7 3.3a1 1 0 010 1.4l-9 9a1 1 0 01-.7.3H2v-3a1 1 0 01.3-.7l9-9a1 1 0 011.4 0z"/>
+                </svg>
+                CODE EDITOR
+            </div>
+            <div class="editor-settings">
+                <select style="font-size: 12px; padding: 4px;">
+                    <option>Python</option>
+                    <option>JavaScript</option>
+                </select>
+            </div>
+        </div>
+
+        <textarea id="code-editor" style="display: none;">from synapse_lang.quantum_designer import QuantumCircuit, QuantumSimulator
+
+# Create a Bell state (maximum entanglement)
+circuit = QuantumCircuit(2)
+
+# Apply Hadamard to qubit 0
+circuit.add_gate("H", [0])
+print("Applied Hadamard to qubit 0")
+
+# Apply CNOT with control=0, target=1
+circuit.add_gate("CNOT", [0, 1])
+print("Applied CNOT gate")
+
+# Simulate the circuit
+simulator = QuantumSimulator()
+state = simulator.simulate(circuit)
+
+print("\n🎯 Quantum State Vector:")
+for basis, amplitude in state.items():
+    print(f"  |{basis}⟩: {amplitude:.3f}")
+
+# Measure the circuit multiple times
+print("\n📊 Measurements (10 shots):")
+for i in range(10):
+    result = simulator.measure(circuit)
+    print(f"  Shot {i+1}: |{result}⟩")</textarea>
+    </div>
+
+    <!-- Output Panel -->
+    <div class="output-panel">
+        <div class="output-tabs">
+            <button class="output-tab active" onclick="switchOutput('console')">
+                <svg width="16" height="16" fill="currentColor">
+                    <path d="M2 3h12a1 1 0 011 1v8a1 1 0 01-1 1H2a1 1 0 01-1-1V4a1 1 0 011-1z"/>
+                </svg>
+                Console
+            </button>
+            <button class="output-tab" onclick="switchOutput('visualization')">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="10" height="10"/>
+                    <circle cx="8" cy="8" r="2"/>
+                </svg>
+                Visualization
+            </button>
+            <button class="output-tab" onclick="switchOutput('metrics')">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M2 10l4-4 3 3 5-5"/>
+                </svg>
+                Metrics
+            </button>
+            <button class="output-tab" onclick="switchOutput('terminal')">
+                <svg width="16" height="16" fill="currentColor">
+                    <path d="M4 6l3 3-3 3M8 12h4"/>
+                </svg>
+                Terminal
+            </button>
+        </div>
+
+        <div class="output-content">
+            <!-- Console Tab -->
+            <div id="console-output" class="console-output">
+                <div class="console-line">
+                    <span class="console-timestamp">00:00:00</span>
+                    <span class="console-info">Ready to execute Synapse code...</span>
+                </div>
+            </div>
+
+            <!-- Visualization Tab -->
+            <div id="visualization-output" class="visualization-container" style="display: none;">
+                <div class="quantum-circuit-viz">
+                    <svg class="circuit-svg" width="400" height="200" viewBox="0 0 400 200">
+                        <!-- Quantum Circuit Visualization -->
+                        <line x1="50" y1="50" x2="350" y2="50" stroke="#666" stroke-width="1"/>
+                        <line x1="50" y1="100" x2="350" y2="100" stroke="#666" stroke-width="1"/>
+
+                        <!-- Qubit labels -->
+                        <text x="20" y="55" fill="currentColor" font-size="14">q₀</text>
+                        <text x="20" y="105" fill="currentColor" font-size="14">q₁</text>
+
+                        <!-- Hadamard Gate -->
+                        <rect x="100" y="35" width="30" height="30" fill="var(--accent)" rx="4"/>
+                        <text x="115" y="55" fill="white" font-size="16" text-anchor="middle">H</text>
+
+                        <!-- CNOT Gate -->
+                        <circle cx="200" cy="50" r="15" fill="var(--accent)"/>
+                        <circle cx="200" cy="100" r="4" fill="var(--accent)"/>
+                        <line x1="200" y1="65" x2="200" y2="100" stroke="var(--accent)" stroke-width="2"/>
+                        <text x="200" y="55" fill="white" font-size="20" text-anchor="middle">⊕</text>
+
+                        <!-- Measurement -->
+                        <rect x="280" y="35" width="30" height="30" stroke="var(--accent)" fill="none" stroke-width="2"/>
+                        <path d="M285 50 L295 55 L305 45" stroke="var(--accent)" stroke-width="2" fill="none"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Metrics Tab -->
+            <div id="metrics-output" class="metrics-container" style="display: none;">
+                <div class="metric-box">
+                    <div class="metric-label">Execution Time</div>
+                    <div class="metric-value">342<span class="metric-unit">ms</span></div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">Memory Usage</div>
+                    <div class="metric-value">12.4<span class="metric-unit">MB</span></div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">Quantum Gates</div>
+                    <div class="metric-value">2</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">Qubits</div>
+                    <div class="metric-value">2</div>
+                </div>
+            </div>
+
+            <!-- Terminal Tab -->
+            <div id="terminal-output" class="terminal-container" style="display: none;">
+                <div>synapse@playground:~$ python quantum_circuit.py</div>
+                <div>Loading Synapse Language v2.3.2...</div>
+                <div class="terminal-prompt">$</div>
+                <input type="text" class="terminal-input" placeholder="Enter command..." onkeypress="executeTerminal(event)">
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-left">
+            <div class="status-item">
+                <span class="status-indicator status-ready" id="status-indicator"></span>
+                <span id="status-text">Ready</span>
+            </div>
+            <div class="status-item">
+                Python 3.10 • Synapse v{{ metadata.version }}
+            </div>
+            <div class="status-item">
+                Line 1, Col 1
+            </div>
+        </div>
+
+        <div class="status-item">
+            <svg width="16" height="16" fill="currentColor">
+                <path d="M8 12a4 4 0 100-8 4 4 0 000 8z"/>
+            </svg>
+            <span>Cloud Execution</span>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+<script>
+// Initialize CodeMirror
+const editor = CodeMirror.fromTextArea(document.getElementById('code-editor'), {
+    lineNumbers: true,
+    mode: 'python',
+    theme: localStorage.getItem('theme') === 'dark' ? 'monokai' : 'default',
+    indentUnit: 4,
+    lineWrapping: true,
+    autoCloseBrackets: true,
+    matchBrackets: true,
+    extraKeys: {
+        'Ctrl-Enter': runCode,
+        'Cmd-Enter': runCode
+    }
+});
+
+// Example code templates
+const examples = {
+    'bell-state': `from synapse_lang.quantum_designer import QuantumCircuit, QuantumSimulator
+
+# Create a Bell state (maximum entanglement)
+circuit = QuantumCircuit(2)
+circuit.add_gate("H", [0])
+circuit.add_gate("CNOT", [0, 1])
+
+simulator = QuantumSimulator()
+state = simulator.simulate(circuit)
+print("Bell State:", state)`,
+
+    'type-inference': `from synapse_lang.type_inference import TypeInference
+
+type_system = TypeInference()
+
+# Examples of automatic type inference
+examples = [
+    42,
+    3.14,
+    "hello",
+    [1, 2, 3],
+    {"key": "value"},
+    lambda x: x * 2
+]
+
+for value in examples:
+    inferred = type_system.infer(value)
+    print(f"{value} -> {inferred}")`,
+
+    'mapreduce': `from synapse_lang.distributed import DistributedComputing
+import asyncio
+
+async def word_count():
+    dc = DistributedComputing()
+
+    documents = [
+        "quantum computing is the future",
+        "the future is quantum",
+        "computing with quantum processors"
+    ]
+
+    result = await dc.map_reduce(
+        data=documents,
+        map_func=lambda doc: [(w, 1) for w in doc.split()],
+        reduce_func=lambda w, counts: (w, sum(counts))
+    )
+
+    return dict(result)
+
+asyncio.run(word_count())`
+};
+
+function loadExample(example) {
+    if (examples[example]) {
+        editor.setValue(examples[example]);
+    }
+}
+
+async function runCode() {
+    const button = document.getElementById('run-btn');
+    const indicator = document.getElementById('status-indicator');
+    const statusText = document.getElementById('status-text');
+    const consoleOutput = document.getElementById('console-output');
+
+    // Update UI
+    button.disabled = true;
+    button.innerHTML = '<div class="loading-spinner"></div> Running...';
+    indicator.className = 'status-indicator status-running';
+    statusText.textContent = 'Executing...';
+
+    // Clear previous output
+    consoleOutput.innerHTML = '';
+
+    // Add timestamp
+    const timestamp = new Date().toLocaleTimeString();
+    addConsoleOutput(timestamp, 'Executing code...', 'info');
+
+    try {
+        // Simulate code execution
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Add sample output
+        addConsoleOutput(timestamp, 'Applied Hadamard to qubit 0', 'log');
+        addConsoleOutput(timestamp, 'Applied CNOT gate', 'log');
+        addConsoleOutput(timestamp, '', 'log');
+        addConsoleOutput(timestamp, '🎯 Quantum State Vector:', 'success');
+        addConsoleOutput(timestamp, '  |00⟩: 0.707', 'log');
+        addConsoleOutput(timestamp, '  |11⟩: 0.707', 'log');
+        addConsoleOutput(timestamp, '', 'log');
+        addConsoleOutput(timestamp, '📊 Measurements (10 shots):', 'success');
+
+        for (let i = 1; i <= 10; i++) {
+            const result = Math.random() > 0.5 ? '00' : '11';
+            addConsoleOutput(timestamp, `  Shot ${i}: |${result}⟩`, 'log');
+        }
+
+        indicator.className = 'status-indicator status-ready';
+        statusText.textContent = 'Execution complete';
+    } catch (error) {
+        addConsoleOutput(timestamp, `Error: ${error.message}`, 'error');
+        indicator.className = 'status-indicator status-error';
+        statusText.textContent = 'Error';
+    } finally {
+        button.disabled = false;
+        button.innerHTML = '<svg width="16" height="16" fill="currentColor"><path d="M5 3l9 5-9 5V3z"/></svg> Run';
+    }
+}
+
+function addConsoleOutput(timestamp, message, type) {
+    const consoleOutput = document.getElementById('console-output');
+    const line = document.createElement('div');
+    line.className = 'console-line';
+    line.innerHTML = `
+        <span class="console-timestamp">${timestamp}</span>
+        <span class="console-${type}">${message}</span>
+    `;
+    consoleOutput.appendChild(line);
+    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+}
+
+function switchOutput(tab) {
+    // Hide all outputs
+    document.getElementById('console-output').style.display = 'none';
+    document.getElementById('visualization-output').style.display = 'none';
+    document.getElementById('metrics-output').style.display = 'none';
+    document.getElementById('terminal-output').style.display = 'none';
+
+    // Remove active class from all tabs
+    document.querySelectorAll('.output-tab').forEach(t => t.classList.remove('active'));
+
+    // Show selected output and mark tab as active
+    document.getElementById(`${tab}-output`).style.display =
+        tab === 'metrics' ? 'grid' :
+        tab === 'visualization' ? 'flex' : 'block';
+
+    event.target.classList.add('active');
+}
+
+function clearOutput() {
+    document.getElementById('console-output').innerHTML = `
+        <div class="console-line">
+            <span class="console-timestamp">${new Date().toLocaleTimeString()}</span>
+            <span class="console-info">Console cleared</span>
+        </div>
+    `;
+}
+
+function stopExecution() {
+    console.log('Stopping execution...');
+    document.getElementById('status-indicator').className = 'status-indicator status-ready';
+    document.getElementById('status-text').textContent = 'Stopped';
+}
+
+function shareCode() {
+    const code = editor.getValue();
+    const encoded = btoa(code);
+    const shareUrl = `${window.location.origin}/playground?code=${encoded}`;
+
+    navigator.clipboard.writeText(shareUrl);
+    alert('Share link copied to clipboard!');
+}
+
+function executeTerminal(event) {
+    if (event.key === 'Enter') {
+        const input = event.target;
+        const command = input.value;
+
+        const terminal = document.getElementById('terminal-output');
+        const response = document.createElement('div');
+        response.textContent = `$ ${command}`;
+        terminal.insertBefore(response, input.parentElement);
+
+        // Simulate command execution
+        const output = document.createElement('div');
+        output.textContent = `Command '${command}' executed`;
+        terminal.insertBefore(output, input.parentElement);
+
+        input.value = '';
+    }
+}
+
+// Update editor theme when theme changes
+document.addEventListener('DOMContentLoaded', () => {
+    const observer = new MutationObserver(() => {
+        const theme = document.documentElement.getAttribute('data-theme');
+        editor.setOption('theme', theme === 'dark' ? 'monokai' : 'default');
+    });
+
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-theme']
+    });
+});
+</script>
+{% endblock %}

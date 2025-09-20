@@ -1,0 +1,70 @@
+# Fly.io deployment configuration for Synapse v2 Documentation
+# Production-ready configuration with WebSocket support
+
+app = 'synapse-lang-docs'
+primary_region = 'iad'
+kill_signal = 'SIGINT'
+kill_timeout = '5s'
+
+[experimental]
+  auto_rollback = true
+
+[build]
+  dockerfile = 'Dockerfile.production'
+
+[env]
+  PORT = '8080'
+  FLASK_ENV = 'production'
+  SECRET_KEY = 'will-be-set-as-secret'
+
+# Mounts for persistent storage
+[mounts]
+  destination = "/data"
+  source = "synapse_data"
+
+[[services]]
+  protocol = 'tcp'
+  internal_port = 8080
+  processes = ['app']
+  min_machines_running = 1
+  auto_stop_machines = false
+  auto_start_machines = true
+
+  [[services.ports]]
+    port = 80
+    handlers = ['http']
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ['tls', 'http']
+
+  [services.concurrency]
+    type = 'connections'
+    hard_limit = 250
+    soft_limit = 200
+
+  [[services.tcp_checks]]
+    interval = '15s'
+    timeout = '2s'
+    grace_period = '5s'
+    restart_limit = 0
+
+  [[services.http_checks]]
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '10s'
+    method = 'get'
+    path = '/health'
+    protocol = 'http'
+    tls_skip_verify = false
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1
+
+# Metrics
+[metrics]
+  port = 9091
+  path = "/metrics"

@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Synapse Documentation{% endblock %}
+
+{% block content %}
+<h1>📖 {{ title }}</h1>
+
+{% if section == 'quickstart' %}
+<div class="docs-content">
+    <h2>🚀 Quick Start Guide</h2>
+    <p>Get started with Synapse Language in under 5 minutes!</p>
+
+    <h3>1. Installation</h3>
+    <pre><code># Using pip (Python 3.8+)
+pip install synapse_lang
+
+# Using npm
+npm install synapse-lang-core
+
+# Using Docker
+docker pull michaelcrowe11/synapse-lang:{{ version }}</code></pre>
+
+    <h3>2. Your First Quantum Circuit</h3>
+    <pre><code>from synapse_lang.quantum_designer import QuantumCircuit, QuantumSimulator
+
+# Create a 2-qubit circuit
+circuit = QuantumCircuit(2)
+
+# Add quantum gates
+circuit.add_gate("H", [0])      # Hadamard gate
+circuit.add_gate("CNOT", [0, 1])  # Controlled-NOT
+
+# Simulate
+simulator = QuantumSimulator()
+result = simulator.simulate(circuit)
+print("Quantum state:", result)</code></pre>
+
+    <h3>3. Type Inference</h3>
+    <pre><code>from synapse_lang.type_inference import TypeInference
+
+type_system = TypeInference()
+# Automatic type detection for scientific computing
+matrix_type = type_system.infer_matrix_type([[1, 2], [3, 4]])
+print(f"Inferred type: {matrix_type}")</code></pre>
+
+    <h3>4. Next Steps</h3>
+    <ul>
+        <li><a href="/docs/features">Explore all 8 features</a></li>
+        <li><a href="/playground">Try the online playground</a></li>
+        <li><a href="/docs/api">Read the API documentation</a></li>
+    </ul>
+</div>
+
+{% elif section == 'installation' %}
+<div class="docs-content">
+    <h2>📦 Installation Guide</h2>
+
+    <h3>Python (Recommended)</h3>
+    <pre><code># Install from PyPI
+pip install synapse_lang
+
+# Verify installation
+python -c "import synapse_lang; print(synapse_lang.__version__)"</code></pre>
+
+    <h3>Node.js</h3>
+    <pre><code># Install from npm
+npm install synapse-lang-core
+
+# Use in your project
+const SynapseLanguage = require('synapse-lang-core');
+const synapse = new SynapseLanguage();</code></pre>
+
+    <h3>Docker</h3>
+    <pre><code># Pull the image
+docker pull michaelcrowe11/synapse-lang:{{ version }}
+
+# Run interactive shell
+docker run -it michaelcrowe11/synapse-lang:{{ version }}
+
+# Run with volume mount
+docker run -it -v $(pwd):/workspace michaelcrowe11/synapse-lang:{{ version }}</code></pre>
+
+    <h3>From Source</h3>
+    <pre><code># Clone the repository
+git clone https://github.com/michaelcrowe11/synapse-lang.git
+cd synapse-lang
+
+# Install in development mode
+pip install -e .
+
+# Run tests
+python tests/test_all.py</code></pre>
+
+    <h3>System Requirements</h3>
+    <ul>
+        <li>Python 3.8 or higher</li>
+        <li>Node.js 14+ (for npm package)</li>
+        <li>Docker (for container deployment)</li>
+        <li>4GB RAM minimum</li>
+        <li>1GB disk space</li>
+    </ul>
+</div>
+
+{% elif section == 'features' %}
+<div class="docs-content">
+    <h2>✨ All Features</h2>
+
+    <h3>1. 🔍 Advanced Type Inference</h3>
+    <p>Hindley-Milner type system extended for scientific computing</p>
+    <ul>
+        <li>Automatic type detection</li>
+        <li>Scientific types (Matrix, Tensor, Complex)</li>
+        <li>Uncertainty quantification</li>
+        <li>Generic type parameters</li>
+    </ul>
+
+    <h3>2. 👥 Real-time Collaboration</h3>
+    <p>Operational Transformation for concurrent editing</p>
+    <ul>
+        <li>Conflict-free editing</li>
+        <li>Multi-user sessions</li>
+        <li>Version control integration</li>
+        <li>Real-time synchronization</li>
+    </ul>
+
+    <h3>3. 🎨 Visual Programming</h3>
+    <p>Node-based interface for visual development</p>
+    <ul>
+        <li>Drag-and-drop nodes</li>
+        <li>Automatic code generation</li>
+        <li>Data flow visualization</li>
+        <li>Custom node types</li>
+    </ul>
+
+    <h3>4. 🌐 Distributed Computing</h3>
+    <p>Built-in MapReduce and distributed processing</p>
+    <ul>
+        <li>Automatic parallelization</li>
+        <li>Fault tolerance</li>
+        <li>Load balancing</li>
+        <li>Cluster management</li>
+    </ul>
+
+    <h3>5. 🤖 AI Code Suggestions</h3>
+    <p>Context-aware code completion and suggestions</p>
+    <ul>
+        <li>Pattern recognition</li>
+        <li>Smart completions</li>
+        <li>Error prevention</li>
+        <li>Learning from usage</li>
+    </ul>
+
+    <h3>6. ⚛️ Quantum Circuit Designer</h3>
+    <p>Visual quantum circuit creation and simulation</p>
+    <ul>
+        <li>Quantum gates library</li>
+        <li>State vector simulation</li>
+        <li>Measurement operations</li>
+        <li>Entanglement visualization</li>
+    </ul>
+
+    <h3>7. 📱 Mobile App Framework</h3>
+    <p>Cross-platform mobile development</p>
+    <ul>
+        <li>iOS and Android support</li>
+        <li>Native performance</li>
+        <li>UI component library</li>
+        <li>Hot reload development</li>
+    </ul>
+
+    <h3>8. 🔐 Blockchain Verification</h3>
+    <p>Code integrity and verification through blockchain</p>
+    <ul>
+        <li>Immutable code history</li>
+        <li>Cryptographic verification</li>
+        <li>Distributed consensus</li>
+        <li>Audit trails</li>
+    </ul>
+</div>
+
+{% elif section == 'api' %}
+<div class="docs-content">
+    <h2>📚 API Reference</h2>
+
+    <h3>Core Modules</h3>
+
+    <h4>synapse_lang.type_inference</h4>
+    <pre><code>class TypeInference:
+    def infer(node: ast.AST) -> Type
+    def unify(type1: Type, type2: Type) -> Type
+    def infer_function(func_node: ast.FunctionDef) -> Type</code></pre>
+
+    <h4>synapse_lang.quantum_designer</h4>
+    <pre><code>class QuantumCircuit:
+    def __init__(num_qubits: int)
+    def add_gate(name: str, qubits: List[int])
+    def to_dict() -> Dict
+
+class QuantumSimulator:
+    def simulate(circuit: QuantumCircuit) -> StateVector
+    def measure(circuit: QuantumCircuit) -> str</code></pre>
+
+    <h4>synapse_lang.collaboration</h4>
+    <pre><code>class CollaborationManager:
+    def create_session(project_name: str) -> str
+    def join_session(session_id: str, user_id: str) -> bool
+    def apply_operation(session_id: str, operation: Dict) -> bool
+    def get_session_state(session_id: str) -> Dict</code></pre>
+
+    <h4>synapse_lang.distributed</h4>
+    <pre><code>class DistributedComputing:
+    async def map_reduce(data: List, map_func: Callable, reduce_func: Callable) -> List
+    async def distribute_task(task: Callable, workers: int) -> Any</code></pre>
+
+    <h3>Complete API Documentation</h3>
+    <p>For detailed API documentation, visit our <a href="https://github.com/michaelcrowe11/synapse-lang/wiki">GitHub Wiki</a></p>
+</div>
+
+{% elif section == 'examples' %}
+<div class="docs-content">
+    <h2>💡 Examples</h2>
+
+    <h3>Quantum Teleportation</h3>
+    <pre><code>from synapse_lang.quantum_designer import QuantumCircuit, QuantumSimulator
+
+def quantum_teleportation():
+    # Create 3-qubit circuit for teleportation
+    circuit = QuantumCircuit(3)
+
+    # Prepare entangled pair (Bell state)
+    circuit.add_gate("H", [1])
+    circuit.add_gate("CNOT", [1, 2])
+
+    # Prepare state to teleport on qubit 0
+    circuit.add_gate("H", [0])
+
+    # Bell measurement
+    circuit.add_gate("CNOT", [0, 1])
+    circuit.add_gate("H", [0])
+
+    return circuit</code></pre>
+
+    <h3>Distributed Word Count</h3>
+    <pre><code>from synapse_lang.distributed import DistributedComputing
+import asyncio
+
+async def distributed_word_count(documents):
+    dc = DistributedComputing()
+
+    def map_words(doc):
+        return [(word.lower(), 1) for word in doc.split()]
+
+    def reduce_counts(word, counts):
+        return (word, sum(counts))
+
+    return await dc.map_reduce(documents, map_words, reduce_counts)</code></pre>
+
+    <h3>More Examples</h3>
+    <ul>
+        <li><a href="/playground">Interactive Playground</a></li>
+        <li><a href="https://github.com/michaelcrowe11/synapse-lang/tree/main/examples">GitHub Examples</a></li>
+    </ul>
+</div>
+
+{% else %}
+<div class="docs-content">
+    <h2>Documentation</h2>
+    <p>Select a topic from the navigation menu to get started.</p>
+</div>
+{% endif %}
+{% endblock %}

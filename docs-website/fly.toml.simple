@@ -1,0 +1,30 @@
+# Simplified Fly.io configuration for initial deployment
+
+app = "synapse-lang-docs"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile.production"
+
+[env]
+  PORT = "8080"
+
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [[services.http_checks]]
+    interval = "30s"
+    grace_period = "5s"
+    method = "get"
+    path = "/health"
+    protocol = "http"
+    timeout = "2s"
