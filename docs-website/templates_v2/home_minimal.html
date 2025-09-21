@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Synapse - Scientific Computing Platform</title>
+    <link rel="stylesheet" href="/static_v2/enhanced.css">
     <style>
         /* COMPLETE REDESIGN - MINIMAL BRUTALIST */
         * {
@@ -454,5 +455,71 @@
             </div>
         </div>
     </footer>
+    <script src="/static_v2/enhanced.js"></script>
+    <script>
+        // Additional inline enhancements
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add reveal animations to sections
+            document.querySelectorAll('section').forEach((section, i) => {
+                section.classList.add('reveal-on-scroll');
+                section.style.animationDelay = `${i * 0.1}s`;
+            });
+
+            // Enhanced button interactions
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.classList.add('btn-enhanced');
+
+                btn.addEventListener('mouseenter', () => {
+                    btn.style.transform = 'scale(1.05)';
+                });
+
+                btn.addEventListener('mouseleave', () => {
+                    btn.style.transform = 'scale(1)';
+                });
+            });
+
+            // Add typewriter effect to hero
+            const heroH1 = document.querySelector('.hero h1');
+            if (heroH1) {
+                heroH1.classList.add('typewriter');
+            }
+
+            // Live metrics update
+            const updateMetrics = () => {
+                document.querySelectorAll('.stat-number').forEach(stat => {
+                    const current = parseInt(stat.textContent.replace(/,/g, ''));
+                    const increment = Math.floor(Math.random() * 10) + 1;
+                    stat.textContent = (current + increment).toLocaleString();
+                });
+            };
+
+            // Update every 5 seconds
+            setInterval(updateMetrics, 5000);
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                // Cmd/Ctrl + K for command palette
+                if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                    e.preventDefault();
+                    if (window.synapseEnhancer) {
+                        window.synapseEnhancer.showCommandPalette();
+                    }
+                }
+
+                // Cmd/Ctrl + / for quick actions
+                if ((e.metaKey || e.ctrlKey) && e.key === '/') {
+                    e.preventDefault();
+                    if (window.synapseEnhancer) {
+                        window.synapseEnhancer.showQuickActions();
+                    }
+                }
+            });
+
+            // Add matrix background
+            const matrix = document.createElement('div');
+            matrix.className = 'matrix-bg';
+            document.body.insertBefore(matrix, document.body.firstChild);
+        });
+    </script>
 </body>
 </html>
