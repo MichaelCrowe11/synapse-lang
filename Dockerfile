@@ -25,7 +25,7 @@ RUN pip install --no-cache-dir \
     numpy scipy pandas matplotlib \
     jupyter notebook ipython \
     networkx sympy \
-    plotly seaborn
+    plotly seaborn numba
 
 # Create workspace directory
 RUN mkdir -p /workspace

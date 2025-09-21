@@ -13,7 +13,7 @@ import secrets
 from datetime import datetime, timedelta
 import uuid
 
-app = Flask(__name__, template_folder='templates_v2', static_folder='static_v2')
+app = Flask(__name__, template_folder='templates_v2', static_folder='static_v2', static_url_path='/static_v2')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
 # Initialize SocketIO with CORS
@@ -47,8 +47,8 @@ user_cursors = {}
 @app.route('/')
 def home():
     """Modern landing page"""
-    # Use new minimal design
-    return render_template('home_minimal.html',
+    # Use simple working template
+    return render_template('home_simple.html',
                          metadata=PACKAGE_METADATA,
                          version=SYNAPSE_VERSION)
 

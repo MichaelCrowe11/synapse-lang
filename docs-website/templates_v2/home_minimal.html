@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Synapse - Scientific Computing Platform</title>
-    <link rel="stylesheet" href="/static_v2/enhanced.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='enhanced.css') }}">
     <style>
         /* COMPLETE REDESIGN - MINIMAL BRUTALIST */
         * {
@@ -455,7 +455,7 @@
             </div>
         </div>
     </footer>
-    <script src="/static_v2/enhanced.js"></script>
+    <script src="{{ url_for('static', filename='enhanced.js') }}"></script>
     <script>
         // Additional inline enhancements
         document.addEventListener('DOMContentLoaded', () => {
