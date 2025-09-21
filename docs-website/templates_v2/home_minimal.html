@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synapse - Scientific Computing Platform</title>
+    <style>
+        /* COMPLETE REDESIGN - MINIMAL BRUTALIST */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #FFFFFF;
+            color: #000000;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid #000000;
+            z-index: 1000;
+            padding: 20px 40px;
+        }
+
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 40px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: #000000;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+
+        .nav-links a:hover {
+            opacity: 0.6;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 120px 40px 80px;
+            position: relative;
+        }
+
+        .hero::before {
+            content: 'SYNAPSE';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20vw;
+            font-weight: 900;
+            color: rgba(0, 0, 0, 0.02);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .hero-content {
+            max-width: 900px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: clamp(60px, 10vw, 140px);
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            line-height: 0.9;
+            margin-bottom: 40px;
+        }
+
+        .hero h1 .line {
+            display: block;
+        }
+
+        .hero h1 .highlight {
+            background: #000000;
+            color: #FFFFFF;
+            padding: 0 20px;
+            display: inline-block;
+        }
+
+        .hero p {
+            font-size: 20px;
+            line-height: 1.6;
+            max-width: 600px;
+            margin: 0 auto 60px;
+            opacity: 0.7;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 18px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            border: 2px solid #000000;
+            background: #FFFFFF;
+            color: #000000;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #000000;
+            color: #FFFFFF;
+        }
+
+        .btn-primary {
+            background: #000000;
+            color: #FFFFFF;
+        }
+
+        .btn-primary:hover {
+            background: #FFFFFF;
+            color: #000000;
+        }
+
+        /* Installation */
+        .installation {
+            background: #F0F0F0;
+            padding: 120px 40px;
+        }
+
+        .section-title {
+            font-size: 48px;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 80px;
+            letter-spacing: -0.02em;
+        }
+
+        .install-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 0;
+        }
+
+        .install-item {
+            border: 2px solid #000000;
+            background: #FFFFFF;
+            padding: 40px;
+            position: relative;
+        }
+
+        .install-item:nth-child(2) {
+            border-left: none;
+            border-right: none;
+        }
+
+        .install-label {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .install-code {
+            font-family: 'SF Mono', monospace;
+            font-size: 18px;
+            font-weight: 600;
+            background: #000000;
+            color: #FFFFFF;
+            padding: 20px;
+            margin: 0 -40px -40px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .install-code:hover::after {
+            content: 'CLICK TO COPY';
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            opacity: 0.7;
+        }
+
+        /* Features */
+        .features {
+            padding: 120px 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 60px;
+            margin-top: 80px;
+        }
+
+        .feature {
+            border-left: 4px solid #000000;
+            padding-left: 30px;
+        }
+
+        .feature-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            letter-spacing: -0.01em;
+        }
+
+        .feature-desc {
+            font-size: 16px;
+            line-height: 1.6;
+            opacity: 0.7;
+        }
+
+        /* Stats */
+        .stats {
+            background: #000000;
+            color: #FFFFFF;
+            padding: 80px 40px;
+        }
+
+        .stats-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 60px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 64px;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-top: 10px;
+            opacity: 0.6;
+        }
+
+        /* Footer */
+        footer {
+            padding: 60px 40px;
+            border-top: 2px solid #000000;
+            text-align: center;
+        }
+
+        .footer-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .footer-links a {
+            color: #000000;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .copyright {
+            opacity: 0.5;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-content">
+            <div class="logo">SYNAPSE</div>
+            <ul class="nav-links">
+                <li><a href="/docs">Documentation</a></li>
+                <li><a href="/playground">Playground</a></li>
+                <li><a href="/dashboard">Analytics</a></li>
+                <li><a href="https://github.com/michaelcrowe11/synapse-lang">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>
+                <span class="line">SCIENTIFIC</span>
+                <span class="line"><span class="highlight">COMPUTING</span></span>
+                <span class="line">PLATFORM</span>
+            </h1>
+            <p>
+                Quantum computing primitives, uncertainty quantification,
+                and distributed processing in a unified system.
+            </p>
+            <div class="hero-buttons">
+                <a href="/docs/quickstart" class="btn btn-primary">Get Started</a>
+                <a href="/playground" class="btn">Try Online</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Installation -->
+    <section class="installation">
+        <h2 class="section-title">INSTALLATION</h2>
+        <div class="install-grid">
+            <div class="install-item">
+                <div class="install-label">Python Package</div>
+                <div class="install-code" onclick="navigator.clipboard.writeText('pip install synapse_lang')">
+                    pip install synapse_lang
+                </div>
+            </div>
+            <div class="install-item">
+                <div class="install-label">Node Package</div>
+                <div class="install-code" onclick="navigator.clipboard.writeText('npm install synapse-lang-core')">
+                    npm install synapse-lang-core
+                </div>
+            </div>
+            <div class="install-item">
+                <div class="install-label">Docker Image</div>
+                <div class="install-code" onclick="navigator.clipboard.writeText('docker pull michaelcrowe11/synapse-lang')">
+                    docker pull michaelcrowe11/synapse-lang
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features">
+        <h2 class="section-title">CORE FEATURES</h2>
+        <div class="feature-grid">
+            <div class="feature">
+                <h3 class="feature-title">Quantum Computing</h3>
+                <p class="feature-desc">
+                    Native quantum circuit design and simulation with
+                    built-in gate operations and state vector manipulation.
+                </p>
+            </div>
+            <div class="feature">
+                <h3 class="feature-title">Uncertainty Tracking</h3>
+                <p class="feature-desc">
+                    Automatic propagation of measurement uncertainties
+                    through complex calculations with first-class support.
+                </p>
+            </div>
+            <div class="feature">
+                <h3 class="feature-title">Type Inference</h3>
+                <p class="feature-desc">
+                    Hindley-Milner type system extended with scientific
+                    types for dimensional analysis and unit checking.
+                </p>
+            </div>
+            <div class="feature">
+                <h3 class="feature-title">Distributed Computing</h3>
+                <p class="feature-desc">
+                    MapReduce framework with automatic parallelization
+                    and fault tolerance for large-scale computations.
+                </p>
+            </div>
+            <div class="feature">
+                <h3 class="feature-title">Blockchain Verification</h3>
+                <p class="feature-desc">
+                    Cryptographic verification of computational results
+                    with immutable audit trails for research integrity.
+                </p>
+            </div>
+            <div class="feature">
+                <h3 class="feature-title">Real-time Collaboration</h3>
+                <p class="feature-desc">
+                    WebSocket-powered collaborative editing with operational
+                    transformation for concurrent modifications.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="stats">
+        <div class="stats-grid">
+            <div>
+                <div class="stat-number">{{ "{:,}".format(metadata.downloads.total if metadata else 50000) }}</div>
+                <div class="stat-label">Downloads</div>
+            </div>
+            <div>
+                <div class="stat-number">{{ metadata.stars if metadata else 1200 }}</div>
+                <div class="stat-label">GitHub Stars</div>
+            </div>
+            <div>
+                <div class="stat-number">8</div>
+                <div class="stat-label">Core Modules</div>
+            </div>
+            <div>
+                <div class="stat-number">v{{ version if version else '2.3.2' }}</div>
+                <div class="stat-label">Latest Version</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="/docs">Documentation</a>
+                <a href="https://github.com/michaelcrowe11/synapse-lang">GitHub</a>
+                <a href="https://pypi.org/project/synapse-lang">PyPI</a>
+                <a href="https://www.npmjs.com/package/synapse-lang-core">npm</a>
+            </div>
+            <div class="copyright">
+                © 2024 Synapse Language. MIT License.
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

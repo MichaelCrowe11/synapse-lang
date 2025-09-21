@@ -47,7 +47,8 @@ user_cursors = {}
 @app.route('/')
 def home():
     """Modern landing page"""
-    return render_template('home_v2.html',
+    # Use new minimal design
+    return render_template('home_minimal.html',
                          metadata=PACKAGE_METADATA,
                          version=SYNAPSE_VERSION)
 
