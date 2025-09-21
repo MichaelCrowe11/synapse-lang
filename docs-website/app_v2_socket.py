@@ -47,8 +47,8 @@ user_cursors = {}
 @app.route('/')
 def home():
     """Modern landing page"""
-    # Use simple working template
-    return render_template('home_simple.html',
+    # Use enhanced template with animations
+    return render_template('home_enhanced.html',
                          metadata=PACKAGE_METADATA,
                          version=SYNAPSE_VERSION)
 
