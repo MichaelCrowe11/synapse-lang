@@ -12,8 +12,15 @@ RUN apt-get update && apt-get install -y \
 COPY requirements_v2.txt .
 RUN pip install --no-cache-dir -r requirements_v2.txt
 
+# Install additional packages for code execution
+RUN pip install --no-cache-dir psutil
+
+# Install synapse_lang from PyPI (already published)
+RUN pip install --no-cache-dir synapse_lang==2.3.2
+
 # Copy application files
 COPY app_v2_socket.py .
+COPY code_executor.py .
 COPY templates_v2 templates_v2/
 COPY static_v2 static_v2/
 
