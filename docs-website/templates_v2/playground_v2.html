@@ -460,39 +460,49 @@
                 CODE EDITOR
             </div>
             <div class="editor-settings">
-                <select style="font-size: 12px; padding: 4px;">
-                    <option>Python</option>
-                    <option>JavaScript</option>
+                <select id="language-select" style="font-size: 12px; padding: 4px;" onchange="changeLanguage()">
+                    <option value="python">Python</option>
+                    <option value="synapse">Synapse</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="csharp">C#</option>
                 </select>
             </div>
         </div>
 
-        <textarea id="code-editor" style="display: none;">from synapse_lang.quantum_designer import QuantumCircuit, QuantumSimulator
+        <textarea id="code-editor" style="display: none;"># Welcome to Synapse Language Playground!
+# Try running this example or write your own code
 
-# Create a Bell state (maximum entanglement)
-circuit = QuantumCircuit(2)
+from synapse_lang import UncertainValue, QuantumCircuit
+import math
 
-# Apply Hadamard to qubit 0
-circuit.add_gate("H", [0])
-print("Applied Hadamard to qubit 0")
+# 1. Uncertainty Propagation
+print("=== Uncertainty Propagation ===")
+measurement = UncertainValue(10.0, uncertainty=0.2)
+result = measurement * 2 + UncertainValue(5.0, uncertainty=0.1)
+print(f"Result: {result}")
 
-# Apply CNOT with control=0, target=1
-circuit.add_gate("CNOT", [0, 1])
-print("Applied CNOT gate")
+# 2. Simple Quantum Circuit
+print("\n=== Quantum Circuit ===")
+qc = QuantumCircuit(2)
+qc.hadamard(0)
+qc.cnot(0, 1)
+print(f"Created Bell state with {qc.num_qubits} qubits")
+print(f"Circuit depth: {len(qc.gates)}")
 
-# Simulate the circuit
-simulator = QuantumSimulator()
-state = simulator.simulate(circuit)
+# 3. Mathematical Operations
+print("\n=== Math Operations ===")
+angle = math.pi / 4
+print(f"sin({angle:.2f}) = {math.sin(angle):.4f}")
+print(f"cos({angle:.2f}) = {math.cos(angle):.4f}")
 
-print("\n🎯 Quantum State Vector:")
-for basis, amplitude in state.items():
-    print(f"  |{basis}⟩: {amplitude:.3f}")
+# 4. Python Features
+print("\n=== Python Features ===")
+fibonacci = [0, 1]
+for i in range(8):
+    fibonacci.append(fibonacci[-1] + fibonacci[-2])
+print(f"Fibonacci: {fibonacci}")
 
-# Measure the circuit multiple times
-print("\n📊 Measurements (10 shots):")
-for i in range(10):
-    result = simulator.measure(circuit)
-    print(f"  Shot {i+1}: |{result}⟩")</textarea>
+print("\n✅ Code executed successfully!")</textarea>
     </div>
 
     <!-- Output Panel -->
@@ -689,6 +699,117 @@ async def word_count():
 asyncio.run(word_count())`
 };
 
+const languageExamples = {
+    python: `# Welcome to Synapse Language Playground!
+# Try running this example or write your own code
+
+from synapse_lang import UncertainValue, QuantumCircuit
+import math
+
+# 1. Uncertainty Propagation
+print("=== Uncertainty Propagation ===")
+measurement = UncertainValue(10.0, uncertainty=0.2)
+result = measurement * 2 + UncertainValue(5.0, uncertainty=0.1)
+print(f"Result: {result}")
+
+# 2. Simple Quantum Circuit
+print("\n=== Quantum Circuit ===")
+qc = QuantumCircuit(2)
+qc.hadamard(0)
+qc.cnot(0, 1)
+print(f"Created Bell state with {qc.num_qubits} qubits")
+print(f"Circuit depth: {len(qc.gates)}")
+
+# 3. Mathematical Operations
+print("\n=== Math Operations ===")
+angle = math.pi / 4
+print(f"sin({angle:.2f}) = {math.sin(angle):.4f}")
+print(f"cos({angle:.2f}) = {math.cos(angle):.4f}")
+
+print("\n✅ Code executed successfully!")`,
+
+    synapse: `# Synapse Language with special syntax
+# Note: This demonstrates Synapse-specific features
+
+from synapse_lang import *
+
+# Uncertain value with ± operator (preprocessed)
+# In real Synapse: value = 10.0 ± 0.5
+value = UncertainValue(10.0, uncertainty=0.5)
+print(f"Uncertain value: {value}")
+
+# Quantum state notation
+qc = QuantumCircuit(2)
+qc.initialize([0.707, 0, 0, 0.707])  # |00⟩ + |11⟩
+print("Bell state initialized")
+
+# Parallel computation
+from synapse_lang import ParallelCompute
+pc = ParallelCompute()
+results = pc.map(lambda x: x**2, [1, 2, 3, 4, 5])
+print(f"Parallel results: {results}")
+
+# Blockchain verification
+from synapse_lang import BlockchainVerifier
+verifier = BlockchainVerifier()
+data = {"experiment": "quantum_bell", "result": 0.95}
+block = verifier.create_block(data, "0")
+print(f"Block hash: {block['hash'][:16]}...")`,
+
+    javascript: `// JavaScript is not directly executable in Python environment
+// This shows what JavaScript code would look like
+
+console.log("JavaScript execution requires Node.js runtime");
+
+// Example Synapse API call from JavaScript
+fetch('/api/v2/execute', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+        code: 'print("Hello from API")'
+    })
+})
+.then(res => res.json())
+.then(data => console.log(data));`,
+
+    csharp: `// C# code example
+// Note: C# execution requires .NET runtime
+
+using System;
+using StackExchange.Redis;
+
+public class Program
+{
+    public static void Main()
+    {
+        Console.WriteLine("C# execution requires .NET runtime");
+        Console.WriteLine("To run C# code:");
+        Console.WriteLine("1. Install .NET SDK");
+        Console.WriteLine("2. Use 'dotnet run' command");
+        Console.WriteLine("3. Or use online C# compilers");
+
+        // Your Redis example would run here with proper setup
+        Console.WriteLine("\nFor Synapse Language examples, switch to Python or Synapse mode.");
+    }
+}`
+};
+
+function changeLanguage() {
+    const language = document.getElementById('language-select').value;
+    if (languageExamples[language]) {
+        editor.setValue(languageExamples[language]);
+    }
+
+    // Update syntax highlighting mode
+    if (language === 'python' || language === 'synapse') {
+        editor.session.setMode('ace/mode/python');
+    } else if (language === 'javascript') {
+        editor.session.setMode('ace/mode/javascript');
+    } else if (language === 'csharp') {
+        editor.session.setMode('ace/mode/csharp');
+    }
+}
+
 function loadExample(example) {
     if (examples[example]) {
         editor.setValue(examples[example]);
@@ -700,6 +821,7 @@ async function runCode() {
     const indicator = document.getElementById('status-indicator');
     const statusText = document.getElementById('status-text');
     const consoleOutput = document.getElementById('console-output');
+    const language = document.getElementById('language-select').value;
 
     // Update UI
     button.disabled = true;
@@ -712,34 +834,51 @@ async function runCode() {
 
     // Add timestamp
     const timestamp = new Date().toLocaleTimeString();
-    addConsoleOutput(timestamp, 'Executing code...', 'info');
+    addConsoleOutput(timestamp, `Executing ${language} code...`, 'info');
 
-    try {
-        // Simulate code execution
-        await new Promise(resolve => setTimeout(resolve, 1000));
+    // Emit run_code event via WebSocket
+    if (socket && socket.connected) {
+        socket.emit('run_code', {
+            code: editor.getValue(),
+            language: language
+        });
 
-        // Add sample output
-        addConsoleOutput(timestamp, 'Applied Hadamard to qubit 0', 'log');
-        addConsoleOutput(timestamp, 'Applied CNOT gate', 'log');
-        addConsoleOutput(timestamp, '', 'log');
-        addConsoleOutput(timestamp, '🎯 Quantum State Vector:', 'success');
-        addConsoleOutput(timestamp, '  |00⟩: 0.707', 'log');
-        addConsoleOutput(timestamp, '  |11⟩: 0.707', 'log');
-        addConsoleOutput(timestamp, '', 'log');
-        addConsoleOutput(timestamp, '📊 Measurements (10 shots):', 'success');
+        // Wait for execution result
+        socket.once('execution_result', (result) => {
+            if (result.status === 'success') {
+                if (result.output) {
+                    const lines = result.output.split('\n');
+                    lines.forEach(line => {
+                        if (line) addConsoleOutput(timestamp, line, 'log');
+                    });
+                }
+                addConsoleOutput(timestamp, `Execution time: ${result.execution_time}s`, 'info');
+                addConsoleOutput(timestamp, `Memory used: ${result.memory_used}`, 'info');
+                indicator.className = 'status-indicator status-ready';
+                statusText.textContent = 'Execution complete';
+            } else if (result.status === 'error') {
+                addConsoleOutput(timestamp, `Error: ${result.error}`, 'error');
+                indicator.className = 'status-indicator status-error';
+                statusText.textContent = 'Error';
+            } else if (result.status === 'info') {
+                if (result.output) {
+                    const lines = result.output.split('\n');
+                    lines.forEach(line => {
+                        if (line) addConsoleOutput(timestamp, line, 'info');
+                    });
+                }
+                indicator.className = 'status-indicator status-ready';
+                statusText.textContent = 'Info';
+            }
 
-        for (let i = 1; i <= 10; i++) {
-            const result = Math.random() > 0.5 ? '00' : '11';
-            addConsoleOutput(timestamp, `  Shot ${i}: |${result}⟩`, 'log');
-        }
-
-        indicator.className = 'status-indicator status-ready';
-        statusText.textContent = 'Execution complete';
-    } catch (error) {
-        addConsoleOutput(timestamp, `Error: ${error.message}`, 'error');
+            button.disabled = false;
+            button.innerHTML = '<svg width="16" height="16" fill="currentColor"><path d="M5 3l9 5-9 5V3z"/></svg> Run';
+        });
+    } else {
+        // Fallback for when WebSocket is not connected
+        addConsoleOutput(timestamp, 'WebSocket not connected. Please refresh the page.', 'error');
         indicator.className = 'status-indicator status-error';
-        statusText.textContent = 'Error';
-    } finally {
+        statusText.textContent = 'Not connected';
         button.disabled = false;
         button.innerHTML = '<svg width="16" height="16" fill="currentColor"><path d="M5 3l9 5-9 5V3z"/></svg> Run';
     }

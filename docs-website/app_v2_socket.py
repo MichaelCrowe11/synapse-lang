@@ -224,19 +224,59 @@ def handle_run_code(data):
     language = data.get('language', 'python')
     client_id = request.sid
 
-    # Simulate code execution (in production, use sandboxed environment)
     emit('execution_started', {'status': 'running'})
 
-    # Simulate delay
-    socketio.sleep(1)
+    try:
+        if language.lower() in ['python', 'synapse']:
+            # Execute Python/Synapse code
+            from code_executor import execute_python_code, execute_synapse_specific
 
-    # Send results
-    emit('execution_result', {
-        'output': f'Executed {len(code)} characters of {language} code successfully',
-        'execution_time': 0.342,
-        'memory_used': '12.4 MB',
-        'status': 'success'
-    })
+            if language.lower() == 'synapse':
+                result = execute_synapse_specific(code)
+            else:
+                result = execute_python_code(code)
+
+            emit('execution_result', {
+                'output': result.get('output', ''),
+                'error': result.get('error', ''),
+                'execution_time': result.get('execution_time', 0),
+                'memory_used': result.get('memory_used', '0 MB'),
+                'status': 'success' if result.get('success') else 'error'
+            })
+
+        elif language.lower() == 'csharp':
+            # For C# code, we need a different approach
+            emit('execution_result', {
+                'output': 'C# execution requires a .NET runtime environment.\n'
+                         'This code appears to be for Redis connection.\n'
+                         'To run C# code, you would need:\n'
+                         '1. .NET SDK installed\n'
+                         '2. StackExchange.Redis package\n'
+                         '3. A Redis server instance\n\n'
+                         'For Synapse Language examples, switch to "Python" or "Synapse" mode.',
+                'error': '',
+                'execution_time': 0,
+                'memory_used': '0 MB',
+                'status': 'info'
+            })
+
+        else:
+            emit('execution_result', {
+                'output': '',
+                'error': f'Language {language} is not yet supported. Try Python or Synapse.',
+                'execution_time': 0,
+                'memory_used': '0 MB',
+                'status': 'error'
+            })
+
+    except Exception as e:
+        emit('execution_result', {
+            'output': '',
+            'error': str(e),
+            'execution_time': 0,
+            'memory_used': '0 MB',
+            'status': 'error'
+        })
 
 # API Endpoints
 @app.route('/api/v2/package')

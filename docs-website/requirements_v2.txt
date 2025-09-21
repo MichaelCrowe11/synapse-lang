@@ -7,3 +7,5 @@ Markdown==3.5.1
 gunicorn==21.2.0
 eventlet==0.33.3
 redis==5.0.1
+psutil==5.9.6
+synapse_lang==2.3.2
