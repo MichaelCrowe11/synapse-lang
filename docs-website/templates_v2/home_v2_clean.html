@@ -1,0 +1,544 @@
+{% extends "base_v2.html" %}
+
+{% block title %}Synapse Language - Scientific Computing Platform{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Clean, professional design system */
+    :root {
+        --brand-primary: #5B47E0;
+        --brand-secondary: #8B7FE8;
+        --brand-dark: #2A2065;
+        --brand-light: #F7F5FF;
+        --system-green: #00A67E;
+        --system-blue: #0066CC;
+        --system-red: #DC2626;
+        --mono-font: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+    }
+
+    /* Typography */
+    .display-heading {
+        font-size: clamp(48px, 8vw, 96px);
+        font-weight: 700;
+        letter-spacing: -0.04em;
+        line-height: 0.9;
+        color: var(--brand-dark);
+    }
+
+    [data-theme="dark"] .display-heading {
+        color: #FFFFFF;
+    }
+
+    .section-heading {
+        font-size: 32px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin-bottom: 16px;
+    }
+
+    /* Hero Section */
+    .hero-container {
+        min-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 0 24px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
+    }
+
+    .version-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        background: var(--brand-light);
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 32px;
+        color: var(--brand-primary);
+    }
+
+    [data-theme="dark"] .version-badge {
+        background: rgba(91, 71, 224, 0.1);
+        color: var(--brand-secondary);
+    }
+
+    .status-indicator {
+        width: 6px;
+        height: 6px;
+        background: var(--system-green);
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .hero-description {
+        font-size: 20px;
+        line-height: 1.5;
+        color: #64748B;
+        max-width: 720px;
+        margin: 24px 0 48px;
+    }
+
+    [data-theme="dark"] .hero-description {
+        color: #94A3B8;
+    }
+
+    /* Action Buttons */
+    .action-group {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .primary-action {
+        padding: 14px 32px;
+        background: var(--brand-primary);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .primary-action:hover {
+        background: var(--brand-dark);
+        transform: translateY(-1px);
+    }
+
+    .secondary-action {
+        padding: 14px 32px;
+        background: transparent;
+        color: var(--brand-primary);
+        border: 2px solid var(--brand-primary);
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .secondary-action:hover {
+        background: var(--brand-light);
+    }
+
+    [data-theme="dark"] .secondary-action {
+        color: var(--brand-secondary);
+        border-color: var(--brand-secondary);
+    }
+
+    [data-theme="dark"] .secondary-action:hover {
+        background: rgba(91, 71, 224, 0.1);
+    }
+
+    /* Installation Cards */
+    .installation-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 24px;
+        max-width: 1200px;
+        margin: 120px auto 0;
+        padding: 0 24px;
+    }
+
+    .install-card {
+        background: #FFFFFF;
+        border: 1px solid #E5E7EB;
+        border-radius: 8px;
+        padding: 24px;
+        position: relative;
+        transition: all 0.2s ease;
+    }
+
+    [data-theme="dark"] .install-card {
+        background: #1F2937;
+        border-color: #374151;
+    }
+
+    .install-card:hover {
+        border-color: var(--brand-primary);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .package-manager {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #6B7280;
+        margin-bottom: 12px;
+    }
+
+    .install-command {
+        font-family: var(--mono-font);
+        font-size: 14px;
+        background: #F9FAFB;
+        padding: 12px 16px;
+        border-radius: 4px;
+        position: relative;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+
+    [data-theme="dark"] .install-command {
+        background: #111827;
+    }
+
+    .install-command:hover {
+        background: #F3F4F6;
+    }
+
+    [data-theme="dark"] .install-command:hover {
+        background: #1F2937;
+    }
+
+    .copy-indicator {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6B7280;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    .install-command:hover .copy-indicator {
+        opacity: 1;
+    }
+
+    /* Metrics Grid */
+    .metrics-section {
+        background: linear-gradient(180deg, #FAFAFA 0%, #FFFFFF 100%);
+        padding: 80px 24px;
+        margin-top: 120px;
+    }
+
+    [data-theme="dark"] .metrics-section {
+        background: linear-gradient(180deg, #111827 0%, #1F2937 100%);
+    }
+
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 48px;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .metric-item {
+        text-align: center;
+    }
+
+    .metric-value {
+        font-size: 48px;
+        font-weight: 700;
+        color: var(--brand-primary);
+        line-height: 1;
+    }
+
+    .metric-label {
+        font-size: 14px;
+        color: #6B7280;
+        margin-top: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* Feature Cards */
+    .features-section {
+        max-width: 1200px;
+        margin: 120px auto;
+        padding: 0 24px;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 32px;
+        margin-top: 48px;
+    }
+
+    .feature-card {
+        padding: 32px;
+        background: #FFFFFF;
+        border-radius: 8px;
+        border: 1px solid #E5E7EB;
+        transition: all 0.3s ease;
+    }
+
+    [data-theme="dark"] .feature-card {
+        background: #1F2937;
+        border-color: #374151;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+    }
+
+    .feature-icon {
+        width: 48px;
+        height: 48px;
+        background: var(--brand-light);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    [data-theme="dark"] .feature-icon {
+        background: rgba(91, 71, 224, 0.1);
+    }
+
+    .feature-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .feature-description {
+        font-size: 14px;
+        color: #6B7280;
+        line-height: 1.6;
+    }
+
+    /* Custom SVG Icons */
+    .icon-quantum {
+        width: 24px;
+        height: 24px;
+        stroke: var(--brand-primary);
+        stroke-width: 2;
+        fill: none;
+    }
+
+    .icon-network {
+        width: 24px;
+        height: 24px;
+        stroke: var(--brand-primary);
+        stroke-width: 2;
+        fill: none;
+    }
+
+    .icon-shield {
+        width: 24px;
+        height: 24px;
+        stroke: var(--brand-primary);
+        stroke-width: 2;
+        fill: none;
+    }
+
+    /* Grid Background Pattern */
+    .grid-pattern {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: 
+            linear-gradient(rgba(91, 71, 224, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(91, 71, 224, 0.03) 1px, transparent 1px);
+        background-size: 50px 50px;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero-container">
+    <div class="grid-pattern"></div>
+    <div class="hero-content">
+        <div class="version-badge">
+            <span class="status-indicator"></span>
+            VERSION {{ version }}
+        </div>
+        
+        <h1 class="display-heading">Synapse Language</h1>
+        
+        <p class="hero-description">
+            A scientific computing platform that integrates quantum computing primitives,
+            uncertainty quantification, and distributed processing into a unified system.
+        </p>
+        
+        <div class="action-group">
+            <a href="/docs/quickstart" class="primary-action">Get Started</a>
+            <a href="/playground" class="secondary-action">Try Playground</a>
+            <a href="https://github.com/michaelcrowe11/synapse-lang" class="secondary-action">View Source</a>
+        </div>
+    </div>
+</div>
+
+<div class="installation-grid">
+    <div class="install-card">
+        <div class="package-manager">Python Package</div>
+        <div class="install-command" onclick="copyCommand(this, 'pip install synapse_lang')">
+            pip install synapse_lang
+            <span class="copy-indicator">COPY</span>
+        </div>
+    </div>
+    
+    <div class="install-card">
+        <div class="package-manager">Node Package</div>
+        <div class="install-command" onclick="copyCommand(this, 'npm install synapse-lang-core')">
+            npm install synapse-lang-core
+            <span class="copy-indicator">COPY</span>
+        </div>
+    </div>
+    
+    <div class="install-card">
+        <div class="package-manager">Container Image</div>
+        <div class="install-command" onclick="copyCommand(this, 'docker pull michaelcrowe11/synapse-lang')">
+            docker pull michaelcrowe11/synapse-lang
+            <span class="copy-indicator">COPY</span>
+        </div>
+    </div>
+</div>
+
+<div class="metrics-section">
+    <div class="metrics-grid">
+        <div class="metric-item">
+            <div class="metric-value">{{ "{:,}".format(metadata.downloads.total) }}</div>
+            <div class="metric-label">Downloads</div>
+        </div>
+        <div class="metric-item">
+            <div class="metric-value">{{ "{:,}".format(metadata.stars) }}</div>
+            <div class="metric-label">Stars</div>
+        </div>
+        <div class="metric-item">
+            <div class="metric-value">{{ metadata.contributors }}</div>
+            <div class="metric-label">Contributors</div>
+        </div>
+        <div class="metric-item">
+            <div class="metric-value">8</div>
+            <div class="metric-label">Core Modules</div>
+        </div>
+    </div>
+</div>
+
+<div class="features-section">
+    <h2 class="section-heading">Core Capabilities</h2>
+    
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg class="icon-quantum">
+                    <circle cx="12" cy="12" r="8"/>
+                    <line x1="12" y1="4" x2="12" y2="20"/>
+                    <line x1="4" y1="12" x2="20" y2="12"/>
+                </svg>
+            </div>
+            <h3 class="feature-title">Quantum Computing</h3>
+            <p class="feature-description">
+                Native quantum circuit design and simulation with built-in gate operations and state vector manipulation.
+            </p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg class="icon-network">
+                    <polyline points="4 12 8 8 12 12 16 6 20 10"/>
+                    <circle cx="8" cy="8" r="2"/>
+                    <circle cx="16" cy="6" r="2"/>
+                </svg>
+            </div>
+            <h3 class="feature-title">Uncertainty Propagation</h3>
+            <p class="feature-description">
+                Automatic uncertainty tracking through calculations with first-class support for measurement errors.
+            </p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg class="icon-shield">
+                    <path d="M12 2L4 7v5c0 3.5 2.5 6.5 8 8 5.5-1.5 8-4.5 8-8V7l-8-5z"/>
+                    <polyline points="9 11 11 13 15 9"/>
+                </svg>
+            </div>
+            <h3 class="feature-title">Blockchain Verification</h3>
+            <p class="feature-description">
+                Cryptographic verification of computational results with immutable audit trails for research integrity.
+            </p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg class="icon-network">
+                    <rect x="4" y="4" width="6" height="6"/>
+                    <rect x="14" y="4" width="6" height="6"/>
+                    <rect x="4" y="14" width="6" height="6"/>
+                    <rect x="14" y="14" width="6" height="6"/>
+                </svg>
+            </div>
+            <h3 class="feature-title">Distributed Computing</h3>
+            <p class="feature-description">
+                MapReduce framework with automatic parallelization and fault tolerance for large-scale computations.
+            </p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg class="icon-network">
+                    <path d="M4 8 L12 4 L20 8 L20 16 L12 20 L4 16 Z"/>
+                    <line x1="12" y1="4" x2="12" y2="12"/>
+                </svg>
+            </div>
+            <h3 class="feature-title">Type Inference</h3>
+            <p class="feature-description">
+                Hindley-Milner type system extended with scientific types for dimensional analysis and unit checking.
+            </p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg class="icon-network">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24"/>
+                </svg>
+            </div>
+            <h3 class="feature-title">Real-time Collaboration</h3>
+            <p class="feature-description">
+                WebSocket-powered collaborative editing with operational transformation for concurrent modifications.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyCommand(element, command) {
+    navigator.clipboard.writeText(command).then(() => {
+        const indicator = element.querySelector('.copy-indicator');
+        const original = indicator.textContent;
+        indicator.textContent = 'COPIED';
+        indicator.style.color = 'var(--system-green)';
+        setTimeout(() => {
+            indicator.textContent = original;
+            indicator.style.color = '';
+        }, 2000);
+    });
+}
+</script>
+{% endblock %}

@@ -469,40 +469,40 @@
             </div>
         </div>
 
-        <textarea id="code-editor" style="display: none;"># Welcome to Synapse Language Playground!
-# Try running this example or write your own code
+        <textarea id="code-editor" style="display: none;"># Synapse Language - Interactive Playground
+# Execute this example or write your own code
 
 from synapse_lang import UncertainValue, QuantumCircuit
 import math
 
-# 1. Uncertainty Propagation
-print("=== Uncertainty Propagation ===")
+# Uncertainty Propagation
+print("--- Uncertainty Propagation ---")
 measurement = UncertainValue(10.0, uncertainty=0.2)
 result = measurement * 2 + UncertainValue(5.0, uncertainty=0.1)
 print(f"Result: {result}")
 
-# 2. Simple Quantum Circuit
-print("\n=== Quantum Circuit ===")
+# Quantum Circuit
+print("\n--- Quantum Circuit ---")
 qc = QuantumCircuit(2)
 qc.hadamard(0)
 qc.cnot(0, 1)
 print(f"Created Bell state with {qc.num_qubits} qubits")
 print(f"Circuit depth: {len(qc.gates)}")
 
-# 3. Mathematical Operations
-print("\n=== Math Operations ===")
+# Mathematical Operations
+print("\n--- Mathematical Operations ---")
 angle = math.pi / 4
 print(f"sin({angle:.2f}) = {math.sin(angle):.4f}")
 print(f"cos({angle:.2f}) = {math.cos(angle):.4f}")
 
-# 4. Python Features
-print("\n=== Python Features ===")
+# Computation Example
+print("\n--- Fibonacci Sequence ---")
 fibonacci = [0, 1]
 for i in range(8):
     fibonacci.append(fibonacci[-1] + fibonacci[-2])
-print(f"Fibonacci: {fibonacci}")
+print(f"Sequence: {fibonacci}")
 
-print("\n✅ Code executed successfully!")</textarea>
+print("\n[SUCCESS] Code executed")</textarea>
     </div>
 
     <!-- Output Panel -->
@@ -711,33 +711,33 @@ asyncio.run(word_count())`
 };
 
 const languageExamples = {
-    python: `# Welcome to Synapse Language Playground!
-# Try running this example or write your own code
+    python: `# Synapse Language - Python Example
+# Execute real code in a sandboxed environment
 
 from synapse_lang import UncertainValue, QuantumCircuit
 import math
 
-# 1. Uncertainty Propagation
-print("=== Uncertainty Propagation ===")
+# Uncertainty Propagation
+print("--- Uncertainty Propagation ---")
 measurement = UncertainValue(10.0, uncertainty=0.2)
 result = measurement * 2 + UncertainValue(5.0, uncertainty=0.1)
 print(f"Result: {result}")
 
-# 2. Simple Quantum Circuit
-print("\n=== Quantum Circuit ===")
+# Quantum Circuit
+print("\n--- Quantum Circuit ---")
 qc = QuantumCircuit(2)
 qc.hadamard(0)
 qc.cnot(0, 1)
 print(f"Created Bell state with {qc.num_qubits} qubits")
 print(f"Circuit depth: {len(qc.gates)}")
 
-# 3. Mathematical Operations
-print("\n=== Math Operations ===")
+# Mathematical Operations
+print("\n--- Mathematical Operations ---")
 angle = math.pi / 4
 print(f"sin({angle:.2f}) = {math.sin(angle):.4f}")
 print(f"cos({angle:.2f}) = {math.cos(angle):.4f}")
 
-print("\n✅ Code executed successfully!")`,
+print("\n[SUCCESS] Code executed")`,
 
     synapse: `# Synapse Language with special syntax
 # Note: This demonstrates Synapse-specific features
