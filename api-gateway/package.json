@@ -22,7 +22,7 @@
     "axios": "^1.6.2",
     "winston": "^3.11.0",
     "dotenv": "^16.3.1",
-    "express-validator": "^7.0.1",
+    "express-validator": "^7.3.0",
     "uuid": "^9.0.1",
     "ioredis": "^5.3.2",
     "node-cache": "^5.1.2",
