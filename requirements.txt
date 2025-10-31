@@ -37,7 +37,7 @@ google-cloud-firestore==2.11.1
 google-cloud-logging==3.5.0
 
 # Environment management
-python-dotenv==1.0.0
+python-dotenv==1.2.1
 
 # WebSocket support
 python-socketio==5.9.0

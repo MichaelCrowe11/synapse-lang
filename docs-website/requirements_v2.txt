@@ -2,7 +2,7 @@ Flask==3.0.0
 flask-cors==4.0.0
 flask-socketio==5.3.5
 python-socketio==5.10.0
-python-dotenv==1.0.0
+python-dotenv==1.2.1
 Markdown==3.5.1
 gunicorn==21.2.0
 eventlet==0.33.3
