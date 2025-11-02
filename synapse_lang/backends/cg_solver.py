@@ -2,11 +2,10 @@
 Conjugate Gradient solver POC
 Tries SciPy's sparse CG; falls back to a pure-numpy implementation for dense SPD matrices.
 """
-from typing import Optional, Union, Tuple
 import numpy as np
 
 
-def cg_solve(A, b, tol: float = 1e-8, maxiter: Optional[int] = None):
+def cg_solve(A, b, tol: float = 1e-8, maxiter: int | None = None):
     """Solve A x = b using Conjugate Gradient.
 
     A may be:
@@ -17,11 +16,11 @@ def cg_solve(A, b, tol: float = 1e-8, maxiter: Optional[int] = None):
     """
     # Try SciPy sparse path
     try:
-        import scipy.sparse.linalg as spla  # type: ignore
         import scipy.sparse as sp
+        import scipy.sparse.linalg as spla  # type: ignore
 
         # Check if A is already sparse or can be converted
-        if hasattr(A, 'tocsr') or sp.issparse(A):
+        if hasattr(A, "tocsr") or sp.issparse(A):
             x, info = spla.cg(A, b, tol=tol, maxiter=maxiter)
             if info != 0:
                 raise RuntimeError(f"CG failed (info={info})")
@@ -38,7 +37,7 @@ def cg_solve(A, b, tol: float = 1e-8, maxiter: Optional[int] = None):
             return x
     except ImportError:
         pass
-    except Exception as e:
+    except Exception:
         # Log but continue to fallback
         pass
 
@@ -58,10 +57,9 @@ def cg_solve(A, b, tol: float = 1e-8, maxiter: Optional[int] = None):
     p = r.copy()
     rsold = r.dot(r)
 
-    it = 0
     maxiter = maxiter or min(n * 10, 10000)
 
-    for it in range(maxiter):
+    for _it in range(maxiter):
         Ap = A.dot(p)
         pAp = p.dot(Ap)
 
@@ -84,7 +82,7 @@ def cg_solve(A, b, tol: float = 1e-8, maxiter: Optional[int] = None):
     return x
 
 
-def pcg_solve(A, b, M=None, tol: float = 1e-8, maxiter: Optional[int] = None):
+def pcg_solve(A, b, M=None, tol: float = 1e-8, maxiter: int | None = None):
     """Preconditioned Conjugate Gradient solver.
 
     M is the preconditioner (should approximate A^{-1}).
@@ -98,12 +96,14 @@ def pcg_solve(A, b, M=None, tol: float = 1e-8, maxiter: Optional[int] = None):
     if M is None:
         diag = np.diag(A)
         diag[diag == 0] = 1.0  # Avoid division by zero
-        M_inv = lambda x: x / diag
+        def M_inv(x):
+            return x / diag
     elif callable(M):
         M_inv = M
     else:
         M = np.asarray(M)
-        M_inv = lambda x: np.linalg.solve(M, x)
+        def M_inv(x):
+            return np.linalg.solve(M, x)
 
     x = np.zeros_like(b, dtype=np.float64)
     r = b - A.dot(x)
@@ -113,7 +113,7 @@ def pcg_solve(A, b, M=None, tol: float = 1e-8, maxiter: Optional[int] = None):
 
     maxiter = maxiter or min(n * 10, 10000)
 
-    for it in range(maxiter):
+    for _it in range(maxiter):
         Ap = A.dot(p)
         alpha = rzold / (p.dot(Ap) + 1e-30)
         x = x + alpha * p
@@ -131,7 +131,7 @@ def pcg_solve(A, b, M=None, tol: float = 1e-8, maxiter: Optional[int] = None):
     return x
 
 
-def bicgstab_solve(A, b, tol: float = 1e-8, maxiter: Optional[int] = None):
+def bicgstab_solve(A, b, tol: float = 1e-8, maxiter: int | None = None):
     """BiConjugate Gradient Stabilized method for non-symmetric systems."""
     A = np.asarray(A)
     b = np.asarray(b)
@@ -145,7 +145,7 @@ def bicgstab_solve(A, b, tol: float = 1e-8, maxiter: Optional[int] = None):
 
     maxiter = maxiter or min(n * 10, 10000)
 
-    for it in range(maxiter):
+    for _it in range(maxiter):
         rho_new = r_hat.dot(r)
 
         if abs(rho_new) < 1e-30:

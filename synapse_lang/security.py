@@ -349,7 +349,8 @@ class ExecutionSandbox:
 
                     # Compile and execute code
                     compiled = compile(code, "<sandboxed>", "exec")
-                    exec(compiled, self.namespace.namespace)
+                    # nosec B102: exec required for sandboxed code execution with resource limits
+                    exec(compiled, self.namespace.namespace)  # nosec
 
                     # Get result if available
                     if "__result__" in self.namespace.namespace:

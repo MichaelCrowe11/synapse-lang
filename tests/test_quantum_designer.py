@@ -2,8 +2,9 @@
 Test suite for Quantum Circuit Designer
 """
 
-import unittest
 import math
+import unittest
+
 from synapse_lang.quantum_designer import QuantumCircuit, QuantumSimulator
 
 
@@ -34,8 +35,8 @@ class TestQuantumCircuit(unittest.TestCase):
         result = self.simulator.simulate(circuit)
 
         # Check for equal superposition
-        self.assertAlmostEqual(abs(result['0']), 1/math.sqrt(2), places=5)
-        self.assertAlmostEqual(abs(result['1']), 1/math.sqrt(2), places=5)
+        self.assertAlmostEqual(abs(result["0"]), 1/math.sqrt(2), places=5)
+        self.assertAlmostEqual(abs(result["1"]), 1/math.sqrt(2), places=5)
 
     def test_cnot_gate(self):
         """Test CNOT gate creates entanglement"""
@@ -46,10 +47,10 @@ class TestQuantumCircuit(unittest.TestCase):
         result = self.simulator.simulate(circuit)
 
         # Check for Bell state
-        self.assertAlmostEqual(abs(result.get('00', 0)), 1/math.sqrt(2), places=5)
-        self.assertAlmostEqual(abs(result.get('11', 0)), 1/math.sqrt(2), places=5)
-        self.assertAlmostEqual(abs(result.get('01', 0)), 0, places=5)
-        self.assertAlmostEqual(abs(result.get('10', 0)), 0, places=5)
+        self.assertAlmostEqual(abs(result.get("00", 0)), 1/math.sqrt(2), places=5)
+        self.assertAlmostEqual(abs(result.get("11", 0)), 1/math.sqrt(2), places=5)
+        self.assertAlmostEqual(abs(result.get("01", 0)), 0, places=5)
+        self.assertAlmostEqual(abs(result.get("10", 0)), 0, places=5)
 
     def test_pauli_gates(self):
         """Test Pauli gates"""
@@ -57,13 +58,13 @@ class TestQuantumCircuit(unittest.TestCase):
         circuit = QuantumCircuit(1)
         circuit.add_gate("X", [0])
         result = self.simulator.simulate(circuit)
-        self.assertAlmostEqual(abs(result.get('1', 0)), 1, places=5)
+        self.assertAlmostEqual(abs(result.get("1", 0)), 1, places=5)
 
         # Y gate
         circuit = QuantumCircuit(1)
         circuit.add_gate("Y", [0])
         result = self.simulator.simulate(circuit)
-        self.assertAlmostEqual(abs(result.get('1', 0)), 1, places=5)
+        self.assertAlmostEqual(abs(result.get("1", 0)), 1, places=5)
 
         # Z gate (phase flip)
         circuit = QuantumCircuit(1)
@@ -71,7 +72,7 @@ class TestQuantumCircuit(unittest.TestCase):
         circuit.add_gate("Z", [0])
         circuit.add_gate("H", [0])
         result = self.simulator.simulate(circuit)
-        self.assertAlmostEqual(abs(result.get('1', 0)), 1, places=5)
+        self.assertAlmostEqual(abs(result.get("1", 0)), 1, places=5)
 
     def test_measure(self):
         """Test measurement"""
@@ -86,11 +87,11 @@ class TestQuantumCircuit(unittest.TestCase):
             measurements.append(result)
 
         # Should only get '00' or '11' for Bell state
-        self.assertTrue(all(m in ['00', '11'] for m in measurements))
+        self.assertTrue(all(m in ["00", "11"] for m in measurements))
 
         # Roughly equal distribution (statistical test)
-        count_00 = measurements.count('00')
-        count_11 = measurements.count('11')
+        count_00 = measurements.count("00")
+        count_11 = measurements.count("11")
         self.assertGreater(count_00, 20)  # At least 20% chance
         self.assertGreater(count_11, 20)  # At least 20% chance
 
@@ -101,9 +102,9 @@ class TestQuantumCircuit(unittest.TestCase):
 
         circuit_dict = self.circuit.to_dict()
 
-        self.assertEqual(circuit_dict['num_qubits'], 2)
-        self.assertEqual(len(circuit_dict['gates']), 2)
-        self.assertEqual(circuit_dict['gates'][0]['name'], 'H')
+        self.assertEqual(circuit_dict["num_qubits"], 2)
+        self.assertEqual(len(circuit_dict["gates"]), 2)
+        self.assertEqual(circuit_dict["gates"][0]["name"], "H")
 
     def test_invalid_gate_placement(self):
         """Test error handling for invalid gate placement"""
@@ -140,5 +141,5 @@ class TestQuantumCircuit(unittest.TestCase):
         self.assertEqual(len(result), 2)  # Still in superposition
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -2,22 +2,18 @@
 Enables distributed execution across multiple nodes with automatic parallelization
 """
 
-import asyncio
-import json
 import hashlib
-import pickle
-import time
-import threading
 import multiprocessing
-from typing import Dict, List, Optional, Any, Callable, Tuple, Set
-from dataclasses import dataclass, field
-from enum import Enum, auto
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, Future
+import os
 import queue
 import socket
-import struct
-import os
-import sys
+import threading
+import time
+from collections.abc import Callable
+from concurrent.futures import ProcessPoolExecutor
+from dataclasses import dataclass, field
+from enum import Enum, auto
+from typing import Any
 
 
 class TaskStatus(Enum):
@@ -54,13 +50,13 @@ class Task:
     func: Callable
     args: tuple = ()
     kwargs: dict = field(default_factory=dict)
-    dependencies: Set[str] = field(default_factory=set)
+    dependencies: set[str] = field(default_factory=set)
     status: TaskStatus = TaskStatus.PENDING
     result: Any = None
-    error: Optional[Exception] = None
-    worker_id: Optional[str] = None
-    start_time: Optional[float] = None
-    end_time: Optional[float] = None
+    error: Exception | None = None
+    worker_id: str | None = None
+    start_time: float | None = None
+    end_time: float | None = None
     retry_count: int = 0
     max_retries: int = 3
     priority: int = 0
@@ -103,11 +99,11 @@ class TaskScheduler:
 
     def __init__(self, strategy: str = "least_loaded"):
         self.strategy = strategy
-        self.workers: Dict[str, WorkerNode] = {}
+        self.workers: dict[str, WorkerNode] = {}
         self.task_queue: queue.PriorityQueue = queue.PriorityQueue()
-        self.running_tasks: Dict[str, Task] = {}
-        self.completed_tasks: Dict[str, Task] = {}
-        self.task_graph: Dict[str, Set[str]] = {}  # Dependencies
+        self.running_tasks: dict[str, Task] = {}
+        self.completed_tasks: dict[str, Task] = {}
+        self.task_graph: dict[str, set[str]] = {}  # Dependencies
 
     def add_worker(self, worker: WorkerNode):
         """Register worker node"""
@@ -144,7 +140,7 @@ class TaskScheduler:
                 return False
         return True
 
-    def schedule_next(self) -> Optional[Tuple[Task, WorkerNode]]:
+    def schedule_next(self) -> tuple[Task, WorkerNode] | None:
         """Get next task and worker assignment"""
         if self.task_queue.empty():
             return None
@@ -167,7 +163,7 @@ class TaskScheduler:
 
         return task, worker
 
-    def _select_worker(self) -> Optional[WorkerNode]:
+    def _select_worker(self) -> WorkerNode | None:
         """Select worker based on scheduling strategy"""
         available_workers = [w for w in self.workers.values() if w.is_available()]
 
@@ -282,7 +278,7 @@ class DistributedExecutor:
         self.scheduler.submit_task(task)
         return task_id
 
-    def map(self, func: Callable, iterable, chunksize: int = 1) -> List[Any]:
+    def map(self, func: Callable, iterable, chunksize: int = 1) -> list[Any]:
         """Distributed map operation"""
         # Partition data
         chunks = self._partition_data(iterable, chunksize)
@@ -321,7 +317,7 @@ class DistributedExecutor:
         # Final reduction
         return self._reduce_chunk(func, intermediate, initializer)
 
-    def scatter(self, data: Any, broadcast: bool = False) -> Dict[str, Any]:
+    def scatter(self, data: Any, broadcast: bool = False) -> dict[str, Any]:
         """Scatter data across nodes"""
         if broadcast:
             # Send same data to all workers
@@ -334,20 +330,20 @@ class DistributedExecutor:
         partitions = self._partition_data(data,
                                          len(data) // len(self.scheduler.workers))
         scattered = {}
-        for i, (worker_id, partition) in enumerate(
-            zip(self.scheduler.workers.keys(), partitions)):
+        for _i, (worker_id, partition) in enumerate(
+            zip(self.scheduler.workers.keys(), partitions, strict=False)):
             scattered[worker_id] = partition
 
         return scattered
 
-    def gather(self, scattered_data: Dict[str, Any]) -> List[Any]:
+    def gather(self, scattered_data: dict[str, Any]) -> list[Any]:
         """Gather results from distributed nodes"""
         results = []
-        for worker_id, data in scattered_data.items():
+        for _worker_id, data in scattered_data.items():
             results.append(data)
         return results
 
-    def _partition_data(self, data, chunksize: int) -> List[Any]:
+    def _partition_data(self, data, chunksize: int) -> list[Any]:
         """Partition data into chunks"""
         chunks = []
         data_list = list(data)
@@ -358,12 +354,12 @@ class DistributedExecutor:
         return chunks
 
     @staticmethod
-    def _map_chunk(func: Callable, chunk: List) -> List:
+    def _map_chunk(func: Callable, chunk: list) -> list:
         """Apply function to chunk"""
         return [func(item) for item in chunk]
 
     @staticmethod
-    def _reduce_chunk(func: Callable, chunk: List, initializer) -> Any:
+    def _reduce_chunk(func: Callable, chunk: list, initializer) -> Any:
         """Reduce chunk"""
         if initializer is not None:
             result = initializer
@@ -375,7 +371,7 @@ class DistributedExecutor:
                 result = func(result, item)
         return result
 
-    def get_result(self, task_id: str, timeout: Optional[float] = None) -> Any:
+    def get_result(self, task_id: str, timeout: float | None = None) -> Any:
         """Get task result"""
         start_time = time.time()
 
@@ -411,10 +407,10 @@ class MapReduceFramework:
         self.executor = executor
 
     def map_reduce(self,
-                   data: List[Any],
+                   data: list[Any],
                    mapper: Callable,
                    reducer: Callable,
-                   combiner: Optional[Callable] = None) -> Any:
+                   combiner: Callable | None = None) -> Any:
         """Execute MapReduce job"""
 
         # Map phase
@@ -458,10 +454,10 @@ class DataParallel:
     def __init__(self, executor: DistributedExecutor):
         self.executor = executor
 
-    def parallel_matrix_multiply(self, A: List[List[float]],
-                                B: List[List[float]]) -> List[List[float]]:
+    def parallel_matrix_multiply(self, A: list[list[float]],
+                                B: list[list[float]]) -> list[list[float]]:
         """Distributed matrix multiplication"""
-        n = len(A)
+        len(A)
         m = len(B[0])
         k = len(B)
 
@@ -469,7 +465,7 @@ class DataParallel:
         row_chunks = self.executor.scatter(A)
 
         # Broadcast B to all nodes
-        B_broadcast = self.executor.scatter(B, broadcast=True)
+        self.executor.scatter(B, broadcast=True)
 
         # Compute partial results
         def compute_rows(A_chunk, B_full):
@@ -486,7 +482,7 @@ class DataParallel:
 
         # Execute distributed computation
         partial_results = []
-        for worker_id, A_chunk in row_chunks.items():
+        for _worker_id, A_chunk in row_chunks.items():
             task_id = self.executor.submit(compute_rows, A_chunk, B)
             partial_results.append(task_id)
 
@@ -498,7 +494,7 @@ class DataParallel:
 
         return result
 
-    def parallel_fft(self, signal: List[complex]) -> List[complex]:
+    def parallel_fft(self, signal: list[complex]) -> list[complex]:
         """Distributed Fast Fourier Transform"""
         n = len(signal)
 

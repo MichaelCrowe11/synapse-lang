@@ -4,7 +4,6 @@ Setup GitHub repository structure for Synapse Language
 Creates all necessary GitHub templates and documentation
 """
 
-import os
 from pathlib import Path
 
 # Base directory

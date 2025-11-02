@@ -2,12 +2,11 @@
 Cross-platform mobile interface for Synapse development and execution
 """
 
-import json
 import time
 import uuid
-from typing import Dict, List, Optional, Any, Callable
 from dataclasses import dataclass, field
 from enum import Enum, auto
+from typing import Any
 
 
 class AppScreen(Enum):
@@ -43,19 +42,19 @@ class UIComponent:
     type: ComponentType = ComponentType.BUTTON
     title: str = ""
     content: str = ""
-    properties: Dict[str, Any] = field(default_factory=dict)
-    children: List['UIComponent'] = field(default_factory=list)
-    actions: Dict[str, str] = field(default_factory=dict)  # event -> action_id
+    properties: dict[str, Any] = field(default_factory=dict)
+    children: list["UIComponent"] = field(default_factory=list)
+    actions: dict[str, str] = field(default_factory=dict)  # event -> action_id
 
     def to_dict(self) -> dict:
         return {
-            'id': self.id,
-            'type': self.type.name,
-            'title': self.title,
-            'content': self.content,
-            'properties': self.properties,
-            'children': [child.to_dict() for child in self.children],
-            'actions': self.actions
+            "id": self.id,
+            "type": self.type.name,
+            "title": self.title,
+            "content": self.content,
+            "properties": self.properties,
+            "children": [child.to_dict() for child in self.children],
+            "actions": self.actions
         }
 
 
@@ -69,22 +68,22 @@ class MobileProject:
     language: str = "synapse"
     created: float = field(default_factory=time.time)
     modified: float = field(default_factory=time.time)
-    tags: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
     is_favorite: bool = False
-    execution_results: List[Dict[str, Any]] = field(default_factory=list)
+    execution_results: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
-            'id': self.id,
-            'name': self.name,
-            'description': self.description,
-            'code': self.code,
-            'language': self.language,
-            'created': self.created,
-            'modified': self.modified,
-            'tags': self.tags,
-            'is_favorite': self.is_favorite,
-            'execution_results': self.execution_results
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "code": self.code,
+            "language": self.language,
+            "created": self.created,
+            "modified": self.modified,
+            "tags": self.tags,
+            "is_favorite": self.is_favorite,
+            "execution_results": self.execution_results
         }
 
 
@@ -99,7 +98,7 @@ class MobileCodeEditor:
         self.font_size = 14
         self.theme = "dark"
 
-    def insert_text(self, text: str, position: Optional[int] = None):
+    def insert_text(self, text: str, position: int | None = None):
         """Insert text at cursor or specified position"""
         pos = position if position is not None else self.cursor_position
         self.content = self.content[:pos] + text + self.content[pos:]
@@ -112,9 +111,9 @@ class MobileCodeEditor:
 
     def get_current_line(self) -> str:
         """Get current line text"""
-        lines = self.content.split('\n')
+        lines = self.content.split("\n")
         line_start = 0
-        for i, line in enumerate(lines):
+        for _i, line in enumerate(lines):
             line_end = line_start + len(line)
             if line_start <= self.cursor_position <= line_end:
                 return line
@@ -127,12 +126,12 @@ class MobileCodeEditor:
         indent_level = len(current_line) - len(current_line.lstrip())
 
         # Add extra indent for control structures
-        if current_line.strip().endswith(':') or 'quantum[' in current_line:
+        if current_line.strip().endswith(":") or "quantum[" in current_line:
             indent_level += 4
 
-        self.insert_text('\n' + ' ' * indent_level)
+        self.insert_text("\n" + " " * indent_level)
 
-    def suggest_completion(self, prefix: str) -> List[str]:
+    def suggest_completion(self, prefix: str) -> list[str]:
         """Get code completion suggestions"""
         synapse_keywords = [
             "let", "def", "if", "then", "else", "for", "in", "while",
@@ -150,7 +149,7 @@ class MobileCodeEditor:
 
     def format_code(self) -> str:
         """Format Synapse code for mobile display"""
-        lines = self.content.split('\n')
+        lines = self.content.split("\n")
         formatted_lines = []
 
         for line in lines:
@@ -160,20 +159,20 @@ class MobileCodeEditor:
 
             formatted_lines.append(line)
 
-        return '\n'.join(formatted_lines)
+        return "\n".join(formatted_lines)
 
 
 class SynapseExamples:
     """Library of Synapse code examples for mobile"""
 
     @staticmethod
-    def get_examples() -> Dict[str, List[Dict[str, Any]]]:
+    def get_examples() -> dict[str, list[dict[str, Any]]]:
         return {
             "Basic": [
                 {
                     "title": "Hello World",
                     "description": "Simple output example",
-                    "code": "let message = \"Hello, Synapse!\"\nprint(message)",
+                    "code": 'let message = "Hello, Synapse!"\nprint(message)',
                     "difficulty": "beginner"
                 },
                 {
@@ -215,7 +214,7 @@ class SynapseExamples:
                 {
                     "title": "Hypothesis Testing",
                     "description": "Scientific hypothesis validation",
-                    "code": "hypothesis \"energy_conservation\" {\n    assume total_energy_before\n    when collision_occurs\n    then total_energy_after == total_energy_before\n}",
+                    "code": 'hypothesis "energy_conservation" {\n    assume total_energy_before\n    when collision_occurs\n    then total_energy_after == total_energy_before\n}',
                     "difficulty": "advanced"
                 }
             ]
@@ -226,7 +225,7 @@ class MobileUI:
     """Mobile user interface builder"""
 
     def __init__(self):
-        self.screens: Dict[AppScreen, UIComponent] = {}
+        self.screens: dict[AppScreen, UIComponent] = {}
         self.current_screen = AppScreen.HOME
         self.navigation_stack = [AppScreen.HOME]
 
@@ -446,7 +445,7 @@ class MobileUI:
 
         return examples_screen
 
-    def build_app(self) -> Dict[str, Any]:
+    def build_app(self) -> dict[str, Any]:
         """Build complete mobile app structure"""
         # Create all screens
         self.screens[AppScreen.HOME] = self.create_home_screen()
@@ -502,8 +501,8 @@ class MobileAppManager:
     def __init__(self):
         self.ui = MobileUI()
         self.editor = MobileCodeEditor()
-        self.projects: List[MobileProject] = []
-        self.current_project: Optional[MobileProject] = None
+        self.projects: list[MobileProject] = []
+        self.current_project: MobileProject | None = None
         self.app_config = self.ui.build_app()
 
     def create_project(self, name: str, code: str = "") -> MobileProject:
@@ -527,7 +526,7 @@ class MobileAppManager:
             self.current_project.code = self.editor.content
             self.current_project.modified = time.time()
 
-    def execute_code(self, code: str) -> Dict[str, Any]:
+    def execute_code(self, code: str) -> dict[str, Any]:
         """Execute Synapse code (simulated)"""
         execution_result = {
             "timestamp": time.time(),
@@ -556,7 +555,7 @@ class MobileAppManager:
 
         return execution_result
 
-    def handle_action(self, action_id: str, component_id: str = "", data: Any = None) -> Dict[str, Any]:
+    def handle_action(self, action_id: str, component_id: str = "", data: Any = None) -> dict[str, Any]:
         """Handle UI actions"""
         if action_id == "navigate_to_editor":
             return {"action": "navigate", "screen": "EDITOR"}
@@ -598,7 +597,7 @@ class MobileAppManager:
         }
         return templates.get(template_type, "")
 
-    def get_app_state(self) -> Dict[str, Any]:
+    def get_app_state(self) -> dict[str, Any]:
         """Get current app state"""
         return {
             "current_screen": self.ui.current_screen.name,
@@ -663,8 +662,8 @@ if __name__ == "__main__":
 
     # Show screen structure
     print("\n--- App Screens ---")
-    for screen_name, screen_data in app_state['app_config']['screens'].items():
-        children_count = len(screen_data.get('children', []))
+    for screen_name, screen_data in app_state["app_config"]["screens"].items():
+        children_count = len(screen_data.get("children", []))
         print(f"• {screen_name}: {children_count} components")
 
     print("\n✅ Mobile app framework implemented!")

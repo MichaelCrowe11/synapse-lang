@@ -2,9 +2,10 @@
 Test suite for Synapse Language Type Inference System
 """
 
-import unittest
 import ast
-from synapse_lang.type_inference import TypeInference, Type, TypeKind
+import unittest
+
+from synapse_lang.type_inference import Type, TypeInference, TypeKind
 
 
 class TestTypeInference(unittest.TestCase):
@@ -93,10 +94,10 @@ def add(x: int, y: int) -> int:
     def test_generic_types(self):
         """Test generic type handling"""
         # Generic list
-        list_type = Type(TypeKind.LIST, params=[Type(TypeKind.GENERIC, name='T')])
+        list_type = Type(TypeKind.LIST, params=[Type(TypeKind.GENERIC, name="T")])
         self.assertEqual(list_type.kind, TypeKind.LIST)
         self.assertEqual(list_type.params[0].kind, TypeKind.GENERIC)
-        self.assertEqual(list_type.params[0].name, 'T')
+        self.assertEqual(list_type.params[0].name, "T")
 
     def test_optional_types(self):
         """Test optional type handling"""
@@ -112,5 +113,5 @@ def add(x: int, y: int) -> int:
         self.assertEqual(unknown_type.kind, TypeKind.UNKNOWN)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

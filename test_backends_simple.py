@@ -27,7 +27,7 @@ def test_backend_modules():
 
     # Test GPU fallback import
     try:
-        from synapse_lang.backends.gpu_fallback import matmul, to_gpu, to_cpu
+        from synapse_lang.backends.gpu_fallback import matmul, to_cpu, to_gpu
         print("✅ GPU fallback module imported")
     except ImportError as e:
         print(f"❌ Failed to import GPU fallback: {e}")
@@ -58,7 +58,7 @@ def test_backend_detection():
         # Test backend info
         info = get_backend_info()
         print("\nAvailable backends:")
-        for backend, available in info.get('available', {}).items():
+        for backend, available in info.get("available", {}).items():
             status = "✅" if available else "❌"
             print(f"  {status} {backend}")
 
@@ -119,7 +119,7 @@ def test_quantum_stub():
     print("="*50)
 
     try:
-        from synapse_lang.backends.quant_orchestrator import vqe_energy, vqe_minimize
+        from synapse_lang.backends.quant_orchestrator import vqe_energy
 
         # Test with simple parameters
         params = [0.5, -0.3, 0.2]

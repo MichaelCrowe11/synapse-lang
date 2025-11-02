@@ -395,7 +395,8 @@ class JITCompiler:
         }
 
         # Execute code to define function
-        exec(code, namespace)
+        # nosec B102: exec required for JIT compilation of user-defined functions
+        exec(code, namespace)  # nosec
 
         # Find the main function
         func_name = name or "main"
@@ -406,7 +407,8 @@ class JITCompiler:
         def wrapper(*args, **kwargs):
             local_ns = namespace.copy()
             local_ns.update({"args": args, "kwargs": kwargs})
-            exec(code, local_ns)
+            # nosec B102: exec required for JIT compilation wrapper execution
+            exec(code, local_ns)  # nosec
             return local_ns.get("__result__", None)
 
         return wrapper

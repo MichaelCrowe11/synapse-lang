@@ -2,15 +2,12 @@
 Provides intelligent code completion, error detection, and optimization suggestions
 """
 
-import re
-import ast
-import json
 import hashlib
-from typing import Dict, List, Optional, Any, Tuple, Set
+import re
+import time
 from dataclasses import dataclass, field
 from enum import Enum, auto
-import time
-import difflib
+from typing import Any
 
 
 class SuggestionType(Enum):
@@ -42,25 +39,25 @@ class CodeSuggestion:
     description: str = ""
     original_code: str = ""
     suggested_code: str = ""
-    position: Tuple[int, int] = (0, 0)  # (line, column)
+    position: tuple[int, int] = (0, 0)  # (line, column)
     confidence: Confidence = Confidence.MEDIUM
     reasoning: str = ""
-    benefits: List[str] = field(default_factory=list)
-    keywords: List[str] = field(default_factory=list)
+    benefits: list[str] = field(default_factory=list)
+    keywords: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
-            'id': self.id,
-            'type': self.type.name,
-            'title': self.title,
-            'description': self.description,
-            'original_code': self.original_code,
-            'suggested_code': self.suggested_code,
-            'position': self.position,
-            'confidence': self.confidence.name,
-            'reasoning': self.reasoning,
-            'benefits': self.benefits,
-            'keywords': self.keywords
+            "id": self.id,
+            "type": self.type.name,
+            "title": self.title,
+            "description": self.description,
+            "original_code": self.original_code,
+            "suggested_code": self.suggested_code,
+            "position": self.position,
+            "confidence": self.confidence.name,
+            "reasoning": self.reasoning,
+            "benefits": self.benefits,
+            "keywords": self.keywords
         }
 
 
@@ -68,7 +65,7 @@ class SynapsePatterns:
     """Common Synapse language patterns and templates"""
 
     @staticmethod
-    def get_patterns() -> Dict[str, Dict[str, Any]]:
+    def get_patterns() -> dict[str, dict[str, Any]]:
         return {
             "uncertainty_propagation": {
                 "trigger": ["uncertain", "±", "error"],
@@ -84,9 +81,9 @@ class SynapsePatterns:
             },
             "hypothesis_testing": {
                 "trigger": ["hypothesis", "test", "validate"],
-                "template": "hypothesis \"{name}\" {\n    assume {assumption}\n    when {condition}\n    then {expectation}\n}",
+                "template": 'hypothesis "{name}" {\n    assume {assumption}\n    when {condition}\n    then {expectation}\n}',
                 "description": "Define scientific hypothesis",
-                "example": "hypothesis \"conservation\" {\n    assume energy_before\n    when collision_occurs\n    then energy_after == energy_before\n}"
+                "example": 'hypothesis "conservation" {\n    assume energy_before\n    when collision_occurs\n    then energy_after == energy_before\n}'
             },
             "quantum_circuit": {
                 "trigger": ["quantum", "qubit", "H", "CNOT"],
@@ -116,7 +113,7 @@ class CodeAnalyzer:
         self.patterns = SynapsePatterns.get_patterns()
         self.syntax_rules = self._load_syntax_rules()
 
-    def _load_syntax_rules(self) -> Dict[str, Any]:
+    def _load_syntax_rules(self) -> dict[str, Any]:
         """Load Synapse syntax rules"""
         return {
             "variable_naming": r"^[a-z][a-z0-9_]*$",
@@ -129,10 +126,10 @@ class CodeAnalyzer:
             ]
         }
 
-    def analyze_code(self, code: str) -> List[CodeSuggestion]:
+    def analyze_code(self, code: str) -> list[CodeSuggestion]:
         """Analyze code and generate suggestions"""
         suggestions = []
-        lines = code.split('\n')
+        lines = code.split("\n")
 
         for i, line in enumerate(lines):
             # Check for completion opportunities
@@ -149,7 +146,7 @@ class CodeAnalyzer:
 
         return suggestions
 
-    def _suggest_completions(self, line: str, line_num: int) -> List[CodeSuggestion]:
+    def _suggest_completions(self, line: str, line_num: int) -> list[CodeSuggestion]:
         """Suggest code completions"""
         suggestions = []
 
@@ -194,7 +191,7 @@ class CodeAnalyzer:
 
         return suggestions
 
-    def _suggest_patterns(self, line: str, line_num: int) -> List[CodeSuggestion]:
+    def _suggest_patterns(self, line: str, line_num: int) -> list[CodeSuggestion]:
         """Suggest common patterns"""
         suggestions = []
 
@@ -215,12 +212,12 @@ class CodeAnalyzer:
 
         return suggestions
 
-    def _suggest_error_fixes(self, line: str, line_num: int) -> List[CodeSuggestion]:
+    def _suggest_error_fixes(self, line: str, line_num: int) -> list[CodeSuggestion]:
         """Suggest fixes for potential errors"""
         suggestions = []
 
         # Missing semicolon (if required)
-        if line.strip() and not line.strip().endswith((':', '{', '}')):
+        if line.strip() and not line.strip().endswith((":", "{", "}")):
             if any(keyword in line for keyword in ["let", "return"]):
                 # Only for statements that might need semicolons
                 pass  # Synapse doesn't require semicolons
@@ -258,7 +255,7 @@ class CodeAnalyzer:
 
         return suggestions
 
-    def _suggest_optimizations(self, line: str, line_num: int) -> List[CodeSuggestion]:
+    def _suggest_optimizations(self, line: str, line_num: int) -> list[CodeSuggestion]:
         """Suggest performance optimizations"""
         suggestions = []
 
@@ -299,7 +296,7 @@ class SmartCompletion:
         self.completions = self._build_completion_database()
         self.context_history = []
 
-    def _build_completion_database(self) -> Dict[str, List[str]]:
+    def _build_completion_database(self) -> dict[str, list[str]]:
         """Build database of completions"""
         return {
             "let": ["let variable = value", "let result = calculation()"],
@@ -309,7 +306,7 @@ class SmartCompletion:
             "while": ["while condition:", "while x < limit:"],
             "parallel": ["parallel { statements }", "parallel { task1; task2 }"],
             "quantum": ["quantum[2] { H(q0); CNOT(q0, q1) }", "quantum[n] { circuit }"],
-            "hypothesis": ["hypothesis \"name\" { assume; when; then }", "hypothesis \"test\" { }"],
+            "hypothesis": ['hypothesis "name" { assume; when; then }', 'hypothesis "test" { }'],
             "uncertain": ["uncertain_value ± error", "10.5 ± 0.3"],
             "import": ["import module", "import quantum", "import math"],
             "measure": ["measure(qubit)", "measure(q0, q1)"],
@@ -317,7 +314,7 @@ class SmartCompletion:
             "CNOT": ["CNOT(control, target)", "CNOT(q0, q1)"]
         }
 
-    def get_completions(self, partial_code: str, cursor_pos: int) -> List[CodeSuggestion]:
+    def get_completions(self, partial_code: str, cursor_pos: int) -> list[CodeSuggestion]:
         """Get smart completions for partial code"""
         suggestions = []
 
@@ -354,7 +351,7 @@ class AICodeAssistant:
         self.completion = SmartCompletion()
         self.session_history = []
 
-    def analyze_and_suggest(self, code: str, cursor_pos: Optional[int] = None) -> List[CodeSuggestion]:
+    def analyze_and_suggest(self, code: str, cursor_pos: int | None = None) -> list[CodeSuggestion]:
         """Analyze code and provide suggestions"""
         suggestions = []
 
@@ -369,7 +366,7 @@ class AICodeAssistant:
         unique_suggestions = self._deduplicate(suggestions)
         return sorted(unique_suggestions, key=lambda s: s.confidence.value, reverse=True)
 
-    def _deduplicate(self, suggestions: List[CodeSuggestion]) -> List[CodeSuggestion]:
+    def _deduplicate(self, suggestions: list[CodeSuggestion]) -> list[CodeSuggestion]:
         """Remove duplicate suggestions"""
         seen = set()
         unique = []
@@ -382,7 +379,7 @@ class AICodeAssistant:
 
         return unique
 
-    def get_documentation_suggestion(self, function_name: str) -> Optional[CodeSuggestion]:
+    def get_documentation_suggestion(self, function_name: str) -> CodeSuggestion | None:
         """Suggest documentation for function"""
         doc_templates = {
             "calculate": "Calculate and return the result of mathematical operation",
@@ -403,7 +400,7 @@ class AICodeAssistant:
             reasoning="Function lacks documentation"
         )
 
-    def suggest_tests(self, function_code: str) -> List[CodeSuggestion]:
+    def suggest_tests(self, function_code: str) -> list[CodeSuggestion]:
         """Suggest test cases for function"""
         suggestions = []
 

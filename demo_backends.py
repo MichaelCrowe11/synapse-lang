@@ -3,20 +3,16 @@
 Demonstration of Synapse Backend Infrastructure
 Shows CG solver, GPU operations, and quantum simulation capabilities
 """
-import numpy as np
-import sys
 import os
+import sys
+
+import numpy as np
 
 # Add synapse_lang to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from synapse_lang.backends import (
-    cg_solve, gpu_matmul, vqe_minimize,
-    auto, get_backend_info
-)
-from synapse_lang.backends.quant_orchestrator import (
-    VQEProblem, EXAMPLE_HAMILTONIANS
-)
+from synapse_lang.backends import auto, cg_solve, get_backend_info, gpu_matmul, vqe_minimize
+from synapse_lang.backends.quant_orchestrator import EXAMPLE_HAMILTONIANS, VQEProblem
 
 
 def print_header(title):
@@ -37,13 +33,13 @@ def demo_backend_detection():
     # Get detailed backend info
     info = get_backend_info()
     print("\n📊 Available backends:")
-    for backend, available in info['available'].items():
+    for backend, available in info["available"].items():
         status = "✅" if available else "❌"
         print(f"  {status} {backend}")
 
-    if 'versions' in info:
+    if "versions" in info:
         print("\n📦 Package versions:")
-        for package, version in info['versions'].items():
+        for package, version in info["versions"].items():
             print(f"  • {package}: {version}")
 
 
@@ -67,7 +63,7 @@ def demo_cg_solver():
 
     # Verify solution
     residual = np.linalg.norm(A @ x - b)
-    print(f"✓ Solution found!")
+    print("✓ Solution found!")
     print(f"  • Residual norm: {residual:.2e}")
     print(f"  • Solution norm: {np.linalg.norm(x):.4f}")
 
@@ -172,7 +168,7 @@ def demo_integrated_workflow():
     # Step 5: Map back to original space
     print("\n5️⃣ Mapping solution back to original space...")
     # This is simplified - in practice would involve more sophisticated mapping
-    final_energy = result['fun'] * n / reduced_dim
+    final_energy = result["fun"] * n / reduced_dim
     print(f"   Final objective value: {final_energy:.6f}")
 
     print("\n✅ Workflow completed successfully!")
@@ -185,7 +181,6 @@ def demo_performance_comparison():
     import time
 
     sizes = [50, 100, 200]
-    results = []
 
     print("\n📊 Comparing solver performance:")
     print("\nSize | Direct (NumPy) | CG Solver | Speedup")

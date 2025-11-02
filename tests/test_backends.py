@@ -2,25 +2,37 @@
 Comprehensive tests for Synapse backend infrastructure.
 Run: pytest tests/test_backends.py -v
 """
-import pytest
-import numpy as np
-import sys
 import os
+import sys
+
+import numpy as np
+import pytest
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from synapse_lang.backends import (
-    cg_solve, gpu_matmul, vqe_energy, vqe_minimize,
-    auto, get_backend_info, set_default_backend
+    auto,
+    cg_solve,
+    get_backend_info,
+    gpu_matmul,
+    set_default_backend,
+    vqe_energy,
+    vqe_minimize,
 )
-from synapse_lang.backends.cg_solver import pcg_solve, bicgstab_solve
+from synapse_lang.backends.cg_solver import bicgstab_solve, pcg_solve
 from synapse_lang.backends.gpu_fallback import (
-    to_gpu, to_cpu, elementwise_op, solve_linear, eigh, svd,
-    get_gpu_memory_info, GPUArray
+    GPUArray,
+    eigh,
+    elementwise_op,
+    get_gpu_memory_info,
+    solve_linear,
+    svd,
 )
 from synapse_lang.backends.quant_orchestrator import (
-    QuantumSimulator, VQEProblem, EXAMPLE_HAMILTONIANS
+    EXAMPLE_HAMILTONIANS,
+    QuantumSimulator,
+    VQEProblem,
 )
 
 
@@ -118,13 +130,13 @@ class TestGPUFallback:
         b = np.array([4, 5, 6])
 
         # Test various operations
-        result_add = elementwise_op('add', a, b)
+        result_add = elementwise_op("add", a, b)
         assert np.allclose(result_add, a + b)
 
-        result_mul = elementwise_op('multiply', a, b)
+        result_mul = elementwise_op("multiply", a, b)
         assert np.allclose(result_mul, a * b)
 
-        result_exp = elementwise_op('exp', a)
+        result_exp = elementwise_op("exp", a)
         assert np.allclose(result_exp, np.exp(a))
 
     def test_solve_linear_system(self):
@@ -162,10 +174,10 @@ class TestGPUFallback:
     def test_gpu_memory_info(self):
         """Test GPU memory information retrieval"""
         info = get_gpu_memory_info()
-        assert 'available' in info
+        assert "available" in info
         # If GPU available, should have more keys
-        if info['available']:
-            assert 'used_bytes' in info
+        if info["available"]:
+            assert "used_bytes" in info
 
 
 class TestQuantumOrchestrator:
@@ -176,7 +188,7 @@ class TestQuantumOrchestrator:
         sim = QuantumSimulator(2)
 
         # Apply Hadamard to first qubit
-        sim.apply_gate('H', 0)
+        sim.apply_gate("H", 0)
 
         # State should be (|00⟩ + |01⟩)/√2
         expected = np.array([1, 1, 0, 0]) / np.sqrt(2)
@@ -187,7 +199,7 @@ class TestQuantumOrchestrator:
         sim = QuantumSimulator(1)
 
         # Apply Y rotation of π/2
-        sim.apply_gate('RY', 0, np.pi/2)
+        sim.apply_gate("RY", 0, np.pi/2)
 
         # State should be (|0⟩ + |1⟩)/√2
         expected = np.array([1/np.sqrt(2), 1/np.sqrt(2)])
@@ -211,15 +223,15 @@ class TestQuantumOrchestrator:
 
         result = vqe_minimize(initial, hamiltonian, maxiter=10)
 
-        assert 'x' in result
-        assert 'fun' in result
-        assert 'success' in result
-        assert result['fun'] <= vqe_energy(initial, hamiltonian)  # Should improve
+        assert "x" in result
+        assert "fun" in result
+        assert "success" in result
+        assert result["fun"] <= vqe_energy(initial, hamiltonian)  # Should improve
 
     def test_vqe_problem_class(self):
         """Test VQEProblem helper class"""
         # Use H2 molecule Hamiltonian
-        problem = VQEProblem(EXAMPLE_HAMILTONIANS['h2'])
+        problem = VQEProblem(EXAMPLE_HAMILTONIANS["h2"])
 
         assert problem.n_qubits == 2
         assert problem.n_params == 4
@@ -230,11 +242,11 @@ class TestQuantumOrchestrator:
 
         # Solve problem
         result = problem.solve(initial_params=params, maxiter=5)
-        assert result['success']
+        assert result["success"]
 
     def test_example_hamiltonians(self):
         """Test with provided example Hamiltonians"""
-        for name, H in EXAMPLE_HAMILTONIANS.items():
+        for _name, H in EXAMPLE_HAMILTONIANS.items():
             # Each should be a valid Hamiltonian
             assert H.shape[0] == H.shape[1]  # Square
             assert np.allclose(H, H.conj().T)  # Hermitian
@@ -251,27 +263,27 @@ class TestBackendDetection:
     def test_auto_backend_detection(self):
         """Test automatic backend detection"""
         backend = auto()
-        assert backend in ['cpu.numpy', 'cpu.scipy', 'gpu.cupy', 'quant.hpc']
+        assert backend in ["cpu.numpy", "cpu.scipy", "gpu.cupy", "quant.hpc"]
 
     def test_backend_info(self):
         """Test backend information retrieval"""
         info = get_backend_info()
 
-        assert 'default' in info
-        assert 'available' in info
-        assert 'versions' in info
+        assert "default" in info
+        assert "available" in info
+        assert "versions" in info
 
         # NumPy should always be available
-        assert 'cpu.numpy' in info['available']
+        assert "cpu.numpy" in info["available"]
 
     def test_set_default_backend(self):
         """Test setting default backend"""
         original = auto()
-        set_default_backend('cpu.numpy')
+        set_default_backend("cpu.numpy")
         info = get_backend_info()
 
         # Should be set to cpu.numpy now
-        assert info['default'] == 'cpu.numpy'
+        assert info["default"] == "cpu.numpy"
 
         # Restore original
         set_default_backend(original)
@@ -339,7 +351,7 @@ class TestPerformance:
             b = np.random.randn(n)
 
             start = time.time()
-            x = cg_solve(A, b)
+            cg_solve(A, b)
             elapsed = time.time() - start
             times.append(elapsed)
 

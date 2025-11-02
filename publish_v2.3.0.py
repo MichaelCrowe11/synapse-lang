@@ -4,11 +4,11 @@ Automated PyPI Publishing Script for Synapse v2.3.0
 Ready to execute with your PyPI token
 """
 
-import os
-import sys
-import subprocess
-from pathlib import Path
 import getpass
+import os
+import subprocess
+import sys
+from pathlib import Path
 
 
 def print_banner():
@@ -77,7 +77,7 @@ def get_token():
     if not token.startswith("pypi-"):
         print("⚠️  Warning: Token should start with 'pypi-'")
         confirm = input("Continue anyway? (y/n): ")
-        if confirm.lower() != 'y':
+        if confirm.lower() != "y":
             return None
 
     return token

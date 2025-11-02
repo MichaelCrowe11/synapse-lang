@@ -2,14 +2,13 @@
 Visual and programmatic quantum circuit design with simulation capabilities
 """
 
-import math
 import cmath
 import json
-import uuid
-from typing import Dict, List, Optional, Any, Tuple, Union
+import math
+import random
 from dataclasses import dataclass, field
 from enum import Enum, auto
-import random
+from typing import Any
 
 
 class GateType(Enum):
@@ -47,15 +46,15 @@ class GateType(Enum):
 class QuantumGate:
     """Quantum gate representation"""
     gate_type: GateType
-    qubits: List[int]
-    parameters: List[float] = field(default_factory=list)
+    qubits: list[int]
+    parameters: list[float] = field(default_factory=list)
     label: str = ""
 
     def __post_init__(self):
         if not self.label:
             self.label = self.gate_type.name
 
-    def get_matrix(self) -> List[List[complex]]:
+    def get_matrix(self) -> list[list[complex]]:
         """Get matrix representation of gate"""
         if self.gate_type == GateType.I:
             return [[1, 0], [0, 1]]
@@ -94,10 +93,10 @@ class QuantumGate:
 
     def to_dict(self) -> dict:
         return {
-            'type': self.gate_type.name,
-            'qubits': self.qubits,
-            'parameters': self.parameters,
-            'label': self.label
+            "type": self.gate_type.name,
+            "qubits": self.qubits,
+            "parameters": self.parameters,
+            "label": self.label
         }
 
 
@@ -105,9 +104,9 @@ class QuantumGate:
 class QuantumCircuit:
     """Quantum circuit representation"""
     num_qubits: int
-    gates: List[QuantumGate] = field(default_factory=list)
+    gates: list[QuantumGate] = field(default_factory=list)
     classical_bits: int = 0
-    measurements: Dict[int, int] = field(default_factory=dict)  # qubit -> classical bit
+    measurements: dict[int, int] = field(default_factory=dict)  # qubit -> classical bit
     name: str = "Circuit"
 
     def add_gate(self, gate: QuantumGate):
@@ -155,7 +154,7 @@ class QuantumCircuit:
         """Add RZ rotation gate"""
         self.add_gate(QuantumGate(GateType.RZ, [qubit], [theta]))
 
-    def measure(self, qubit: int, classical_bit: Optional[int] = None):
+    def measure(self, qubit: int, classical_bit: int | None = None):
         """Add measurement"""
         if classical_bit is None:
             classical_bit = len(self.measurements)
@@ -176,7 +175,7 @@ class QuantumCircuit:
         # Simple depth calculation - actual implementation would need gate scheduling
         return len(self.gates)
 
-    def gate_count(self, gate_type: Optional[GateType] = None) -> int:
+    def gate_count(self, gate_type: GateType | None = None) -> int:
         """Count gates of specific type or all gates"""
         if gate_type is None:
             return len(self.gates)
@@ -184,8 +183,8 @@ class QuantumCircuit:
 
     def to_qasm(self) -> str:
         """Convert circuit to OpenQASM format"""
-        qasm = f"OPENQASM 2.0;\n"
-        qasm += f"include \"qelib1.inc\";\n"
+        qasm = "OPENQASM 2.0;\n"
+        qasm += 'include "qelib1.inc";\n'
         qasm += f"qreg q[{self.num_qubits}];\n"
 
         if self.classical_bits > 0:
@@ -278,11 +277,11 @@ class QuantumCircuit:
 
     def to_dict(self) -> dict:
         return {
-            'name': self.name,
-            'num_qubits': self.num_qubits,
-            'classical_bits': self.classical_bits,
-            'gates': [gate.to_dict() for gate in self.gates],
-            'measurements': self.measurements
+            "name": self.name,
+            "num_qubits": self.num_qubits,
+            "classical_bits": self.classical_bits,
+            "gates": [gate.to_dict() for gate in self.gates],
+            "measurements": self.measurements
         }
 
 
@@ -308,7 +307,7 @@ class QuantumSimulator:
         elif gate.gate_type == GateType.CNOT:
             self._apply_cnot(gate.qubits[0], gate.qubits[1])
 
-    def _apply_single_qubit_gate(self, qubit: int, matrix: List[List[complex]]):
+    def _apply_single_qubit_gate(self, qubit: int, matrix: list[list[complex]]):
         """Apply single qubit gate"""
         new_state = [0.0] * len(self.state)
 
@@ -379,17 +378,17 @@ class QuantumSimulator:
 
         return result
 
-    def get_probabilities(self) -> Dict[str, float]:
+    def get_probabilities(self) -> dict[str, float]:
         """Get measurement probabilities for all basis states"""
         probs = {}
         for i in range(len(self.state)):
             prob = abs(self.state[i]) ** 2
             if prob > 1e-10:  # Only show non-zero probabilities
-                binary = format(i, f'0{self.num_qubits}b')
+                binary = format(i, f"0{self.num_qubits}b")
                 probs[binary] = prob
         return probs
 
-    def simulate_circuit(self, circuit: QuantumCircuit) -> Dict[str, float]:
+    def simulate_circuit(self, circuit: QuantumCircuit) -> dict[str, float]:
         """Simulate entire circuit and return final probabilities"""
         self.initialize(circuit.num_qubits)
 
@@ -442,7 +441,7 @@ class CircuitLibrary:
     @staticmethod
     def grover_oracle(n: int, marked: int) -> QuantumCircuit:
         """Create Grover oracle for marked item"""
-        circuit = QuantumCircuit(n, name=f"Grover Oracle")
+        circuit = QuantumCircuit(n, name="Grover Oracle")
 
         # Mark the target state
         for i in range(n):
@@ -463,9 +462,9 @@ class CircuitLibrary:
     @staticmethod
     def variational_ansatz(n: int, depth: int) -> QuantumCircuit:
         """Create variational quantum circuit ansatz"""
-        circuit = QuantumCircuit(n, name=f"VQE Ansatz")
+        circuit = QuantumCircuit(n, name="VQE Ansatz")
 
-        for layer in range(depth):
+        for _layer in range(depth):
             # Rotation layer
             for i in range(n):
                 circuit.ry(i, 0.5)  # Parameter would be optimized
@@ -489,8 +488,8 @@ class QuantumCircuitBuilder:
         self.circuit = QuantumCircuit(num_qubits, name=name)
         return self.circuit
 
-    def add_gate_by_name(self, gate_name: str, qubits: List[int],
-                        parameters: List[float] = None):
+    def add_gate_by_name(self, gate_name: str, qubits: list[int],
+                        parameters: list[float] = None):
         """Add gate by name"""
         if not self.circuit:
             raise ValueError("No circuit created")
@@ -500,24 +499,24 @@ class QuantumCircuitBuilder:
         gate = QuantumGate(gate_type, qubits, parameters)
         self.circuit.add_gate(gate)
 
-    def simulate(self) -> Dict[str, float]:
+    def simulate(self) -> dict[str, float]:
         """Simulate current circuit"""
         if not self.circuit:
             raise ValueError("No circuit to simulate")
 
         return self.simulator.simulate_circuit(self.circuit)
 
-    def get_circuit_info(self) -> Dict[str, Any]:
+    def get_circuit_info(self) -> dict[str, Any]:
         """Get circuit information"""
         if not self.circuit:
             return {}
 
         return {
-            'name': self.circuit.name,
-            'qubits': self.circuit.num_qubits,
-            'gates': len(self.circuit.gates),
-            'depth': self.circuit.depth(),
-            'measurements': len(self.circuit.measurements)
+            "name": self.circuit.name,
+            "qubits": self.circuit.num_qubits,
+            "gates": len(self.circuit.gates),
+            "depth": self.circuit.depth(),
+            "measurements": len(self.circuit.measurements)
         }
 
     def save_circuit(self, filename: str):
@@ -525,23 +524,23 @@ class QuantumCircuitBuilder:
         if not self.circuit:
             raise ValueError("No circuit to save")
 
-        with open(filename, 'w') as f:
+        with open(filename, "w") as f:
             json.dump(self.circuit.to_dict(), f, indent=2)
 
     def load_circuit(self, filename: str):
         """Load circuit from file"""
-        with open(filename, 'r') as f:
+        with open(filename) as f:
             data = json.load(f)
 
-        circuit = QuantumCircuit(data['num_qubits'], name=data['name'])
-        circuit.classical_bits = data['classical_bits']
-        circuit.measurements = data['measurements']
+        circuit = QuantumCircuit(data["num_qubits"], name=data["name"])
+        circuit.classical_bits = data["classical_bits"]
+        circuit.measurements = data["measurements"]
 
-        for gate_data in data['gates']:
+        for gate_data in data["gates"]:
             gate = QuantumGate(
-                GateType[gate_data['type']],
-                gate_data['qubits'],
-                gate_data['parameters']
+                GateType[gate_data["type"]],
+                gate_data["qubits"],
+                gate_data["parameters"]
             )
             circuit.add_gate(gate)
 
@@ -619,9 +618,9 @@ if __name__ == "__main__":
 
     for name, circuit in circuits:
         info = {
-            'qubits': circuit.num_qubits,
-            'gates': circuit.gate_count(),
-            'depth': circuit.depth()
+            "qubits": circuit.num_qubits,
+            "gates": circuit.gate_count(),
+            "depth": circuit.depth()
         }
         print(f"• {name}: {info['qubits']} qubits, {info['gates']} gates, depth {info['depth']}")
 

@@ -2,11 +2,12 @@
 Minimal Synapse Documentation App for Testing Deployment
 """
 
-from flask import Flask, jsonify, render_template_string
 import os
 
+from flask import Flask, jsonify, render_template_string
+
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key')
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-key")
 
 # Minimal HTML template
 HOME_TEMPLATE = """
@@ -103,32 +104,32 @@ HOME_TEMPLATE = """
 </html>
 """
 
-@app.route('/')
+@app.route("/")
 def home():
     return render_template_string(HOME_TEMPLATE)
 
-@app.route('/health')
+@app.route("/health")
 def health():
     return jsonify({
-        'status': 'healthy',
-        'version': '2.3.2',
-        'deployment': 'successful'
+        "status": "healthy",
+        "version": "2.3.2",
+        "deployment": "successful"
     })
 
-@app.route('/api/status')
+@app.route("/api/status")
 def status():
     return jsonify({
-        'status': 'operational',
-        'app': 'synapse-lang-docs',
-        'version': '2.3.2',
-        'features': [
-            'Modern UI',
-            'Real-time collaboration',
-            'Code playground',
-            'API documentation'
+        "status": "operational",
+        "app": "synapse-lang-docs",
+        "version": "2.3.2",
+        "features": [
+            "Modern UI",
+            "Real-time collaboration",
+            "Code playground",
+            "API documentation"
         ]
     })
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)

@@ -5,18 +5,18 @@ Demonstrates all 8 major features in action
 """
 
 import asyncio
-import json
-from datetime import datetime
+
+from synapse_lang.blockchain import BlockchainVerifier
+from synapse_lang.mobile_framework import MobileApp
+
+from synapse_lang.ai_suggestions import AISuggestions
+from synapse_lang.collaboration import CollaborationManager
+from synapse_lang.distributed import DistributedComputing
+from synapse_lang.quantum_designer import QuantumCircuit, QuantumSimulator
 
 # Import all Synapse modules
 from synapse_lang.type_inference import TypeInference
-from synapse_lang.collaboration import CollaborationManager
 from synapse_lang.visual_programming import VisualProgrammingInterface
-from synapse_lang.distributed import DistributedComputing
-from synapse_lang.ai_suggestions import AISuggestions
-from synapse_lang.quantum_designer import QuantumCircuit, QuantumSimulator
-from synapse_lang.mobile_framework import MobileApp
-from synapse_lang.blockchain import BlockchainVerifier
 
 
 def showcase_type_inference():

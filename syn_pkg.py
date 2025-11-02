@@ -4,20 +4,18 @@ syn-pkg: Package manager for Synapse language
 Similar to pip for Python or npm for JavaScript
 """
 
-import os
-import sys
-import json
-import shutil
-import urllib.request
-import urllib.error
-import tarfile
-import zipfile
 import argparse
-import subprocess
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-from datetime import datetime
 import hashlib
+import json
+import os
+import shutil
+import subprocess
+import tarfile
+import urllib.error
+import urllib.request
+import zipfile
+from datetime import datetime
+from pathlib import Path
 
 
 class SynapsePackageManager:
@@ -44,10 +42,10 @@ class SynapsePackageManager:
         self.registry_cache_file = self.cache_dir / "registry.json"
         self.registry_cache = self.load_registry_cache()
 
-    def load_database(self) -> Dict:
+    def load_database(self) -> dict:
         """Load installed packages database"""
         if self.db_file.exists():
-            with open(self.db_file, 'r') as f:
+            with open(self.db_file) as f:
                 return json.load(f)
         return {
             "installed": {},
@@ -57,13 +55,13 @@ class SynapsePackageManager:
 
     def save_database(self):
         """Save packages database"""
-        with open(self.db_file, 'w') as f:
+        with open(self.db_file, "w") as f:
             json.dump(self.packages_db, f, indent=2)
 
-    def load_registry_cache(self) -> Dict:
+    def load_registry_cache(self) -> dict:
         """Load cached registry data"""
         if self.registry_cache_file.exists():
-            with open(self.registry_cache_file, 'r') as f:
+            with open(self.registry_cache_file) as f:
                 cache = json.load(f)
                 # Check if cache is recent (less than 1 hour old)
                 cache_time = datetime.fromisoformat(cache.get("timestamp", "2000-01-01"))
@@ -74,10 +72,10 @@ class SynapsePackageManager:
     def save_registry_cache(self):
         """Save registry cache"""
         self.registry_cache["timestamp"] = datetime.now().isoformat()
-        with open(self.registry_cache_file, 'w') as f:
+        with open(self.registry_cache_file, "w") as f:
             json.dump(self.registry_cache, f, indent=2)
 
-    def install(self, package_spec: str, version: Optional[str] = None,
+    def install(self, package_spec: str, version: str | None = None,
                 dev: bool = False, force: bool = False):
         """Install a Synapse package"""
         print(f"📦 Installing {package_spec}...")
@@ -124,7 +122,7 @@ class SynapsePackageManager:
                 print(f"❌ Failed to initialize package in {path}")
                 return
 
-        with open(package_json_path, 'r') as f:
+        with open(package_json_path) as f:
             package_info = json.load(f)
 
         name = package_info["name"]
@@ -173,7 +171,7 @@ class SynapsePackageManager:
                 print(f"📦 Installing dependency: {dep} {dep_version}")
                 self.install(dep, dep_version)
 
-    def install_from_git(self, git_url: str, version: Optional[str] = None,
+    def install_from_git(self, git_url: str, version: str | None = None,
                         dev: bool = False):
         """Install package from git repository"""
         print(f"🌐 Cloning from {git_url}...")
@@ -223,11 +221,11 @@ class SynapsePackageManager:
         extract_dir.mkdir()
 
         try:
-            if filename.endswith('.tar.gz') or filename.endswith('.tgz'):
-                with tarfile.open(download_path, 'r:gz') as tar:
+            if filename.endswith(".tar.gz") or filename.endswith(".tgz"):
+                with tarfile.open(download_path, "r:gz") as tar:
                     tar.extractall(extract_dir)
-            elif filename.endswith('.zip'):
-                with zipfile.ZipFile(download_path, 'r') as zip_ref:
+            elif filename.endswith(".zip"):
+                with zipfile.ZipFile(download_path, "r") as zip_ref:
                     zip_ref.extractall(extract_dir)
             else:
                 print(f"❌ Unsupported archive format: {filename}")
@@ -239,7 +237,7 @@ class SynapsePackageManager:
                 package_dir = package_dirs[0].parent
                 self.install_local(str(package_dir), dev=dev)
             else:
-                print(f"❌ No package.syn.json found in archive")
+                print("❌ No package.syn.json found in archive")
 
         finally:
             # Cleanup
@@ -247,12 +245,12 @@ class SynapsePackageManager:
                 shutil.rmtree(extract_dir)
             download_path.unlink()
 
-    def install_from_registry(self, package_name: str, version: Optional[str] = None,
+    def install_from_registry(self, package_name: str, version: str | None = None,
                              dev: bool = False):
         """Install package from registry"""
         # For now, create an example package since registry doesn't exist yet
         print(f"📦 Package '{package_name}' not found in registry")
-        print(f"📝 Creating example package for demonstration...")
+        print("📝 Creating example package for demonstration...")
 
         self.create_example_package(package_name)
         example_dir = Path(f"./{package_name}")
@@ -310,7 +308,7 @@ class SynapsePackageManager:
                 if info.get("description"):
                     print(f"    Description: {info['description']}")
                 if info.get("dependencies"):
-                    print(f"    Dependencies:")
+                    print("    Dependencies:")
                     for dep, version in info["dependencies"].items():
                         print(f"      - {dep} {version}")
                 print()
@@ -397,7 +395,7 @@ class SynapsePackageManager:
             "keywords": ["synapse", "example", name]
         }
 
-        with open(package_dir / "package.syn.json", 'w') as f:
+        with open(package_dir / "package.syn.json", "w") as f:
             json.dump(package_json, f, indent=2)
 
         # Create main.syn
@@ -448,7 +446,7 @@ function calculate_std(data) {{
 }}
 """
 
-        with open(package_dir / "main.syn", 'w') as f:
+        with open(package_dir / "main.syn", "w") as f:
             f.write(main_content)
 
         # Create README.md
@@ -499,7 +497,7 @@ Performs statistical calculations on data.
 MIT
 """
 
-        with open(package_dir / "README.md", 'w') as f:
+        with open(package_dir / "README.md", "w") as f:
             f.write(readme_content)
 
         # Create test file
@@ -529,12 +527,12 @@ test "calculate function works" {{
 
         test_dir = package_dir / "tests"
         test_dir.mkdir(exist_ok=True)
-        with open(test_dir / "test_main.syn", 'w') as f:
+        with open(test_dir / "test_main.syn", "w") as f:
             f.write(test_content)
 
         print(f"✅ Created example package in ./{name}/")
 
-    def init_package(self, path: Optional[Path] = None):
+    def init_package(self, path: Path | None = None):
         """Initialize a new Synapse package in the current or specified directory"""
         if path is None:
             path = Path.cwd()
@@ -563,25 +561,25 @@ test "calculate function works" {{
 
         package_json_path = path / "package.syn.json"
         if package_json_path.exists():
-            print(f"⚠️  package.syn.json already exists")
+            print("⚠️  package.syn.json already exists")
         else:
-            with open(package_json_path, 'w') as f:
+            with open(package_json_path, "w") as f:
                 json.dump(package_json, f, indent=2)
-            print(f"✅ Created package.syn.json")
+            print("✅ Created package.syn.json")
 
         # Create main.syn if it doesn't exist
         main_path = path / "main.syn"
         if not main_path.exists():
-            with open(main_path, 'w') as f:
+            with open(main_path, "w") as f:
                 f.write(f"// {project_name} - Main entry point\n\n")
-            print(f"✅ Created main.syn")
+            print("✅ Created main.syn")
 
         # Create .gitignore
         gitignore_path = path / ".gitignore"
         if not gitignore_path.exists():
-            with open(gitignore_path, 'w') as f:
+            with open(gitignore_path, "w") as f:
                 f.write("node_modules/\n*.pyc\n__pycache__/\n.synapse_cache/\n*.log\n")
-            print(f"✅ Created .gitignore")
+            print("✅ Created .gitignore")
 
         print(f"🎉 Synapse package initialized: {project_name}")
 
@@ -597,7 +595,7 @@ test "calculate function works" {{
 
         print(f"❌ Script '{script_name}' not found")
 
-    def install_scripts(self, package_name: str, scripts: Dict[str, str],
+    def install_scripts(self, package_name: str, scripts: dict[str, str],
                        package_path: Path):
         """Install package scripts"""
         if "scripts" not in self.packages_db:
@@ -613,7 +611,7 @@ import sys
 os.system("synapse {package_path}/{script_cmd}")
 """
             script_path = self.bin_dir / script_name
-            with open(script_path, 'w') as f:
+            with open(script_path, "w") as f:
                 f.write(script_content)
 
             # Make executable
@@ -621,7 +619,7 @@ os.system("synapse {package_path}/{script_cmd}")
             self.packages_db["scripts"][package_name][script_name] = str(script_path)
             print(f"  📜 Installed script: {script_name}")
 
-    def update(self, package_name: Optional[str] = None):
+    def update(self, package_name: str | None = None):
         """Update packages"""
         if package_name:
             # Update specific package
@@ -630,11 +628,11 @@ os.system("synapse {package_path}/{script_cmd}")
                 return
 
             print(f"🔄 Updating {package_name}...")
-            info = self.packages_db["installed"][package_name]
+            self.packages_db["installed"][package_name]
             self.install(package_name, force=True)
         else:
             # Update all packages
-            print(f"🔄 Updating all packages...")
+            print("🔄 Updating all packages...")
             for package_name in list(self.packages_db["installed"].keys()):
                 self.update(package_name)
 

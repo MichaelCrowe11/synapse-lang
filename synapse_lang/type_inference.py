@@ -3,10 +3,10 @@ Advanced Type Inference System for Synapse Language
 Implements Hindley-Milner type inference with extensions for scientific types
 """
 
-from typing import Dict, List, Optional, Set, Tuple, Union, Any
+import ast
 from dataclasses import dataclass, field
 from enum import Enum, auto
-import ast
+from typing import Any, Optional
 
 
 class TypeKind(Enum):
@@ -26,8 +26,8 @@ class Type:
     """Base type representation"""
     kind: TypeKind
     name: str
-    params: List['Type'] = field(default_factory=list)
-    constraints: Dict[str, Any] = field(default_factory=dict)
+    params: list["Type"] = field(default_factory=list)
+    constraints: dict[str, Any] = field(default_factory=dict)
 
     def __str__(self):
         if self.params:
@@ -44,7 +44,7 @@ class TypeVar:
     """Type variable for polymorphic types"""
     id: int
     name: str
-    constraints: Set[Type] = field(default_factory=set)
+    constraints: set[Type] = field(default_factory=set)
 
     def __str__(self):
         return f"'{self.name}"
@@ -56,17 +56,17 @@ class TypeVar:
 class TypeEnvironment:
     """Type environment for tracking variable types"""
 
-    def __init__(self, parent: Optional['TypeEnvironment'] = None):
-        self.bindings: Dict[str, Type] = {}
+    def __init__(self, parent: Optional["TypeEnvironment"] = None):
+        self.bindings: dict[str, Type] = {}
         self.parent = parent
-        self.type_vars: Dict[str, TypeVar] = {}
+        self.type_vars: dict[str, TypeVar] = {}
         self._next_var_id = 0
 
     def bind(self, name: str, type_: Type):
         """Bind a variable to a type"""
         self.bindings[name] = type_
 
-    def lookup(self, name: str) -> Optional[Type]:
+    def lookup(self, name: str) -> Type | None:
         """Look up a variable's type"""
         if name in self.bindings:
             return self.bindings[name]
@@ -80,7 +80,7 @@ class TypeEnvironment:
         self._next_var_id += 1
         return var
 
-    def child(self) -> 'TypeEnvironment':
+    def child(self) -> "TypeEnvironment":
         """Create child environment"""
         return TypeEnvironment(parent=self)
 
@@ -90,8 +90,8 @@ class TypeInference:
 
     def __init__(self):
         self.env = TypeEnvironment()
-        self.substitutions: Dict[TypeVar, Type] = {}
-        self.constraints: List[Tuple[Type, Type]] = []
+        self.substitutions: dict[TypeVar, Type] = {}
+        self.constraints: list[tuple[Type, Type]] = []
         self._init_builtin_types()
 
     def _init_builtin_types(self):
@@ -214,7 +214,7 @@ class TypeInference:
                 raise TypeError(f"Function expects {len(expected_args)} arguments, got {len(arg_types)}")
 
             # Unify argument types
-            for arg_type, expected in zip(arg_types, expected_args):
+            for arg_type, expected in zip(arg_types, expected_args, strict=False):
                 self.unify(arg_type, expected)
 
             return return_type
@@ -242,7 +242,7 @@ class TypeInference:
     def infer_For(self, node: ast.For) -> Type:
         """Infer type of for loop"""
         # Infer iterator type
-        iter_type = self.infer(node.iter)
+        self.infer(node.iter)
 
         # Bind loop variable
         if isinstance(node.target, ast.Name):
@@ -280,7 +280,7 @@ class TypeInference:
 
         return func_type
 
-    def infer_block(self, stmts: List[ast.AST]) -> Type:
+    def infer_block(self, stmts: list[ast.AST]) -> Type:
         """Infer type of statement block"""
         if not stmts:
             return Type(TypeKind.SCALAR, "void")
@@ -313,7 +313,7 @@ class TypeInference:
             if len(type1.params) != len(type2.params):
                 raise TypeError(f"Cannot unify {type1} with {type2}")
 
-            for p1, p2 in zip(type1.params, type2.params):
+            for p1, p2 in zip(type1.params, type2.params, strict=False):
                 self.unify(p1, p2)
 
         else:
@@ -333,7 +333,7 @@ class TypeInference:
             return var == type_
         return any(self.occurs(var, p) for p in type_.params)
 
-    def apply_substitutions(self, type_: Union[Type, TypeVar]) -> Type:
+    def apply_substitutions(self, type_: Type | TypeVar) -> Type:
         """Apply substitutions to type"""
         if isinstance(type_, TypeVar):
             if type_ in self.substitutions:
@@ -344,7 +344,7 @@ class TypeInference:
         new_params = [self.apply_substitutions(p) for p in type_.params]
         return Type(type_.kind, type_.name, new_params, type_.constraints)
 
-    def infer_program(self, source: str) -> Dict[str, Type]:
+    def infer_program(self, source: str) -> dict[str, Type]:
         """Infer types for entire program"""
         tree = ast.parse(source)
         types = {}
