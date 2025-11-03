@@ -11,7 +11,7 @@ alembic==1.12.1
 redis==5.0.1
 pydantic==2.5.0
 pydantic-settings==2.1.0
-stripe==7.6.0
+stripe==13.1.1
 httpx==0.25.2
 python-dotenv==1.2.1
 pytest==7.4.3
