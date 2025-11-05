@@ -19,42 +19,56 @@ except Exception:  # fallback if quantum subpackage missing or partial
 
 
 class SynapseInterpreter:
+    """Optimized interpreter with dispatch table"""
+    __slots__ = ('variables', '_active_backend_name', '_current_backend_config', '_dispatch_table')
+
     def __init__(self):
         self.variables: dict[str, Any] = {}
         self._active_backend_name = None
         self._current_backend_config: dict[str, Any] = {}
 
+        # Dispatch table for faster node handling (avoid isinstance chain)
+        self._dispatch_table = {
+            ProgramNode: self._interpret_program,
+            QuantumCircuitNode: self._define_circuit,
+            QuantumBackendNode: self._define_backend,
+            RunNode: self._run,
+            NumberNode: lambda node: node.value,
+            StringNode: lambda node: node.value,
+            IdentifierNode: lambda node: self.variables.get(node.name, node.name),
+            BlockNode: self._interpret_block,
+            QuantumAlgorithmNode: self._interpret_algorithm,
+        }
+
     def execute(self, source: str):
         ast = parse(source)
         return self.interpret(ast)
 
-    # --- dispatch ---
+    # --- optimized dispatch using jump table ---
     def interpret(self, node: ASTNode):
-        if isinstance(node, ProgramNode):
-            out = []
-            for stmt in node.body:
-                r = self.interpret(stmt)
-                if r is not None:
-                    out.append(r)
-            return out
-        if isinstance(node, QuantumCircuitNode):
-            return self._define_circuit(node)
-        if isinstance(node, QuantumBackendNode):
-            return self._define_backend(node)
-        if isinstance(node, RunNode):
-            return self._run(node)
-        if isinstance(node, NumberNode):
-            return node.value
-        if isinstance(node, StringNode):
-            return node.value
-        if isinstance(node, IdentifierNode):
-            return self.variables.get(node.name, node.name)
-        if isinstance(node, BlockNode):
-            return [self.interpret(s) for s in node.statements]
-        if isinstance(node, QuantumAlgorithmNode):
-            self.variables[f"algorithm_{node.name}"] = node
-            return f"Algorithm {node.name} registered"
+        """Fast dispatch using type-based lookup"""
+        handler = self._dispatch_table.get(type(node))
+        if handler:
+            return handler(node)
         return None
+
+    def _interpret_program(self, node: ProgramNode):
+        """Handle program node"""
+        out = []
+        for stmt in node.body:
+            r = self.interpret(stmt)
+            if r is not None:
+                out.append(r)
+        return out
+
+    def _interpret_block(self, node: BlockNode):
+        """Handle block node"""
+        return [self.interpret(s) for s in node.statements]
+
+    def _interpret_algorithm(self, node: QuantumAlgorithmNode):
+        """Handle algorithm node"""
+        self.variables[f"algorithm_{node.name}"] = node
+        return f"Algorithm {node.name} registered"
 
     # --- definitions ---
     def _define_circuit(self, node: QuantumCircuitNode):

@@ -91,7 +91,9 @@ class NodeType(Enum):
 
 
 class ASTNode:
-    """Base class for all AST nodes"""
+    """Base class for all AST nodes with __slots__ for memory efficiency"""
+    __slots__ = ('node_type', 'line', 'column')
+
     def __init__(self, node_type: NodeType, line: int = 0, column: int = 0):
         self.node_type = node_type
         self.line = line
