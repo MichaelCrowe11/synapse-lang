@@ -7,20 +7,20 @@ matplotlib>=3.4.0
 
 # Web framework
 Flask==2.3.3
-Flask-CORS==4.0.0
+Flask-CORS==6.0.0
 Flask-SocketIO==5.3.4
-gunicorn==21.2.0
+gunicorn==23.0.0
 
 # Security and networking
 cryptography>=3.4.8
 requests>=2.26.0
-werkzeug==2.3.7
+werkzeug==3.0.6
 
 # Payment processing
 stripe==6.5.0
 
 # Database
-pymongo==4.5.0
+pymongo==4.6.3
 
 # Quantum computing frameworks
 qiskit>=0.34.0
