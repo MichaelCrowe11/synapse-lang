@@ -37,8 +37,8 @@ PACKAGE_METADATA = {
 
 @app.route('/')
 def home():
-    """Modern landing page"""
-    return render_template('home_v2.html',
+    """Ultra-enhanced landing page with better visual hierarchy"""
+    return render_template('home_ultra_enhanced.html',
                          metadata=PACKAGE_METADATA,
                          version=SYNAPSE_VERSION)
 
@@ -68,8 +68,8 @@ def docs(path=''):
 
 @app.route('/playground')
 def playground():
-    """Advanced code playground"""
-    return render_template('playground_v2.html',
+    """Advanced code playground with all enhancements"""
+    return render_template('playground_enhanced.html',
                          metadata=PACKAGE_METADATA)
 
 @app.route('/api/v2/package')
