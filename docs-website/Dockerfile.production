@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
@@ -6,6 +6,7 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
@@ -19,8 +20,7 @@ RUN pip install --no-cache-dir psutil
 RUN pip install --no-cache-dir synapse_lang==2.3.2
 
 # Copy application files
-COPY app_v2_socket.py .
-COPY code_executor.py .
+COPY app_v2.py .
 COPY templates_v2 templates_v2/
 COPY static_v2 static_v2/
 
@@ -30,13 +30,14 @@ RUN mkdir -p static_v2/css static_v2/js
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8080
+ENV FLASK_ENV=production
 
 # Expose port
 EXPOSE 8080
 
-# Health check
+# Health check using the /api/health endpoint
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8080/health')" || exit 1
+    CMD curl -f http://localhost:8080/api/health || exit 1
 
-# Run with gunicorn and eventlet worker
-CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:8080", "--timeout", "120", "app_v2_socket:app"]
+# Run with gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "2", "--timeout", "120", "app_v2:app"]
