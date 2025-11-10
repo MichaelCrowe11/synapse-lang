@@ -33,7 +33,7 @@ pennylane==0.33.1
 # Security
 python-dotenv==1.2.1
 cryptography==41.0.7
-PyJWT==2.8.0
+PyJWT==2.10.1
 bcrypt==5.0.0
 
 # Monitoring & Logging
