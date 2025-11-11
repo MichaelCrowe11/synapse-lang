@@ -27,10 +27,6 @@ jobs:
         working-directory: ./vscode-extension
         run: npm ci
 
-      - name: Build extension
-        working-directory: ./vscode-extension
-        run: npm run compile
-
       - name: Publish to Open VSX Registry
         uses: HaaLeo/publish-vscode-extension@v2
         with:

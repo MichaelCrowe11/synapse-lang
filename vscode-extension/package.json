@@ -38,7 +38,6 @@
     "tensor-operations",
     "synapse"
   ],
-  "main": "./extension.js",
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "webpack --mode production",
