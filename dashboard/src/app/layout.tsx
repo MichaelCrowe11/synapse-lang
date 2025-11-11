@@ -1,14 +1,11 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import { Providers } from './providers';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
-
 export const metadata: Metadata = {
-  title: 'Synapse Platform - Quantum Computing Dashboard',
-  description: 'Advanced quantum computing and AI platform for researchers and developers',
-  keywords: ['quantum computing', 'AI', 'machine learning', 'research', 'platform'],
+  title: 'Crowe Logic Ecosystem - Cinematic Code Intelligence',
+  description: 'Experience the future of intelligent systems through Crowe Code (neural AI) and Synapse-Code (fungal networks). Advanced liquid glass morphism meets cutting-edge code generation.',
+  keywords: ['AI', 'code generation', 'neural networks', 'mycelial intelligence', 'quantum computing', 'WebGL', 'Three.js'],
 };
 
 export default function RootLayout({
@@ -18,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className="font-sans antialiased">
         <Providers>
           {children}
         </Providers>
