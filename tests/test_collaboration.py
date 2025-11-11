@@ -3,6 +3,7 @@ Test suite for Real-time Collaboration features
 """
 
 import unittest
+
 from synapse_lang.collaboration import CollaborationManager, OperationalTransform
 
 
@@ -159,5 +160,5 @@ class TestCollaborationManager(unittest.TestCase):
         self.assertFalse(result)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -165,10 +165,13 @@ class AutoDockVina(DockingEngine):
         # Prepare files
         receptor_pdbqt = self.prepare_receptor(receptor)
         ligand_pdbqt = self.prepare_ligand(ligand)
-        output_pdbqt = tempfile.mktemp(suffix="_out.pdbqt")
+        # Use secure temp file creation
+        output_fd, output_pdbqt = tempfile.mkstemp(suffix="_out.pdbqt")
+        os.close(output_fd)  # Close fd, we only need the filename
 
-        # Create config file
-        config_file = tempfile.mktemp(suffix=".txt")
+        # Create config file with secure temp file
+        config_fd, config_file = tempfile.mkstemp(suffix=".txt")
+        os.close(config_fd)  # Close fd, we'll reopen for writing
         with open(config_file, "w") as f:
             f.write(f"receptor = {receptor_pdbqt}\n")
             f.write(f"ligand = {ligand_pdbqt}\n")

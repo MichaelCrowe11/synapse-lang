@@ -3,17 +3,15 @@ Synapse Language v2 - Next Generation Documentation Platform
 Modern, timeless design inspired by Vercel/npm
 """
 
-from flask import Flask, render_template, jsonify, request, session
-from flask_cors import CORS
-import markdown
 import os
-import json
-import hashlib
-from datetime import datetime, timedelta
 import secrets
+from datetime import datetime, timedelta
 
-app = Flask(__name__, template_folder='templates_v2', static_folder='static_v2')
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
+from flask import Flask, jsonify, render_template, request
+from flask_cors import CORS
+
+app = Flask(__name__, template_folder="templates_v2", static_folder="static_v2")
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 CORS(app)
 
 # Version and metadata
@@ -35,14 +33,14 @@ PACKAGE_METADATA = {
     "files": 142
 }
 
-@app.route('/')
+@app.route("/")
 def home():
     """Ultra-enhanced landing page with better visual hierarchy"""
     return render_template('home_ultra_enhanced.html',
                          metadata=PACKAGE_METADATA,
                          version=SYNAPSE_VERSION)
 
-@app.route('/dashboard')
+@app.route("/dashboard")
 def dashboard():
     """Package dashboard with analytics"""
     analytics = {
@@ -54,25 +52,25 @@ def dashboard():
             "docker": 25
         }
     }
-    return render_template('dashboard_v2.html',
+    return render_template("dashboard_v2.html",
                          metadata=PACKAGE_METADATA,
                          analytics=analytics)
 
-@app.route('/docs')
-@app.route('/docs/<path:path>')
-def docs(path=''):
+@app.route("/docs")
+@app.route("/docs/<path:path>")
+def docs(path=""):
     """Interactive documentation"""
-    return render_template('docs_v2.html',
+    return render_template("docs_v2.html",
                          path=path,
                          metadata=PACKAGE_METADATA)
 
-@app.route('/playground')
+@app.route("/playground")
 def playground():
     """Advanced code playground with all enhancements"""
     return render_template('playground_enhanced.html',
                          metadata=PACKAGE_METADATA)
 
-@app.route('/api/v2/package')
+@app.route("/api/v2/package")
 def api_package():
     """Package information API"""
     return jsonify({
@@ -88,19 +86,19 @@ def api_package():
         ]
     })
 
-@app.route('/api/v2/search')
+@app.route("/api/v2/search")
 def api_search():
     """Search API for documentation"""
-    query = request.args.get('q', '')
+    query = request.args.get("q", "")
     results = search_docs(query)
     return jsonify({"query": query, "results": results})
 
-@app.route('/api/v2/run', methods=['POST'])
+@app.route("/api/v2/run", methods=["POST"])
 def api_run():
     """Execute code in sandbox"""
     data = request.json
-    code = data.get('code', '')
-    language = data.get('language', 'python')
+    code = data.get("code", "")
+    language = data.get("language", "python")
 
     # Simulated execution (in production, use sandboxed environment)
     result = {
@@ -113,7 +111,7 @@ def api_run():
 
     return jsonify(result)
 
-@app.route('/api/v2/analytics')
+@app.route("/api/v2/analytics")
 def api_analytics():
     """Real-time analytics data"""
     return jsonify({
@@ -124,22 +122,22 @@ def api_analytics():
         "health_score": 98
     })
 
-@app.route('/workspace')
+@app.route("/workspace")
 def workspace():
     """Collaborative workspace"""
-    return render_template('workspace_v2.html',
+    return render_template("workspace_v2.html",
                          metadata=PACKAGE_METADATA)
 
-@app.route('/explorer')
+@app.route("/explorer")
 def explorer():
     """Package file explorer"""
-    return render_template('explorer_v2.html',
+    return render_template("explorer_v2.html",
                          metadata=PACKAGE_METADATA)
 
 def generate_chart_data():
     """Generate download chart data"""
     import random
-    dates = [(datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d')
+    dates = [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
              for i in range(30, 0, -1)]
     return {
         "labels": dates,
@@ -180,7 +178,7 @@ def search_docs(query):
 
     results = [
         {
-            "title": f"QuantumCircuit class",
+            "title": "QuantumCircuit class",
             "path": "/docs/api/quantum",
             "excerpt": "Create and manipulate quantum circuits with ease",
             "relevance": 0.95

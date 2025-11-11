@@ -272,7 +272,10 @@ class Fingerprint:
             for atom in atoms:
                 # Hash feature type and atom index to bit position
                 hash_str = f"{feature_type}_{atom}"
-                hash_val = int(hashlib.md5(hash_str.encode()).hexdigest(), 16)
+                # MD5 used only for feature hashing, not cryptographic security
+                hash_val = int(
+                    hashlib.md5(hash_str.encode(), usedforsecurity=False).hexdigest(), 16
+                )
                 bit_pos = hash_val % n_bits
                 fp[bit_pos] = 1
 

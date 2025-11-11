@@ -198,7 +198,7 @@ class EnhancedParser:
         return QuantumGateNode(gate_type, qubits, parameters,
                               self.previous().line, self.previous().column)
 
-    def parse_quantum_measure(self) -> QuantumMeasureNode:
+    def parse_quantum_measure(self) -> QuantumMeasurementNode:
         """Parse quantum measurement"""
         qubits = "all"  # default
         classical_bits = None
@@ -216,8 +216,8 @@ class EnhancedParser:
 
             self.consume(TokenType.RPAREN, "Expected ')' after measure arguments")
 
-        return QuantumMeasureNode(qubits, classical_bits,
-                                 self.previous().line, self.previous().column)
+        return QuantumMeasurementNode(qubits, classical_bits,
+                                      self.previous().line, self.previous().column)
 
     def parse_quantum_algorithm(self) -> QuantumAlgorithmNode:
         """Parse quantum algorithm definition"""

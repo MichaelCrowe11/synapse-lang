@@ -11,12 +11,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from synapse_lang import __version__
+
 print(f"🧠 Synapse Language v{__version__} - Feature Demo\n")
 
 # 1. Type Inference System
 print("1️⃣ Advanced Type Inference System")
 print("-" * 40)
-from synapse_lang.type_inference import TypeInference, Type, TypeKind
+from synapse_lang.type_inference import TypeInference, TypeKind
 
 type_system = TypeInference()
 print(f"✅ Type system initialized with {len(type_system.type_vars)} type variables")
@@ -37,7 +38,7 @@ print(f"   Version: {session.version}\n")
 # 3. Visual Programming
 print("3️⃣ Visual Programming Interface")
 print("-" * 40)
-from synapse_lang.visual_programming import VisualProgram, Node
+from synapse_lang.visual_programming import Node, VisualProgram
 
 visual_program = VisualProgram()
 input_node = Node("input", "Input", {"value": 10})
@@ -52,7 +53,7 @@ visual_program.add_edge(input_node.id, process_node.id)
 visual_program.add_edge(process_node.id, output_node.id)
 
 print(f"✅ Visual program created with {len(visual_program.nodes)} nodes")
-print(f"   Node types: Input, Math, Output")
+print("   Node types: Input, Math, Output")
 print(f"   Can generate Synapse code: {visual_program.validate()}\n")
 
 # 4. Distributed Computing
@@ -61,9 +62,9 @@ print("-" * 40)
 from synapse_lang.distributed import DistributedExecutor
 
 executor = DistributedExecutor(num_workers=4)
-print(f"✅ Distributed executor initialized")
+print("✅ Distributed executor initialized")
 print(f"   Workers: {executor.num_workers}")
-print(f"   Scheduler: Round-robin")
+print("   Scheduler: Round-robin")
 
 # Simple parallel computation
 data = list(range(10))
@@ -78,7 +79,7 @@ from synapse_lang.ai_suggestions import AICodeAssistant
 assistant = AICodeAssistant()
 code = "def calculate_energy(mass):"
 suggestions = assistant.analyze_and_suggest(code)
-print(f"✅ AI Assistant analyzed code")
+print("✅ AI Assistant analyzed code")
 print(f"   Found {len(suggestions)} suggestions")
 if suggestions:
     print(f"   Top suggestion: {suggestions[0].description[:50]}...")
@@ -95,10 +96,10 @@ circuit.add_gate("CNOT", [0, 1])  # CNOT between 0 and 1
 circuit.add_gate("CNOT", [0, 2])  # CNOT between 0 and 2
 circuit.measure_all()
 
-print(f"✅ Quantum circuit created")
+print("✅ Quantum circuit created")
 print(f"   Qubits: {circuit.num_qubits}")
 print(f"   Gates: {len(circuit.gates)}")
-print(f"   GHZ State preparation complete")
+print("   GHZ State preparation complete")
 print(f"   QASM export available: {len(circuit.to_qasm()) > 0}")
 print()
 
@@ -112,11 +113,11 @@ app.add_component("editor", {"type": "code_editor", "syntax": "synapse"})
 app.add_component("output", {"type": "console", "theme": "dark"})
 app.add_component("visualizer", {"type": "quantum_circuit"})
 
-print(f"✅ Mobile app configured")
+print("✅ Mobile app configured")
 print(f"   App ID: {app.app_id}")
 print(f"   Components: {len(app.components)}")
-print(f"   Platforms: iOS, Android, Web")
-print(f"   Touch gestures: Enabled\n")
+print("   Platforms: iOS, Android, Web")
+print("   Touch gestures: Enabled\n")
 
 # 8. Blockchain Verification
 print("8️⃣ Blockchain Verification System")
@@ -139,11 +140,11 @@ record_hash = blockchain.add_computation_record(
     {"institution": "Quantum Research Lab"}
 )
 
-print(f"✅ Blockchain initialized")
+print("✅ Blockchain initialized")
 print(f"   Genesis block: {blockchain.chain[0].hash[:16]}...")
 print(f"   Computation verified: {record_hash[:16]}...")
 print(f"   Integrity: {blockchain.is_chain_valid()}")
-print(f"   Immutable record created\n")
+print("   Immutable record created\n")
 
 # Summary
 print("=" * 50)

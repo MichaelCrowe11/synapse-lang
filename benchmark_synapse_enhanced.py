@@ -4,19 +4,19 @@ Enhanced Benchmark suite for Synapse language
 Compares performance with other scientific computing languages
 """
 
-import time
-import numpy as np
-import sys
-import os
 import json
+import os
+import sys
+import time
 from datetime import datetime
-from typing import Dict, List, Any
+
+import numpy as np
 
 # Add synapse_lang to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 try:
-    from synapse_lang import Lexer, Parser, Interpreter
+    from synapse_lang import Interpreter, Lexer, Parser
     SYNAPSE_AVAILABLE = True
 except ImportError:
     print("Warning: Synapse language modules not found")
@@ -83,7 +83,7 @@ class SynapseEnhancedBenchmark:
                 parser = Parser(tokens)
                 ast = parser.parse()
                 interpreter = Interpreter()
-                result = interpreter.interpret(ast)
+                interpreter.interpret(ast)
                 synapse_time = time.time() - start
                 print(f"✓ Synapse: {synapse_time:.4f}s")
             except Exception as e:
@@ -108,7 +108,7 @@ class SynapseEnhancedBenchmark:
             moles_val = (press_val * vol_val) / (R * temp_val)
             # Simplified uncertainty calculation
             rel_unc = np.sqrt((press_unc/press_val)**2 + (vol_unc/vol_val)**2 + (temp_unc/temp_val)**2)
-            moles_unc = moles_val * rel_unc
+            moles_val * rel_unc
 
         python_time = time.time() - start
         print(f"✓ Python (manual): {python_time:.4f}s")
@@ -182,7 +182,7 @@ class SynapseEnhancedBenchmark:
                 parser = Parser(tokens)
                 ast = parser.parse()
                 interpreter = Interpreter()
-                result = interpreter.interpret(ast)
+                interpreter.interpret(ast)
                 synapse_time = time.time() - start
                 print(f"✓ Synapse (parallel): {synapse_time:.4f}s")
             except Exception as e:
@@ -219,13 +219,13 @@ class SynapseEnhancedBenchmark:
                 executor.submit(compute_c, workload_size),
                 executor.submit(compute_d, workload_size)
             ]
-            results = [f.result() for f in futures]
+            [f.result() for f in futures]
         python_parallel_time = time.time() - start
         print(f"✓ Python (threads): {python_parallel_time:.4f}s")
 
         # Benchmark sequential Python
         start = time.time()
-        results = [
+        [
             compute_a(workload_size),
             compute_b(workload_size),
             compute_c(workload_size),
@@ -318,7 +318,7 @@ class SynapseEnhancedBenchmark:
                 parser = Parser(tokens)
                 ast = parser.parse()
                 interpreter = Interpreter()
-                result = interpreter.interpret(ast)
+                interpreter.interpret(ast)
                 synapse_time = time.time() - start
                 print(f"✓ Synapse (pipeline): {synapse_time:.4f}s")
             except Exception as e:
@@ -338,9 +338,9 @@ class SynapseEnhancedBenchmark:
         if len(cleaned) > 0:
             normalized = (cleaned - cleaned.min()) / (cleaned.max() - cleaned.min())
             # Calculate statistics
-            mean_val = np.mean(normalized)
-            variance_val = np.var(normalized)
-            correlation = np.corrcoef(normalized[:min(1000, len(normalized))],
+            np.mean(normalized)
+            np.var(normalized)
+            np.corrcoef(normalized[:min(1000, len(normalized))],
                                     normalized[:min(1000, len(normalized))])[0, 1]
         numpy_time = time.time() - start
         print(f"✓ NumPy (pipeline): {numpy_time:.4f}s")
@@ -348,11 +348,11 @@ class SynapseEnhancedBenchmark:
         # Benchmark Pandas if available
         if PANDAS_AVAILABLE:
             start = time.time()
-            df = pd.DataFrame({'data': np.random.random(data_size) * 100})
+            df = pd.DataFrame({"data": np.random.random(data_size) * 100})
             # Pipeline operations
-            df_cleaned = df[(df['data'] > 5) & (df['data'] < 95)]
+            df_cleaned = df[(df["data"] > 5) & (df["data"] < 95)]
             df_normalized = (df_cleaned - df_cleaned.min()) / (df_cleaned.max() - df_cleaned.min())
-            stats = df_normalized.describe()
+            df_normalized.describe()
             pandas_time = time.time() - start
             print(f"✓ Pandas (pipeline): {pandas_time:.4f}s")
         else:
@@ -427,7 +427,7 @@ class SynapseEnhancedBenchmark:
                 parser = Parser(tokens)
                 ast = parser.parse()
                 interpreter = Interpreter()
-                result = interpreter.interpret(ast)
+                interpreter.interpret(ast)
                 synapse_time = time.time() - start
                 print(f"✓ Synapse: {synapse_time:.4f}s")
             except Exception as e:
@@ -441,10 +441,10 @@ class SynapseEnhancedBenchmark:
         start = time.time()
         a = np.random.rand(size, size)
         b = np.random.rand(size, size)
-        c = np.matmul(a, b)
+        np.matmul(a, b)
         # Additional tensor operation
         tensor = np.random.rand(10, 10, 10)
-        tensor_result = np.einsum('ijk->jki', tensor)
+        np.einsum("ijk->jki", tensor)
         numpy_time = time.time() - start
         print(f"✓ NumPy: {numpy_time:.4f}s")
 
@@ -467,7 +467,7 @@ class SynapseEnhancedBenchmark:
             _ = matrix_multiply_numba(a[:10, :10], b[:10, :10])
 
             start = time.time()
-            c = matrix_multiply_numba(a, b)
+            matrix_multiply_numba(a, b)
             numba_time = time.time() - start
             print(f"✓ Numba JIT: {numba_time:.4f}s")
         else:
@@ -484,10 +484,10 @@ class SynapseEnhancedBenchmark:
     def generate_report(self):
         """Generate comprehensive benchmark report"""
         print(f"\n{'='*60}")
-        print(f"SYNAPSE ENHANCED BENCHMARK REPORT")
+        print("SYNAPSE ENHANCED BENCHMARK REPORT")
         print(f"{'='*60}")
 
-        print(f"\nSystem Information:")
+        print("\nSystem Information:")
         print(f"  Platform: {self.metadata['platform']}")
         print(f"  Python: {sys.version.split()[0]}")
         print(f"  NumPy: {self.metadata['numpy_version']}")
@@ -495,12 +495,12 @@ class SynapseEnhancedBenchmark:
         print(f"  Numba Available: {self.metadata['numba_available']}")
 
         print(f"\n{'='*60}")
-        print(f"PERFORMANCE RESULTS")
+        print("PERFORMANCE RESULTS")
         print(f"{'='*60}")
 
         for test_name, times in self.results.items():
             print(f"\n{test_name.replace('_', ' ').title()}:")
-            print(f"  " + "-" * 56)
+            print("  " + "-" * 56)
 
             # Find best performer
             valid_times = {k: v for k, v in times.items()
@@ -516,11 +516,11 @@ class SynapseEnhancedBenchmark:
                             relative = value / best_time if best_time > 0 else 0
                             status = "🏆" if key == best else "  "
                             print(f"  {status} {key:20s}: {value:8.4f}s (x{relative:.2f})")
-                    elif key not in ['data_size', 'matrix_size', 'measurements', 'speedup']:
+                    elif key not in ["data_size", "matrix_size", "measurements", "speedup"]:
                         print(f"     {key:20s}: {value}")
 
         print(f"\n{'='*60}")
-        print(f"PERFORMANCE SUMMARY")
+        print("PERFORMANCE SUMMARY")
         print(f"{'='*60}")
 
         # Calculate average relative performance
@@ -561,7 +561,7 @@ class SynapseEnhancedBenchmark:
 
         # Save results to JSON
         report_file = f"benchmark_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        with open(report_file, 'w') as f:
+        with open(report_file, "w") as f:
             json.dump({
                 "metadata": self.metadata,
                 "results": self.results

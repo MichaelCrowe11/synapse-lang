@@ -4,15 +4,15 @@ SYNAPSE LANGUAGE - MULTI-PLATFORM PUBLISHING SCRIPT
 Validates and publishes to PyPI, GitHub, npm, conda-forge, and more
 """
 
-import os
-import sys
-import subprocess
-import json
-import shutil
-from pathlib import Path
-from datetime import datetime
 import hashlib
+import json
 import re
+import shutil
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+
 
 class SynapsePublisher:
     """Multi-platform package publisher for Synapse"""
@@ -31,7 +31,7 @@ class SynapsePublisher:
                 match = re.search(r'version = "([^"]+)"', content)
                 if match:
                     return match.group(1)
-        except:
+        except (FileNotFoundError, IOError, re.error):
             pass
 
         try:
@@ -40,7 +40,7 @@ class SynapsePublisher:
                 match = re.search(r'version=["\'](.*?)["\']', content)
                 if match:
                     return match.group(1)
-        except:
+        except (FileNotFoundError, IOError, re.error):
             pass
 
         return "2.1.0"  # Default version
@@ -52,7 +52,7 @@ class SynapsePublisher:
             if capture:
                 result = subprocess.run(cmd, shell=True, capture_output=True, text=True, check=check)
                 if result.returncode == 0:
-                    print(f"  ✅ Success")
+                    print("  ✅ Success")
                     return True, result.stdout
                 else:
                     print(f"  ⚠️  Warning: {result.stderr[:100]}")
@@ -213,7 +213,7 @@ class SynapsePublisher:
 
         # Push (would need authentication)
         print("  ⚠️  GitHub push requires authentication")
-        print(f"  📝 Manual push command: git push origin main --tags")
+        print("  📝 Manual push command: git push origin main --tags")
 
         self.results["github"] = True
         return True
@@ -346,7 +346,7 @@ extra:
         print("🍺 HOMEBREW FORMULA")
         print("="*60)
 
-        formula = f'''class SynapseLang < Formula
+        formula = f"""class SynapseLang < Formula
   desc "Scientific programming language with quantum support"
   homepage "https://synapse-lang.org"
   url "https://github.com/synapse-lang/synapse-lang/archive/v{self.version}.tar.gz"
@@ -365,7 +365,7 @@ extra:
     system "#{bin}/synapse", "--version"
   end
 end
-'''
+"""
 
         with open("synapse-lang.rb", "w") as f:
             f.write(formula)
@@ -474,7 +474,7 @@ CMD ["synapse", "--repl"]
             print(f"    {status} {platform}")
 
         # Create badge markdown
-        badges = f"""
+        badges = """
 [![PyPI version](https://badge.fury.io/py/synapse-lang.svg)](https://pypi.org/project/synapse-lang/)
 [![npm version](https://badge.fury.io/js/%40synapse-lang%2Fcore.svg)](https://www.npmjs.com/package/@synapse-lang/core)
 [![Docker Pulls](https://img.shields.io/docker/pulls/synapse-lang/synapse-lang)](https://hub.docker.com/r/synapse-lang/synapse-lang)

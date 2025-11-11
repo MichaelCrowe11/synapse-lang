@@ -4,13 +4,12 @@ SYNAPSE INTERPRETER - BACKEND INTEGRATION
 Wires the backend POC into Synapse language runtime
 """
 
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from synapse_lang.backends import (
-    auto, get_backend_info, cg_solve, gpu_matmul, vqe_minimize
-)
+from synapse_lang.backends import auto, cg_solve, get_backend_info, gpu_matmul, vqe_minimize
 
 
 class SynapseBackendIntegration:
@@ -30,20 +29,20 @@ class SynapseBackendIntegration:
 
         # Backend namespace
         backend_ns = {
-            'auto': self.backend_auto,
-            'info': self.backend_info,
-            'solve': self.backend_solve,
-            'matmul': self.backend_matmul,
-            'gpu_matmul': self.backend_gpu_matmul,
-            'vqe': self.backend_vqe,
-            'set': self.backend_set,
+            "auto": self.backend_auto,
+            "info": self.backend_info,
+            "solve": self.backend_solve,
+            "matmul": self.backend_matmul,
+            "gpu_matmul": self.backend_gpu_matmul,
+            "vqe": self.backend_vqe,
+            "set": self.backend_set,
         }
 
         # Register under 'backend' namespace
-        if hasattr(self.interpreter, 'env'):
-            self.interpreter.env['backend'] = backend_ns
-        elif hasattr(self.interpreter, 'builtins'):
-            self.interpreter.builtins['backend'] = backend_ns
+        if hasattr(self.interpreter, "env"):
+            self.interpreter.env["backend"] = backend_ns
+        elif hasattr(self.interpreter, "builtins"):
+            self.interpreter.builtins["backend"] = backend_ns
         else:
             # Fallback: add to global namespace
             self.interpreter.backend = backend_ns
@@ -58,10 +57,10 @@ class SynapseBackendIntegration:
         info = get_backend_info()
         # Format for Synapse display
         return {
-            'current': self.current_backend,
-            'available': list(info['available'].keys()),
-            'active': [k for k, v in info['available'].items() if v],
-            'versions': info.get('versions', {})
+            "current": self.current_backend,
+            "available": list(info["available"].keys()),
+            "active": [k for k, v in info["available"].items() if v],
+            "versions": info.get("versions", {})
         }
 
     def backend_solve(self, A, b, **kwargs):
@@ -70,9 +69,9 @@ class SynapseBackendIntegration:
         import numpy as np
 
         # Handle uncertain values
-        if hasattr(A, 'nominal'):
+        if hasattr(A, "nominal"):
             A = A.nominal
-        if hasattr(b, 'nominal'):
+        if hasattr(b, "nominal"):
             b = b.nominal
 
         # Convert to numpy
@@ -80,7 +79,7 @@ class SynapseBackendIntegration:
         b = np.asarray(b)
 
         # Solve based on backend
-        if 'gpu' in self.current_backend:
+        if "gpu" in self.current_backend:
             from synapse_lang.backends.gpu_fallback import solve_linear
             return solve_linear(A, b)
         else:
@@ -88,12 +87,11 @@ class SynapseBackendIntegration:
 
     def backend_matmul(self, A, B):
         """Matrix multiplication with backend selection"""
-        import numpy as np
 
         # Handle uncertain values
-        if hasattr(A, 'nominal'):
+        if hasattr(A, "nominal"):
             A = A.nominal
-        if hasattr(B, 'nominal'):
+        if hasattr(B, "nominal"):
             B = B.nominal
 
         # Use GPU if available
@@ -209,7 +207,7 @@ if __name__ == "__main__":
     integration = SynapseBackendIntegration(mock_interp)
 
     print("\nRegistered functions in interpreter:")
-    for name in mock_interp.env.get('backend', {}).keys():
+    for name in mock_interp.env.get("backend", {}).keys():
         print(f"  backend.{name}")
 
     print("\n" + "="*60)

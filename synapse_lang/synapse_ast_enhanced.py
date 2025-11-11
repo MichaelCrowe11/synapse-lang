@@ -41,6 +41,10 @@ class NodeType(Enum):
     QUANTUM_CIRCUIT = "quantum_circuit"
     QUANTUM_GATE = "quantum_gate"
     QUANTUM_MEASUREMENT = "quantum_measurement"
+    QUANTUM_ALGORITHM = "quantum_algorithm"
+    QUANTUM_ANSATZ = "quantum_ansatz"
+    QUANTUM_BACKEND = "quantum_backend"
+    QUANTUM_NOISE = "quantum_noise"
 
     # Parallel
     PARALLEL = "parallel"
@@ -87,7 +91,9 @@ class NodeType(Enum):
 
 
 class ASTNode:
-    """Base class for all AST nodes"""
+    """Base class for all AST nodes with __slots__ for memory efficiency"""
+    __slots__ = ('node_type', 'line', 'column')
+
     def __init__(self, node_type: NodeType, line: int = 0, column: int = 0):
         self.node_type = node_type
         self.line = line
@@ -237,6 +243,65 @@ class QuantumMeasurementNode(ASTNode):
         self.basis = basis
 
 
+class QuantumAlgorithmNode(ASTNode):
+    """Quantum algorithm definition"""
+    name: str
+    parameters: list[ASTNode]
+    ansatz: ASTNode | None
+    cost_function: ASTNode | None
+    optimizer: ASTNode | None
+
+    def __init__(self, name: str, parameters: list[ASTNode], ansatz: ASTNode | None = None,
+                 cost_function: ASTNode | None = None, optimizer: ASTNode | None = None,
+                 line: int = 0, column: int = 0):
+        super().__init__(NodeType.QUANTUM_ALGORITHM, line, column)
+        self.name = name
+        self.parameters = parameters
+        self.ansatz = ansatz
+        self.cost_function = cost_function
+        self.optimizer = optimizer
+
+
+class QuantumAnsatzNode(ASTNode):
+    """Quantum ansatz (parameterized circuit)"""
+    name: str
+    circuit: QuantumCircuitNode | None
+    parameters: list[str]
+
+    def __init__(self, name: str, circuit: QuantumCircuitNode | None = None,
+                 parameters: list[str] = None, line: int = 0, column: int = 0):
+        super().__init__(NodeType.QUANTUM_ANSATZ, line, column)
+        self.name = name
+        self.circuit = circuit
+        self.parameters = parameters or []
+
+
+class QuantumBackendNode(ASTNode):
+    """Quantum backend specification"""
+    backend_type: str
+    provider: str | None
+    options: dict
+
+    def __init__(self, backend_type: str, provider: str | None = None,
+                 options: dict = None, line: int = 0, column: int = 0):
+        super().__init__(NodeType.QUANTUM_BACKEND, line, column)
+        self.backend_type = backend_type
+        self.provider = provider
+        self.options = options or {}
+
+
+class QuantumNoiseNode(ASTNode):
+    """Quantum noise model"""
+    noise_type: str
+    parameters: dict
+
+    def __init__(self, noise_type: str, parameters: dict = None,
+                 line: int = 0, column: int = 0):
+        super().__init__(NodeType.QUANTUM_NOISE, line, column)
+        self.noise_type = noise_type
+        self.parameters = parameters or {}
+
+
 # ============= Parallel Execution Nodes =============
 
 class ParallelNode(ASTNode):
@@ -329,6 +394,17 @@ class ForkNode(ASTNode):
     def __init__(self, paths: list[tuple[str, ASTNode]], line: int = 0, column: int = 0):
         super().__init__(NodeType.FORK, line, column)
         self.paths = paths
+
+
+class StreamNode(ASTNode):
+    """Stream processing definition"""
+    name: str
+    body: ASTNode
+
+    def __init__(self, name: str, body: ASTNode, line: int = 0, column: int = 0):
+        super().__init__(NodeType.STREAM, line, column)
+        self.name = name
+        self.body = body
 
 
 # ============= Reasoning Nodes =============

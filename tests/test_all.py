@@ -2,17 +2,18 @@
 Comprehensive test suite runner for Synapse Language
 """
 
-import unittest
-import sys
 import os
+import sys
+import unittest
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import all test modules
-from test_type_inference import TestTypeInference
+from test_collaboration import TestCollaborationManager, TestOperationalTransform
 from test_quantum_designer import TestQuantumCircuit, TestQuantumSimulator
-from test_collaboration import TestOperationalTransform, TestCollaborationManager
+from test_type_inference import TestTypeInference
+
 
 def run_all_tests():
     """Run all tests and generate report"""
@@ -52,5 +53,5 @@ def run_all_tests():
         print("\n❌ SOME TESTS FAILED")
         return 1
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(run_all_tests())

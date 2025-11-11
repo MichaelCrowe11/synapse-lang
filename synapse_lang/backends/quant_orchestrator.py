@@ -5,9 +5,10 @@ provides a simulator stub.
 
 Provides vqe_energy(params, hamiltonian) and vqe_minimize(initial_params,...)
 """
-from typing import Sequence, Callable, Optional, Dict, Any, Union
-import numpy as np
+from collections.abc import Callable, Sequence
+from typing import Any
 
+import numpy as np
 
 # Try to import the provided quant-hpc-lite controller (uploaded into the project)
 try:
@@ -27,11 +28,11 @@ class QuantumSimulator:
 
     def apply_gate(self, gate: str, qubit: int, param: float = 0.0):
         """Apply single-qubit gate"""
-        if gate == 'H':  # Hadamard
+        if gate == "H":  # Hadamard
             self._apply_hadamard(qubit)
-        elif gate == 'RY':  # Y-rotation
+        elif gate == "RY":  # Y-rotation
             self._apply_ry(qubit, param)
-        elif gate == 'RZ':  # Z-rotation
+        elif gate == "RZ":  # Z-rotation
             self._apply_rz(qubit, param)
 
     def _apply_hadamard(self, qubit: int):
@@ -102,13 +103,13 @@ def _stub_expectation(params, hamiltonian):
     for i, param in enumerate(params):
         qubit = i % n_qubits
         # Layer of RY rotations
-        sim.apply_gate('RY', qubit, param)
+        sim.apply_gate("RY", qubit, param)
 
         # Entangling layer (simplified)
         if i > 0 and i % n_qubits == 0:
             for q in range(n_qubits - 1):
                 # Simplified: apply phase based on parameter
-                sim.apply_gate('RZ', q, params[i - 1] * 0.1)
+                sim.apply_gate("RZ", q, params[i - 1] * 0.1)
 
     # Calculate expectation value
     if isinstance(hamiltonian, (list, np.ndarray)):
@@ -128,7 +129,7 @@ def _stub_expectation(params, hamiltonian):
 
 
 def vqe_energy(params: Sequence[float], hamiltonian=None,
-               backend: str = 'sim', shots: int = 1024) -> float:
+               backend: str = "sim", shots: int = 1024) -> float:
     """Run the parameterized circuit and return expected energy (POC).
 
     Args:
@@ -140,7 +141,7 @@ def vqe_energy(params: Sequence[float], hamiltonian=None,
     Returns:
         Expectation value of energy
     """
-    if HAS_QHL and backend != 'sim':
+    if HAS_QHL and backend != "sim":
         # Example usage of the controller (API may differ in real module)
         try:
             ctrl = qhl.QuantumController()
@@ -156,8 +157,8 @@ def vqe_energy(params: Sequence[float], hamiltonian=None,
 
 
 def vqe_minimize(initial_params, hamiltonian=None,
-                 method: str = 'L-BFGS-B', backend: str = 'sim',
-                 maxiter: int = 100, callback: Optional[Callable] = None) -> Dict[str, Any]:
+                 method: str = "L-BFGS-B", backend: str = "sim",
+                 maxiter: int = 100, callback: Callable | None = None) -> dict[str, Any]:
     """Classical optimization wrapper minimizing vqe_energy.
 
     Args:
@@ -171,12 +172,12 @@ def vqe_minimize(initial_params, hamiltonian=None,
     Returns:
         dict with x (opt params), fun (energy), success, and other info
     """
-    history = {'energies': [], 'params': []}
+    history = {"energies": [], "params": []}
 
     def track_progress(x):
         energy = vqe_energy(x, hamiltonian, backend=backend)
-        history['energies'].append(energy)
-        history['params'].append(x.copy())
+        history["energies"].append(energy)
+        history["params"].append(x.copy())
         if callback:
             callback(x, energy)
         return energy
@@ -193,16 +194,16 @@ def vqe_minimize(initial_params, hamiltonian=None,
             objective,
             initial_params,
             method=method,
-            options={'maxiter': maxiter}
+            options={"maxiter": maxiter}
         )
 
         return {
-            'x': res.x,
-            'fun': float(res.fun),
-            'success': res.success,
-            'nit': res.nit,
-            'message': res.message,
-            'history': history
+            "x": res.x,
+            "fun": float(res.fun),
+            "success": res.success,
+            "nit": res.nit,
+            "message": res.message,
+            "history": history
         }
 
     except ImportError:
@@ -229,28 +230,28 @@ def vqe_minimize(initial_params, hamiltonian=None,
                         improved = True
 
         return {
-            'x': x,
-            'fun': best,
-            'success': True,
-            'nit': iterations,
-            'message': 'Simple optimization completed',
-            'history': history
+            "x": x,
+            "fun": best,
+            "success": True,
+            "nit": iterations,
+            "message": "Simple optimization completed",
+            "history": history
         }
 
 
-def get_quantum_backend_info() -> Dict[str, Any]:
+def get_quantum_backend_info() -> dict[str, Any]:
     """Get information about available quantum backends"""
     info = {
-        'simulator': True,  # Always available
-        'quant_hpc_lite': HAS_QHL,
-        'backends': ['sim']  # Simulator always available
+        "simulator": True,  # Always available
+        "quant_hpc_lite": HAS_QHL,
+        "backends": ["sim"]  # Simulator always available
     }
 
     if HAS_QHL:
         try:
             ctrl = qhl.QuantumController()
-            info['backends'].extend(ctrl.list_backends())
-            info['default_backend'] = ctrl.default_backend
+            info["backends"].extend(ctrl.list_backends())
+            info["default_backend"] = ctrl.default_backend
         except:
             pass
 
@@ -260,8 +261,8 @@ def get_quantum_backend_info() -> Dict[str, Any]:
 class VQEProblem:
     """Helper class to set up VQE problems"""
 
-    def __init__(self, hamiltonian: Union[np.ndarray, list],
-                 n_qubits: Optional[int] = None):
+    def __init__(self, hamiltonian: np.ndarray | list,
+                 n_qubits: int | None = None):
         """Initialize VQE problem.
 
         Args:
@@ -280,14 +281,14 @@ class VQEProblem:
         self.n_qubits = n_qubits
         self.n_params = 2 * n_qubits  # Default ansatz parameters
 
-    def random_initial_params(self, seed: Optional[int] = None) -> np.ndarray:
+    def random_initial_params(self, seed: int | None = None) -> np.ndarray:
         """Generate random initial parameters"""
         if seed is not None:
             np.random.seed(seed)
         return np.random.uniform(-np.pi, np.pi, self.n_params)
 
-    def solve(self, initial_params: Optional[np.ndarray] = None,
-              **kwargs) -> Dict[str, Any]:
+    def solve(self, initial_params: np.ndarray | None = None,
+              **kwargs) -> dict[str, Any]:
         """Solve the VQE problem"""
         if initial_params is None:
             initial_params = self.random_initial_params()
@@ -297,19 +298,19 @@ class VQEProblem:
 
 # Example Hamiltonians for testing
 EXAMPLE_HAMILTONIANS = {
-    'h2': np.array([  # H2 molecule (simplified)
+    "h2": np.array([  # H2 molecule (simplified)
         [-1.0523, 0.3979, 0, 0],
         [0.3979, -0.4719, 0, 0],
         [0, 0, -0.4719, 0.3979],
         [0, 0, 0.3979, -1.0523]
     ]),
-    'ising_2': np.array([  # 2-qubit Ising
+    "ising_2": np.array([  # 2-qubit Ising
         [-2, 0, 0, 0],
         [0, 0, 0, 0],
         [0, 0, 0, 0],
         [0, 0, 0, 2]
     ]),
-    'xyz_2': np.array([  # 2-qubit XYZ model
+    "xyz_2": np.array([  # 2-qubit XYZ model
         [0, 0, 0, 1],
         [0, 0, 1, 0],
         [0, 1, 0, 0],

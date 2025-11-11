@@ -2,17 +2,16 @@
 Enables multiple users to edit and execute Synapse code simultaneously
 """
 
-import asyncio
-import json
-import uuid
-import time
 import hashlib
-from typing import Dict, List, Optional, Set, Any, Callable
-from dataclasses import dataclass, field, asdict
-from enum import Enum, auto
-from datetime import datetime
-import threading
+import json
 import queue
+import threading
+import time
+import uuid
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from enum import Enum, auto
+from typing import Any
 
 
 class OperationType(Enum):
@@ -42,21 +41,21 @@ class User:
     name: str = "Anonymous"
     color: str = "#007bff"  # Default blue
     cursor_position: int = 0
-    selection_start: Optional[int] = None
-    selection_end: Optional[int] = None
+    selection_start: int | None = None
+    selection_end: int | None = None
     status: PresenceStatus = PresenceStatus.ONLINE
     last_seen: float = field(default_factory=time.time)
-    
+
     def to_dict(self) -> dict:
         return {
-            'id': self.id,
-            'name': self.name,
-            'color': self.color,
-            'cursor_position': self.cursor_position,
-            'selection_start': self.selection_start,
-            'selection_end': self.selection_end,
-            'status': self.status.name,
-            'last_seen': self.last_seen
+            "id": self.id,
+            "name": self.name,
+            "color": self.color,
+            "cursor_position": self.cursor_position,
+            "selection_start": self.selection_start,
+            "selection_end": self.selection_end,
+            "status": self.status.name,
+            "last_seen": self.last_seen
         }
 
 
@@ -71,20 +70,20 @@ class Operation:
     length: int = 0
     timestamp: float = field(default_factory=time.time)
     version: int = 0
-    
+
     def to_dict(self) -> dict:
         return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'type': self.type.name,
-            'position': self.position,
-            'content': self.content,
-            'length': self.length,
-            'timestamp': self.timestamp,
-            'version': self.version
+            "id": self.id,
+            "user_id": self.user_id,
+            "type": self.type.name,
+            "position": self.position,
+            "content": self.content,
+            "length": self.length,
+            "timestamp": self.timestamp,
+            "version": self.version
         }
-    
-    def transform(self, other: 'Operation') -> 'Operation':
+
+    def transform(self, other: "Operation") -> "Operation":
         """Transform this operation against another for OT"""
         if self.type == OperationType.INSERT and other.type == OperationType.INSERT:
             if self.position < other.position:
@@ -112,7 +111,7 @@ class Operation:
                         timestamp=self.timestamp,
                         version=self.version
                     )
-        
+
         elif self.type == OperationType.DELETE and other.type == OperationType.DELETE:
             if self.position < other.position:
                 return self
@@ -137,7 +136,7 @@ class Operation:
                     timestamp=self.timestamp,
                     version=self.version
                 )
-        
+
         elif self.type == OperationType.INSERT and other.type == OperationType.DELETE:
             if self.position <= other.position:
                 return self
@@ -161,7 +160,7 @@ class Operation:
                     timestamp=self.timestamp,
                     version=self.version
                 )
-        
+
         elif self.type == OperationType.DELETE and other.type == OperationType.INSERT:
             if self.position < other.position:
                 return self
@@ -186,7 +185,7 @@ class Document:
     name: str = "untitled.syn"
     content: str = ""
     version: int = 0
-    operations: List[Operation] = field(default_factory=list)
+    operations: list[Operation] = field(default_factory=list)
     checksum: str = ""
 
     def apply_operation(self, op: Operation) -> str:
@@ -217,38 +216,38 @@ class Document:
     def get_snapshot(self) -> dict:
         """Get document snapshot for sync"""
         return {
-            'id': self.id,
-            'name': self.name,
-            'content': self.content,
-            'version': self.version,
-            'checksum': self.checksum
+            "id": self.id,
+            "name": self.name,
+            "content": self.content,
+            "version": self.version,
+            "checksum": self.checksum
         }
 
 
 class CollaborationSession:
     """Manages a collaborative editing session"""
 
-    def __init__(self, session_id: Optional[str] = None):
+    def __init__(self, session_id: str | None = None):
         self.id = session_id or str(uuid.uuid4())
-        self.users: Dict[str, User] = {}
+        self.users: dict[str, User] = {}
         self.document = Document()
         self.operation_queue: queue.Queue = queue.Queue()
-        self.pending_operations: List[Operation] = []
-        self.event_handlers: Dict[str, List[Callable]] = {}
+        self.pending_operations: list[Operation] = []
+        self.event_handlers: dict[str, list[Callable]] = {}
         self.is_active = True
         self._lock = threading.Lock()
 
-    def join(self, user: User) -> Dict[str, Any]:
+    def join(self, user: User) -> dict[str, Any]:
         """User joins the session"""
         with self._lock:
             self.users[user.id] = user
-            self._emit('user_joined', user.to_dict())
+            self._emit("user_joined", user.to_dict())
 
             return {
-                'session_id': self.id,
-                'document': self.document.get_snapshot(),
-                'users': [u.to_dict() for u in self.users.values()],
-                'user_id': user.id
+                "session_id": self.id,
+                "document": self.document.get_snapshot(),
+                "users": [u.to_dict() for u in self.users.values()],
+                "user_id": user.id
             }
 
     def leave(self, user_id: str):
@@ -258,9 +257,9 @@ class CollaborationSession:
                 user = self.users[user_id]
                 user.status = PresenceStatus.OFFLINE
                 del self.users[user_id]
-                self._emit('user_left', {'user_id': user_id})
+                self._emit("user_left", {"user_id": user_id})
 
-    def apply_operation(self, op: Operation) -> Dict[str, Any]:
+    def apply_operation(self, op: Operation) -> dict[str, Any]:
         """Apply operation with OT"""
         with self._lock:
             # Transform against pending operations
@@ -273,16 +272,16 @@ class CollaborationSession:
             self.document.apply_operation(transformed_op)
 
             # Broadcast to other users
-            self._emit('operation', transformed_op.to_dict())
+            self._emit("operation", transformed_op.to_dict())
 
             return {
-                'success': True,
-                'version': self.document.version,
-                'checksum': self.document.checksum
+                "success": True,
+                "version": self.document.version,
+                "checksum": self.document.checksum
             }
 
     def update_cursor(self, user_id: str, position: int,
-                     selection: Optional[tuple] = None):
+                     selection: tuple | None = None):
         """Update user cursor position"""
         with self._lock:
             if user_id in self.users:
@@ -296,13 +295,13 @@ class CollaborationSession:
                 user.status = PresenceStatus.EDITING
                 user.last_seen = time.time()
 
-                self._emit('cursor_update', {
-                    'user_id': user_id,
-                    'position': position,
-                    'selection': selection
+                self._emit("cursor_update", {
+                    "user_id": user_id,
+                    "position": position,
+                    "selection": selection
                 })
 
-    def execute_code(self, user_id: str, code: str) -> Dict[str, Any]:
+    def execute_code(self, user_id: str, code: str) -> dict[str, Any]:
         """Execute Synapse code collaboratively"""
         with self._lock:
             if user_id in self.users:
@@ -317,36 +316,36 @@ class CollaborationSession:
                     version=self.document.version
                 )
 
-                self._emit('code_execution', {
-                    'user_id': user_id,
-                    'code': code,
-                    'timestamp': exec_op.timestamp
+                self._emit("code_execution", {
+                    "user_id": user_id,
+                    "code": code,
+                    "timestamp": exec_op.timestamp
                 })
 
                 # Simulate execution result
                 result = {
-                    'success': True,
-                    'output': f"Executed by {self.users[user_id].name}",
-                    'execution_time': 0.05
+                    "success": True,
+                    "output": f"Executed by {self.users[user_id].name}",
+                    "execution_time": 0.05
                 }
 
                 self.users[user_id].status = PresenceStatus.ONLINE
                 return result
 
-            return {'success': False, 'error': 'User not found'}
+            return {"success": False, "error": "User not found"}
 
-    def add_comment(self, user_id: str, line: int, text: str) -> Dict[str, Any]:
+    def add_comment(self, user_id: str, line: int, text: str) -> dict[str, Any]:
         """Add inline comment"""
         with self._lock:
             comment = {
-                'id': str(uuid.uuid4()),
-                'user_id': user_id,
-                'line': line,
-                'text': text,
-                'timestamp': time.time()
+                "id": str(uuid.uuid4()),
+                "user_id": user_id,
+                "line": line,
+                "text": text,
+                "timestamp": time.time()
             }
 
-            self._emit('comment_added', comment)
+            self._emit("comment_added", comment)
             return comment
 
     def on(self, event: str, handler: Callable):
@@ -364,7 +363,7 @@ class CollaborationSession:
                 except Exception as e:
                     print(f"Error in event handler: {e}")
 
-    def get_presence(self) -> List[Dict[str, Any]]:
+    def get_presence(self) -> list[dict[str, Any]]:
         """Get current user presence info"""
         with self._lock:
             presence = []
@@ -384,8 +383,8 @@ class CollaborationManager:
     """Manages multiple collaboration sessions"""
 
     def __init__(self):
-        self.sessions: Dict[str, CollaborationSession] = {}
-        self.user_sessions: Dict[str, str] = {}  # user_id -> session_id
+        self.sessions: dict[str, CollaborationSession] = {}
+        self.user_sessions: dict[str, str] = {}  # user_id -> session_id
 
     def create_session(self, name: str = "New Session") -> CollaborationSession:
         """Create new collaboration session"""
@@ -394,18 +393,18 @@ class CollaborationManager:
         self.sessions[session.id] = session
         return session
 
-    def get_session(self, session_id: str) -> Optional[CollaborationSession]:
+    def get_session(self, session_id: str) -> CollaborationSession | None:
         """Get session by ID"""
         return self.sessions.get(session_id)
 
-    def join_session(self, session_id: str, user: User) -> Dict[str, Any]:
+    def join_session(self, session_id: str, user: User) -> dict[str, Any]:
         """Join user to session"""
         session = self.get_session(session_id)
         if session:
             result = session.join(user)
             self.user_sessions[user.id] = session_id
             return result
-        return {'error': 'Session not found'}
+        return {"error": "Session not found"}
 
     def leave_session(self, user_id: str):
         """Remove user from their current session"""
@@ -416,14 +415,14 @@ class CollaborationManager:
                 session.leave(user_id)
             del self.user_sessions[user_id]
 
-    def list_sessions(self) -> List[Dict[str, Any]]:
+    def list_sessions(self) -> list[dict[str, Any]]:
         """List all active sessions"""
         return [
             {
-                'id': session.id,
-                'name': session.document.name,
-                'users': len(session.users),
-                'version': session.document.version
+                "id": session.id,
+                "name": session.document.name,
+                "users": len(session.users),
+                "version": session.document.version
             }
             for session in self.sessions.values()
             if session.is_active
@@ -455,34 +454,34 @@ class CollaborationProtocol:
     def encode(msg_type: str, data: Any) -> str:
         """Encode message for transmission"""
         message = {
-            'type': msg_type,
-            'data': data,
-            'timestamp': time.time()
+            "type": msg_type,
+            "data": data,
+            "timestamp": time.time()
         }
         return json.dumps(message)
 
     @staticmethod
-    def decode(message: str) -> Dict[str, Any]:
+    def decode(message: str) -> dict[str, Any]:
         """Decode received message"""
         return json.loads(message)
 
     @staticmethod
     def create_operation_msg(op: Operation) -> str:
         """Create operation message"""
-        return CollaborationProtocol.encode('operation', op.to_dict())
+        return CollaborationProtocol.encode("operation", op.to_dict())
 
     @staticmethod
     def create_cursor_msg(user_id: str, position: int) -> str:
         """Create cursor update message"""
-        return CollaborationProtocol.encode('cursor', {
-            'user_id': user_id,
-            'position': position
+        return CollaborationProtocol.encode("cursor", {
+            "user_id": user_id,
+            "position": position
         })
 
     @staticmethod
-    def create_presence_msg(users: List[User]) -> str:
+    def create_presence_msg(users: list[User]) -> str:
         """Create presence update message"""
-        return CollaborationProtocol.encode('presence', [
+        return CollaborationProtocol.encode("presence", [
             u.to_dict() for u in users
         ])
 

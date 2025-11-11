@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Simple test for distributed computing framework"""
 
+
 from synapse_lang.distributed import *
-import time
+
 
 def main():
     print("Synapse Distributed Computing - Simple Test")

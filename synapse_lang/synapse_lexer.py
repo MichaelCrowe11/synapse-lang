@@ -190,6 +190,8 @@ class TokenType(Enum):
 
 @dataclass
 class Token:
+    """Token with __slots__ for memory optimization"""
+    __slots__ = ('type', 'value', 'line', 'column')
     type: TokenType
     value: Any
     line: int
@@ -197,6 +199,26 @@ class Token:
 
 
 class Lexer:
+    """Optimized lexer with cached keyword lookup"""
+    __slots__ = ('source', 'position', 'line', 'column', 'tokens', 'indent_stack', 'at_line_start')
+
+    # Class-level keyword cache (computed once)
+    _KEYWORDS_CACHE = None
+
+    @classmethod
+    def _get_keywords(cls):
+        """Lazy-load and cache keyword mapping"""
+        if cls._KEYWORDS_CACHE is None:
+            gate_types = {
+                TokenType.H, TokenType.X, TokenType.Y, TokenType.Z,
+                TokenType.S, TokenType.T, TokenType.U
+            }
+            cls._KEYWORDS_CACHE = {
+                k.value: k for k in TokenType
+                if k.value and k.value.isalpha() and k not in (TokenType.IDENTIFIER,) and k not in gate_types
+            }
+        return cls._KEYWORDS_CACHE
+
     def __init__(self, source: str):
         self.source = source
         self.position = 0
@@ -205,17 +227,6 @@ class Lexer:
         self.tokens: list[Token] = []
         self.indent_stack = [0]  # Stack to track indentation levels
         self.at_line_start = True  # Track if we're at the start of a line
-
-        # keyword map - exclude single-letter gate names from general keywords
-        # Gate names should only be recognized in quantum circuit context
-        gate_types = {
-            TokenType.H, TokenType.X, TokenType.Y, TokenType.Z,
-            TokenType.S, TokenType.T, TokenType.U
-        }
-        self.keywords = {
-            k.value: k for k in TokenType
-            if k.value and k.value.isalpha() and k not in (TokenType.IDENTIFIER,) and k not in gate_types
-        }
 
     def current_char(self) -> str | None:
         if self.position >= len(self.source):
@@ -388,7 +399,8 @@ class Lexer:
             if ch.isalpha() or ch == "_":
                 ident_start = self.position
                 ident = self.read_identifier()
-                token_type = self.keywords.get(ident.lower(), TokenType.IDENTIFIER)
+                keywords = self._get_keywords()
+                token_type = keywords.get(ident.lower(), TokenType.IDENTIFIER)
                 value = self.source[ident_start:self.position] if token_type == TokenType.IDENTIFIER else ident.lower()
                 self.tokens.append(Token(token_type, value, line, col))
                 continue

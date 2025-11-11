@@ -2,7 +2,8 @@
 GPU matmul fallback: use CuPy if available, else NumPy.
 Provides transparent API: to_gpu(array) and matmul(A,B)
 """
-from typing import Any, Union, Optional, Tuple
+from typing import Any
+
 import numpy as np
 
 
@@ -73,7 +74,7 @@ def to_gpu(x: Any, force: bool = False):
         GPU array if available, otherwise input
     """
     if HAS_CUPY:
-        if hasattr(x, '__cuda_array_interface__') and not force:
+        if hasattr(x, "__cuda_array_interface__") and not force:
             return x  # Already on GPU
         return cp.asarray(x)
     else:
@@ -89,7 +90,7 @@ def to_cpu(x: Any):
     Returns:
         NumPy array on CPU
     """
-    if HAS_CUPY and hasattr(x, '__cuda_array_interface__'):
+    if HAS_CUPY and hasattr(x, "__cuda_array_interface__"):
         return cp.asnumpy(x)
     else:
         return np.asarray(x)
@@ -97,10 +98,10 @@ def to_cpu(x: Any):
 
 def is_gpu_array(x: Any) -> bool:
     """Check if array is on GPU"""
-    return HAS_CUPY and hasattr(x, '__cuda_array_interface__')
+    return HAS_CUPY and hasattr(x, "__cuda_array_interface__")
 
 
-def matmul(A, B, use_gpu: Optional[bool] = None):
+def matmul(A, B, use_gpu: bool | None = None):
     """Matrix multiply using GPU if available, else CPU.
 
     Args:
@@ -125,7 +126,7 @@ def matmul(A, B, use_gpu: Optional[bool] = None):
         return np.matmul(A_cpu, B_cpu)
 
 
-def elementwise_op(op_name: str, *arrays, use_gpu: Optional[bool] = None):
+def elementwise_op(op_name: str, *arrays, use_gpu: bool | None = None):
     """Perform elementwise operations on GPU if available.
 
     Args:
@@ -148,16 +149,16 @@ def elementwise_op(op_name: str, *arrays, use_gpu: Optional[bool] = None):
 
     # Map operation names to functions
     ops = {
-        'add': module.add,
-        'subtract': module.subtract,
-        'multiply': module.multiply,
-        'divide': module.divide,
-        'power': module.power,
-        'exp': module.exp,
-        'log': module.log,
-        'sin': module.sin,
-        'cos': module.cos,
-        'sqrt': module.sqrt,
+        "add": module.add,
+        "subtract": module.subtract,
+        "multiply": module.multiply,
+        "divide": module.divide,
+        "power": module.power,
+        "exp": module.exp,
+        "log": module.log,
+        "sin": module.sin,
+        "cos": module.cos,
+        "sqrt": module.sqrt,
     }
 
     if op_name not in ops:
@@ -170,7 +171,7 @@ def elementwise_op(op_name: str, *arrays, use_gpu: Optional[bool] = None):
     return result
 
 
-def solve_linear(A, b, use_gpu: Optional[bool] = None):
+def solve_linear(A, b, use_gpu: bool | None = None):
     """Solve linear system Ax = b using GPU if available.
 
     Args:
@@ -195,7 +196,7 @@ def solve_linear(A, b, use_gpu: Optional[bool] = None):
         return np.linalg.solve(A_cpu, b_cpu)
 
 
-def eigh(A, use_gpu: Optional[bool] = None):
+def eigh(A, use_gpu: bool | None = None):
     """Compute eigenvalues and eigenvectors of Hermitian matrix.
 
     Args:
@@ -217,7 +218,7 @@ def eigh(A, use_gpu: Optional[bool] = None):
         return np.linalg.eigh(A_cpu)
 
 
-def svd(A, use_gpu: Optional[bool] = None):
+def svd(A, use_gpu: bool | None = None):
     """Compute Singular Value Decomposition.
 
     Args:

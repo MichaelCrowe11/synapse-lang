@@ -4,8 +4,9 @@ SYNAPSE BACKEND POC - REAL-WORLD APPLICATIONS
 Demonstrates practical use cases across Crowe Logic divisions
 """
 
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # ============================================================================
@@ -51,7 +52,7 @@ def distributed_neural_network_training():
     print("\n🤖 DISTRIBUTED ML TRAINING")
     print("-" * 50)
 
-    from synapse_lang.backends.gpu_fallback import gpu_matmul, elementwise_op
+    from synapse_lang.backends.gpu_fallback import elementwise_op, gpu_matmul
 
     # Simulate mini-batch forward pass
     batch_size = 128
@@ -68,7 +69,7 @@ def distributed_neural_network_training():
 
     # Forward pass with GPU acceleration
     H1 = gpu_matmul(X, W1)  # First layer
-    H1_activated = elementwise_op('exp', H1 / (1 + np.abs(H1)))  # Smooth activation
+    H1_activated = elementwise_op("exp", H1 / (1 + np.abs(H1)))  # Smooth activation
     output = gpu_matmul(H1_activated, W2)  # Output layer
 
     print(f"✓ Processed batch: {batch_size} samples")
@@ -88,14 +89,16 @@ def quantum_molecule_optimization():
     print("-" * 50)
 
     from synapse_lang.backends.quant_orchestrator import (
-        vqe_minimize, EXAMPLE_HAMILTONIANS, VQEProblem
+        EXAMPLE_HAMILTONIANS,
+        VQEProblem,
+        vqe_minimize,
     )
 
     # H2 molecule Hamiltonian
-    H = EXAMPLE_HAMILTONIANS['h2']
+    H = EXAMPLE_HAMILTONIANS["h2"]
     problem = VQEProblem(H)
 
-    print(f"Molecule: H2")
+    print("Molecule: H2")
     print(f"Qubits required: {problem.n_qubits}")
     print(f"Variational parameters: {problem.n_params}")
 
@@ -132,10 +135,10 @@ def reaction_path_optimization():
     from scipy import sparse
 
     # Stoichiometry matrix (compounds x reactions)
-    S = sparse.random(n_compounds, n_reactions, density=0.1, format='csr')
+    S = sparse.random(n_compounds, n_reactions, density=0.1, format="csr")
 
     # Reaction rates (temperature-dependent)
-    k = np.exp(-np.random.rand(n_reactions) * 10)  # Arrhenius-like
+    np.exp(-np.random.rand(n_reactions) * 10)  # Arrhenius-like
 
     # Target compound (last one)
     target = np.zeros(n_compounds)
@@ -170,12 +173,11 @@ def drug_interaction_network():
     print("\n💊 DRUG INTERACTION PREDICTION")
     print("-" * 50)
 
-    from synapse_lang.backends.gpu_fallback import svd, gpu_matmul
+    from synapse_lang.backends.gpu_fallback import gpu_matmul, svd
 
     # Drug-target interaction tensor
     n_drugs = 100
     n_targets = 50
-    n_pathways = 20
 
     # Known interactions (sparse)
     interactions = np.random.rand(n_drugs, n_targets) * (np.random.rand(n_drugs, n_targets) > 0.9)
@@ -198,7 +200,7 @@ def drug_interaction_network():
 
     print(f"✓ Analyzed {n_drugs} drugs × {n_targets} targets")
     print(f"✓ Rank-{k} approximation captures {np.sum(S[:k])/np.sum(S):.1%} variance")
-    print(f"✓ Top predicted interactions: {list(zip(top_predictions[0], top_predictions[1]))}")
+    print(f"✓ Top predicted interactions: {list(zip(top_predictions[0], top_predictions[1], strict=False))}")
 
     return predicted
 
@@ -212,8 +214,8 @@ def protein_folding_simulation():
     print("\n🧬 PROTEIN FOLDING SIMULATION")
     print("-" * 50)
 
-    from synapse_lang.backends.gpu_fallback import eigh
     from synapse_lang.backends.cg_solver import pcg_solve
+    from synapse_lang.backends.gpu_fallback import eigh
 
     # Build contact map Hessian
     n_residues = 50
@@ -232,7 +234,6 @@ def protein_folding_simulation():
 
     # Simulate dynamics with thermal noise
     temperature = 300  # Kelvin
-    kB = 1.38e-23
 
     # Langevin dynamics: M @ ddx = -K @ x + noise
     # Simplified: dx = -K @ x * dt + sqrt(2kT) * dW
@@ -240,13 +241,13 @@ def protein_folding_simulation():
     x = np.random.randn(n_residues) * 0.1  # Initial conformation
     dt = 0.001
 
-    for step in range(100):
+    for _step in range(100):
         force = -K @ x
         x = pcg_solve(np.eye(n_residues) + dt * K, x + dt * force + np.sqrt(2 * temperature * dt) * np.random.randn(n_residues))
 
     rmsd = np.sqrt(np.mean(x**2))
     print(f"✓ RMSD after dynamics: {rmsd:.4f} Å")
-    print(f"✓ Folding simulation converged")
+    print("✓ Folding simulation converged")
 
     return eigenvalues, eigenvectors
 
@@ -260,7 +261,7 @@ def clinical_trial_analysis():
     print("\n🏥 CLINICAL TRIAL ANALYSIS")
     print("-" * 50)
 
-    from synapse_lang.uncertainty import UncertainValue, MonteCarloUncertainty
+    from synapse_lang.uncertainty import UncertainValue
 
     # Patient outcomes with measurement uncertainty
     n_patients = 1000
@@ -268,9 +269,9 @@ def clinical_trial_analysis():
 
     # Biomarker measurements with uncertainty
     biomarkers = []
-    for i in range(n_patients):
+    for _i in range(n_patients):
         patient_data = []
-        for j in range(n_biomarkers):
+        for _j in range(n_biomarkers):
             value = np.random.gamma(2, 2)  # Positive values
             uncertainty = value * 0.1  # 10% measurement error
             patient_data.append(UncertainValue(value, uncertainty))
@@ -280,7 +281,7 @@ def clinical_trial_analysis():
     def treatment_effect(markers):
         # Weighted sum with uncertain weights
         weights = [UncertainValue(np.random.rand(), 0.05) for _ in range(len(markers))]
-        effect = sum(w * m for w, m in zip(weights, markers))
+        effect = sum(w * m for w, m in zip(weights, markers, strict=False))
         return effect
 
     # Calculate treatment effects

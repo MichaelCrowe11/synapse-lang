@@ -3,14 +3,13 @@ Immutable verification of scientific computations and research integrity
 """
 
 import hashlib
+import hmac
 import json
 import time
 import uuid
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from enum import Enum, auto
-import hmac
-import base64
+from typing import Any
 
 
 class VerificationType(Enum):
@@ -43,23 +42,23 @@ class VerificationRecord:
     institution: str = ""
     timestamp: float = field(default_factory=time.time)
     content_hash: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     digital_signature: str = ""
-    peer_signatures: List[str] = field(default_factory=list)
+    peer_signatures: list[str] = field(default_factory=list)
     status: VerificationStatus = VerificationStatus.PENDING
 
     def to_dict(self) -> dict:
         return {
-            'id': self.id,
-            'type': self.verification_type.name,
-            'researcher_id': self.researcher_id,
-            'institution': self.institution,
-            'timestamp': self.timestamp,
-            'content_hash': self.content_hash,
-            'metadata': self.metadata,
-            'digital_signature': self.digital_signature,
-            'peer_signatures': self.peer_signatures,
-            'status': self.status.name
+            "id": self.id,
+            "type": self.verification_type.name,
+            "researcher_id": self.researcher_id,
+            "institution": self.institution,
+            "timestamp": self.timestamp,
+            "content_hash": self.content_hash,
+            "metadata": self.metadata,
+            "digital_signature": self.digital_signature,
+            "peer_signatures": self.peer_signatures,
+            "status": self.status.name
         }
 
 
@@ -68,7 +67,7 @@ class BlockchainBlock:
     """Blockchain block containing verification records"""
     index: int
     timestamp: float = field(default_factory=time.time)
-    records: List[VerificationRecord] = field(default_factory=list)
+    records: list[VerificationRecord] = field(default_factory=list)
     previous_hash: str = ""
     nonce: int = 0
     hash: str = ""
@@ -76,11 +75,11 @@ class BlockchainBlock:
     def calculate_hash(self) -> str:
         """Calculate block hash"""
         block_string = json.dumps({
-            'index': self.index,
-            'timestamp': self.timestamp,
-            'records': [record.to_dict() for record in self.records],
-            'previous_hash': self.previous_hash,
-            'nonce': self.nonce
+            "index": self.index,
+            "timestamp": self.timestamp,
+            "records": [record.to_dict() for record in self.records],
+            "previous_hash": self.previous_hash,
+            "nonce": self.nonce
         }, sort_keys=True)
 
         return hashlib.sha256(block_string.encode()).hexdigest()
@@ -100,12 +99,12 @@ class BlockchainBlock:
 
     def to_dict(self) -> dict:
         return {
-            'index': self.index,
-            'timestamp': self.timestamp,
-            'records': [record.to_dict() for record in self.records],
-            'previous_hash': self.previous_hash,
-            'nonce': self.nonce,
-            'hash': self.hash
+            "index": self.index,
+            "timestamp": self.timestamp,
+            "records": [record.to_dict() for record in self.records],
+            "previous_hash": self.previous_hash,
+            "nonce": self.nonce,
+            "hash": self.hash
         }
 
 
@@ -113,11 +112,11 @@ class ScientificBlockchain:
     """Blockchain for scientific verification"""
 
     def __init__(self, difficulty: int = 2):
-        self.chain: List[BlockchainBlock] = []
-        self.pending_records: List[VerificationRecord] = []
+        self.chain: list[BlockchainBlock] = []
+        self.pending_records: list[VerificationRecord] = []
         self.mining_reward = 1.0
         self.difficulty = difficulty
-        self.verified_researchers: Dict[str, Dict[str, Any]] = {}
+        self.verified_researchers: dict[str, dict[str, Any]] = {}
 
         # Create genesis block
         self._create_genesis_block()
@@ -182,7 +181,7 @@ class ScientificBlockchain:
 
         return True
 
-    def get_researcher_reputation(self, researcher_id: str) -> Dict[str, Any]:
+    def get_researcher_reputation(self, researcher_id: str) -> dict[str, Any]:
         """Calculate researcher reputation based on blockchain records"""
         total_verifications = 0
         peer_reviews = 0
@@ -207,16 +206,16 @@ class ScientificBlockchain:
             reputation_score *= (1 - disputed_records / total_verifications * 0.5)
 
         return {
-            'researcher_id': researcher_id,
-            'reputation_score': max(0, int(reputation_score)),
-            'total_verifications': total_verifications,
-            'peer_reviews': peer_reviews,
-            'publications': publications,
-            'disputed_records': disputed_records,
-            'reliability': (total_verifications - disputed_records) / max(1, total_verifications)
+            "researcher_id": researcher_id,
+            "reputation_score": max(0, int(reputation_score)),
+            "total_verifications": total_verifications,
+            "peer_reviews": peer_reviews,
+            "publications": publications,
+            "disputed_records": disputed_records,
+            "reliability": (total_verifications - disputed_records) / max(1, total_verifications)
         }
 
-    def search_records(self, criteria: Dict[str, Any]) -> List[VerificationRecord]:
+    def search_records(self, criteria: dict[str, Any]) -> list[VerificationRecord]:
         """Search verification records by criteria"""
         results = []
 
@@ -284,7 +283,7 @@ class SynapseVerificationManager:
         self.trusted_institutions = set()
         self.verification_templates = self._load_verification_templates()
 
-    def _load_verification_templates(self) -> Dict[str, Dict[str, Any]]:
+    def _load_verification_templates(self) -> dict[str, dict[str, Any]]:
         """Load verification templates for different scientific scenarios"""
         return {
             "quantum_experiment": {
@@ -355,8 +354,8 @@ class SynapseVerificationManager:
         return record
 
     def verify_quantum_experiment(self,
-                                 circuit_data: Dict[str, Any],
-                                 results: Dict[str, Any],
+                                 circuit_data: dict[str, Any],
+                                 results: dict[str, Any],
                                  researcher_id: str) -> VerificationRecord:
         """Verify quantum experiment results"""
 
@@ -388,9 +387,9 @@ class SynapseVerificationManager:
         return record
 
     def verify_research_integrity(self,
-                                 research_data: Dict[str, Any],
+                                 research_data: dict[str, Any],
                                  researcher_id: str,
-                                 peer_reviewers: List[str] = None) -> VerificationRecord:
+                                 peer_reviewers: list[str] = None) -> VerificationRecord:
         """Verify research data integrity"""
 
         content_hash = hashlib.sha256(
@@ -422,7 +421,7 @@ class SynapseVerificationManager:
         self.blockchain.add_verification_record(record)
         return record
 
-    def create_research_certificate(self, record_id: str) -> Dict[str, Any]:
+    def create_research_certificate(self, record_id: str) -> dict[str, Any]:
         """Create verifiable research certificate"""
 
         # Find record in blockchain
@@ -463,7 +462,7 @@ class SynapseVerificationManager:
 
         return certificate
 
-    def audit_trail(self, content_hash: str) -> List[Dict[str, Any]]:
+    def audit_trail(self, content_hash: str) -> list[dict[str, Any]]:
         """Get complete audit trail for content"""
         trail = []
 
@@ -486,7 +485,7 @@ class SynapseVerificationManager:
         """Mine pending verifications into blockchain"""
         return self.blockchain.mine_pending_records("system_miner")
 
-    def get_verification_statistics(self) -> Dict[str, Any]:
+    def get_verification_statistics(self) -> dict[str, Any]:
         """Get blockchain verification statistics"""
         total_records = 0
         verification_types = {}

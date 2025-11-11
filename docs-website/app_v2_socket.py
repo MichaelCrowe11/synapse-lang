@@ -3,21 +3,20 @@ Synapse Language v2 - Production Ready with WebSocket
 Real-time collaboration and live features
 """
 
-from flask import Flask, render_template, jsonify, request, session
-from flask_cors import CORS
-from flask_socketio import SocketIO, emit, join_room, leave_room
-import markdown
 import os
-import json
 import secrets
-from datetime import datetime, timedelta
 import uuid
+from datetime import datetime, timedelta
 
-app = Flask(__name__, template_folder='templates_v2', static_folder='static_v2', static_url_path='/static_v2')
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
+from flask import Flask, jsonify, render_template, request
+from flask_cors import CORS
+from flask_socketio import SocketIO, emit, join_room
+
+app = Flask(__name__, template_folder="templates_v2", static_folder="static_v2", static_url_path="/static_v2")
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", secrets.token_hex(32))
 
 # Initialize SocketIO with CORS
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 CORS(app)
 
 # Version and metadata
@@ -44,15 +43,15 @@ active_sessions = {}
 collaboration_rooms = {}
 user_cursors = {}
 
-@app.route('/')
+@app.route("/")
 def home():
     """Modern landing page"""
     # Use enhanced template with animations
-    return render_template('home_enhanced.html',
+    return render_template("home_enhanced.html",
                          metadata=PACKAGE_METADATA,
                          version=SYNAPSE_VERSION)
 
-@app.route('/dashboard')
+@app.route("/dashboard")
 def dashboard():
     """Package dashboard with analytics"""
     analytics = {
@@ -64,223 +63,222 @@ def dashboard():
             "docker": 25
         }
     }
-    return render_template('dashboard_v2.html',
+    return render_template("dashboard_v2.html",
                          metadata=PACKAGE_METADATA,
                          analytics=analytics)
 
-@app.route('/docs')
-@app.route('/docs/<path:path>')
-def docs(path=''):
+@app.route("/docs")
+@app.route("/docs/<path:path>")
+def docs(path=""):
     """Interactive documentation"""
-    return render_template('docs_v2.html',
+    return render_template("docs_v2.html",
                          path=path,
                          metadata=PACKAGE_METADATA)
 
-@app.route('/playground')
+@app.route("/playground")
 def playground():
     """Advanced code playground"""
-    return render_template('playground_v2.html',
+    return render_template("playground_v2.html",
                          metadata=PACKAGE_METADATA)
 
-@app.route('/workspace')
+@app.route("/workspace")
 def workspace():
     """Collaborative workspace with WebSocket"""
-    workspace_id = request.args.get('id', str(uuid.uuid4()))
-    return render_template('workspace_v2.html',
+    workspace_id = request.args.get("id", str(uuid.uuid4()))
+    return render_template("workspace_v2.html",
                          metadata=PACKAGE_METADATA,
                          workspace_id=workspace_id)
 
-@app.route('/explorer')
+@app.route("/explorer")
 def explorer():
     """Package file explorer"""
-    return render_template('explorer_v2.html',
+    return render_template("explorer_v2.html",
                          metadata=PACKAGE_METADATA)
 
 # WebSocket Events for Real-time Collaboration
-@socketio.on('connect')
+@socketio.on("connect")
 def handle_connect():
     """Handle client connection"""
     client_id = request.sid
     active_sessions[client_id] = {
-        'connected_at': datetime.utcnow().isoformat(),
-        'user': f'User_{client_id[:8]}'
+        "connected_at": datetime.utcnow().isoformat(),
+        "user": f"User_{client_id[:8]}"
     }
-    emit('connected', {'client_id': client_id, 'version': SYNAPSE_VERSION})
+    emit("connected", {"client_id": client_id, "version": SYNAPSE_VERSION})
 
     # Notify all clients about new connection
-    socketio.emit('user_joined', {
-        'user': active_sessions[client_id]['user'],
-        'total_users': len(active_sessions)
+    socketio.emit("user_joined", {
+        "user": active_sessions[client_id]["user"],
+        "total_users": len(active_sessions)
     }, broadcast=True)
 
-@socketio.on('disconnect')
+@socketio.on("disconnect")
 def handle_disconnect():
     """Handle client disconnection"""
     client_id = request.sid
     if client_id in active_sessions:
-        user = active_sessions[client_id]['user']
+        user = active_sessions[client_id]["user"]
         del active_sessions[client_id]
 
         # Remove from any collaboration rooms
         for room_id in list(collaboration_rooms.keys()):
-            if client_id in collaboration_rooms[room_id]['users']:
-                collaboration_rooms[room_id]['users'].remove(client_id)
-                if not collaboration_rooms[room_id]['users']:
+            if client_id in collaboration_rooms[room_id]["users"]:
+                collaboration_rooms[room_id]["users"].remove(client_id)
+                if not collaboration_rooms[room_id]["users"]:
                     del collaboration_rooms[room_id]
 
         # Notify all clients
-        socketio.emit('user_left', {
-            'user': user,
-            'total_users': len(active_sessions)
+        socketio.emit("user_left", {
+            "user": user,
+            "total_users": len(active_sessions)
         }, broadcast=True)
 
-@socketio.on('join_workspace')
+@socketio.on("join_workspace")
 def handle_join_workspace(data):
     """Join a collaborative workspace"""
-    workspace_id = data.get('workspace_id')
+    workspace_id = data.get("workspace_id")
     client_id = request.sid
     user_info = active_sessions.get(client_id, {})
 
     # Create room if doesn't exist
     if workspace_id not in collaboration_rooms:
         collaboration_rooms[workspace_id] = {
-            'users': [],
-            'content': '',
-            'cursors': {},
-            'created_at': datetime.utcnow().isoformat()
+            "users": [],
+            "content": "",
+            "cursors": {},
+            "created_at": datetime.utcnow().isoformat()
         }
 
     # Join room
     join_room(workspace_id)
-    collaboration_rooms[workspace_id]['users'].append(client_id)
+    collaboration_rooms[workspace_id]["users"].append(client_id)
 
     # Send current state to new user
-    emit('workspace_state', {
-        'content': collaboration_rooms[workspace_id]['content'],
-        'users': len(collaboration_rooms[workspace_id]['users']),
-        'cursors': collaboration_rooms[workspace_id]['cursors']
+    emit("workspace_state", {
+        "content": collaboration_rooms[workspace_id]["content"],
+        "users": len(collaboration_rooms[workspace_id]["users"]),
+        "cursors": collaboration_rooms[workspace_id]["cursors"]
     })
 
     # Notify others in room
-    emit('user_joined_workspace', {
-        'user': user_info.get('user', 'Unknown'),
-        'workspace_id': workspace_id
+    emit("user_joined_workspace", {
+        "user": user_info.get("user", "Unknown"),
+        "workspace_id": workspace_id
     }, room=workspace_id, skip_sid=client_id)
 
-@socketio.on('code_change')
+@socketio.on("code_change")
 def handle_code_change(data):
     """Handle code changes in collaborative editing"""
-    workspace_id = data.get('workspace_id')
-    content = data.get('content')
-    cursor_pos = data.get('cursor_pos')
+    workspace_id = data.get("workspace_id")
+    content = data.get("content")
+    cursor_pos = data.get("cursor_pos")
     client_id = request.sid
 
     if workspace_id in collaboration_rooms:
         # Update content
-        collaboration_rooms[workspace_id]['content'] = content
+        collaboration_rooms[workspace_id]["content"] = content
 
         # Update cursor position
-        collaboration_rooms[workspace_id]['cursors'][client_id] = cursor_pos
+        collaboration_rooms[workspace_id]["cursors"][client_id] = cursor_pos
 
         # Broadcast to others in room
-        emit('code_updated', {
-            'content': content,
-            'cursor_pos': cursor_pos,
-            'user': active_sessions.get(client_id, {}).get('user', 'Unknown')
+        emit("code_updated", {
+            "content": content,
+            "cursor_pos": cursor_pos,
+            "user": active_sessions.get(client_id, {}).get("user", "Unknown")
         }, room=workspace_id, skip_sid=client_id)
 
-@socketio.on('cursor_move')
+@socketio.on("cursor_move")
 def handle_cursor_move(data):
     """Handle cursor movement for live cursor tracking"""
-    workspace_id = data.get('workspace_id')
-    position = data.get('position')
+    workspace_id = data.get("workspace_id")
+    position = data.get("position")
     client_id = request.sid
 
     if workspace_id in collaboration_rooms:
-        collaboration_rooms[workspace_id]['cursors'][client_id] = position
+        collaboration_rooms[workspace_id]["cursors"][client_id] = position
 
-        emit('cursor_update', {
-            'user': active_sessions.get(client_id, {}).get('user', 'Unknown'),
-            'position': position,
-            'client_id': client_id
+        emit("cursor_update", {
+            "user": active_sessions.get(client_id, {}).get("user", "Unknown"),
+            "position": position,
+            "client_id": client_id
         }, room=workspace_id, skip_sid=client_id)
 
-@socketio.on('chat_message')
+@socketio.on("chat_message")
 def handle_chat_message(data):
     """Handle chat messages in workspace"""
-    workspace_id = data.get('workspace_id')
-    message = data.get('message')
+    workspace_id = data.get("workspace_id")
+    message = data.get("message")
     client_id = request.sid
 
-    emit('new_message', {
-        'user': active_sessions.get(client_id, {}).get('user', 'Unknown'),
-        'message': message,
-        'timestamp': datetime.utcnow().isoformat()
+    emit("new_message", {
+        "user": active_sessions.get(client_id, {}).get("user", "Unknown"),
+        "message": message,
+        "timestamp": datetime.utcnow().isoformat()
     }, room=workspace_id)
 
-@socketio.on('run_code')
+@socketio.on("run_code")
 def handle_run_code(data):
     """Handle code execution requests"""
-    code = data.get('code')
-    language = data.get('language', 'python')
-    client_id = request.sid
+    code = data.get("code")
+    language = data.get("language", "python")
 
-    emit('execution_started', {'status': 'running'})
+    emit("execution_started", {"status": "running"})
 
     try:
-        if language.lower() in ['python', 'synapse']:
+        if language.lower() in ["python", "synapse"]:
             # Execute Python/Synapse code
             from code_executor import execute_python_code, execute_synapse_specific
 
-            if language.lower() == 'synapse':
+            if language.lower() == "synapse":
                 result = execute_synapse_specific(code)
             else:
                 result = execute_python_code(code)
 
-            emit('execution_result', {
-                'output': result.get('output', ''),
-                'error': result.get('error', ''),
-                'execution_time': result.get('execution_time', 0),
-                'memory_used': result.get('memory_used', '0 MB'),
-                'status': 'success' if result.get('success') else 'error'
+            emit("execution_result", {
+                "output": result.get("output", ""),
+                "error": result.get("error", ""),
+                "execution_time": result.get("execution_time", 0),
+                "memory_used": result.get("memory_used", "0 MB"),
+                "status": "success" if result.get("success") else "error"
             })
 
-        elif language.lower() == 'csharp':
+        elif language.lower() == "csharp":
             # For C# code, we need a different approach
-            emit('execution_result', {
-                'output': 'C# execution requires a .NET runtime environment.\n'
+            emit("execution_result", {
+                "output": 'C# execution requires a .NET runtime environment.\n'
                          'This code appears to be for Redis connection.\n'
                          'To run C# code, you would need:\n'
                          '1. .NET SDK installed\n'
                          '2. StackExchange.Redis package\n'
                          '3. A Redis server instance\n\n'
                          'For Synapse Language examples, switch to "Python" or "Synapse" mode.',
-                'error': '',
-                'execution_time': 0,
-                'memory_used': '0 MB',
-                'status': 'info'
+                "error": "",
+                "execution_time": 0,
+                "memory_used": "0 MB",
+                "status": "info"
             })
 
         else:
-            emit('execution_result', {
-                'output': '',
-                'error': f'Language {language} is not yet supported. Try Python or Synapse.',
-                'execution_time': 0,
-                'memory_used': '0 MB',
-                'status': 'error'
+            emit("execution_result", {
+                "output": "",
+                "error": f"Language {language} is not yet supported. Try Python or Synapse.",
+                "execution_time": 0,
+                "memory_used": "0 MB",
+                "status": "error"
             })
 
     except Exception as e:
-        emit('execution_result', {
-            'output': '',
-            'error': str(e),
-            'execution_time': 0,
-            'memory_used': '0 MB',
-            'status': 'error'
+        emit("execution_result", {
+            "output": "",
+            "error": str(e),
+            "execution_time": 0,
+            "memory_used": "0 MB",
+            "status": "error"
         })
 
 # API Endpoints
-@app.route('/api/v2/package')
+@app.route("/api/v2/package")
 def api_package():
     """Package information API"""
     return jsonify({
@@ -296,7 +294,7 @@ def api_package():
         ]
     })
 
-@app.route('/api/v2/analytics')
+@app.route("/api/v2/analytics")
 def api_analytics():
     """Real-time analytics data"""
     return jsonify({
@@ -308,7 +306,7 @@ def api_analytics():
         "active_workspaces": len(collaboration_rooms)
     })
 
-@app.route('/api/v2/status')
+@app.route("/api/v2/status")
 def api_status():
     """System status endpoint"""
     return jsonify({
@@ -320,20 +318,20 @@ def api_status():
         "response_time": "42ms"
     })
 
-@app.route('/health')
+@app.route("/health")
 def health():
     """Health check endpoint for Fly.io"""
     return jsonify({
-        'status': 'healthy',
-        'version': SYNAPSE_VERSION,
-        'timestamp': datetime.utcnow().isoformat()
+        "status": "healthy",
+        "version": SYNAPSE_VERSION,
+        "timestamp": datetime.utcnow().isoformat()
     })
 
 # Helper functions
 def generate_chart_data():
     """Generate download chart data"""
     import random
-    dates = [(datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d')
+    dates = [(datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
              for i in range(30, 0, -1)]
     return {
         "labels": dates,
@@ -366,7 +364,7 @@ def get_dependencies():
         "qiskit": ">=0.39.0"
     }
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Run with SocketIO
-    port = int(os.environ.get('PORT', 8080))
-    socketio.run(app, host='0.0.0.0', port=port, debug=False)
+    port = int(os.environ.get("PORT", 8080))
+    socketio.run(app, host="0.0.0.0", port=port, debug=False)
