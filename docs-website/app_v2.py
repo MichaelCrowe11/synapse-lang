@@ -35,8 +35,8 @@ PACKAGE_METADATA = {
 
 @app.route("/")
 def home():
-    """Modern landing page"""
-    return render_template("home_v2.html",
+    """Ultra-enhanced landing page with better visual hierarchy"""
+    return render_template('home_ultra_enhanced.html',
                          metadata=PACKAGE_METADATA,
                          version=SYNAPSE_VERSION)
 
@@ -66,8 +66,8 @@ def docs(path=""):
 
 @app.route("/playground")
 def playground():
-    """Advanced code playground"""
-    return render_template("playground_v2.html",
+    """Advanced code playground with all enhancements"""
+    return render_template('playground_enhanced.html',
                          metadata=PACKAGE_METADATA)
 
 @app.route("/api/v2/package")
@@ -192,6 +192,41 @@ def search_docs(query):
     ]
     return results[:5]
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port, debug=False)
+@app.route('/api/health')
+def api_health():
+    """Health check endpoint for production monitoring"""
+    return jsonify({
+        "status": "healthy",
+        "version": SYNAPSE_VERSION,
+        "timestamp": datetime.utcnow().isoformat(),
+        "service": "synapse-lang-docs"
+    })
+
+@app.route('/api/execute', methods=['POST'])
+def api_execute():
+    """Execute code endpoint (simulated for now, sandboxing will be added later)"""
+    data = request.json
+    code = data.get('code', '')
+    language = data.get('language', 'synapse')
+
+    # Simulated execution results
+    # TODO: Add proper sandboxed execution environment
+    import time
+    start_time = time.time()
+
+    # Simulate processing time
+    execution_time = 0.045 + (len(code) * 0.0001)
+    memory_used = f"{2.4 + (len(code) * 0.001):.1f} MB"
+
+    result = {
+        "success": True,
+        "output": f"Code executed successfully ({len(code)} characters of {language} code)\nSimulated output: Result = 42",
+        "execution_time": round(execution_time, 3),
+        "memory_used": memory_used
+    }
+
+    return jsonify(result)
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port, debug=False)
