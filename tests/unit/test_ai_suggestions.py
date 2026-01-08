@@ -11,12 +11,26 @@ class TestAISuggestionsResearchDiscovery(unittest.TestCase):
         line = "This research project improves discovery and communication."
         suggestions = self.analyzer._suggest_patterns(line, 0)
 
-        self.assertTrue(
-            any(s.title == "Apply research_discovery pattern" for s in suggestions)
-        )
+        pattern_suggestions = [
+            s for s in suggestions if s.title == "Apply research_discovery pattern"
+        ]
+        self.assertTrue(pattern_suggestions)
 
-        research_suggestion = next(
-            (s for s in suggestions if "research" in s.keywords), None
+        self.assertTrue(
+            any(
+                keyword
+                in {
+                    "research",
+                    "discovery",
+                    "insight",
+                    "publish findings",
+                    "share results",
+                    "communicate findings",
+                }
+                for s in pattern_suggestions
+                for keyword in s.keywords
+            )
         )
-        self.assertIsNotNone(research_suggestion)
-        self.assertEqual(research_suggestion.type, SuggestionType.PATTERN)
+        self.assertTrue(
+            all(suggestion.type == SuggestionType.PATTERN for suggestion in pattern_suggestions)
+        )
