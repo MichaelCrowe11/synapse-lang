@@ -16,21 +16,13 @@ class TestAISuggestionsResearchDiscovery(unittest.TestCase):
         ]
         self.assertTrue(pattern_suggestions)
 
-        expected_keywords = {
-            "research",
-            "discovery",
-            "insight",
-            "publication",
-            "communication",
-            "dissemination",
+        expected_keywords = set(self.analyzer.patterns["research_discovery"]["trigger"])
+        found_keywords = {
+            keyword for suggestion in pattern_suggestions for keyword in suggestion.keywords
         }
-        self.assertTrue(
-            any(
-                keyword in expected_keywords
-                for suggestion in pattern_suggestions
-                for keyword in suggestion.keywords
-            )
-        )
+        self.assertTrue(found_keywords)
+        self.assertTrue(found_keywords.issubset(expected_keywords))
+        self.assertTrue(found_keywords & {"research", "discovery"})
         self.assertTrue(
             all(suggestion.type == SuggestionType.PATTERN for suggestion in pattern_suggestions)
         )
