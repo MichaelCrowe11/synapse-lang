@@ -22,7 +22,7 @@ class TestAISuggestionsResearchDiscovery(unittest.TestCase):
         }
         self.assertTrue(found_keywords)
         self.assertTrue(found_keywords.issubset(expected_keywords))
-        self.assertTrue(found_keywords & {"research", "discovery"})
+        self.assertIn("research", found_keywords)
         self.assertTrue(
             all(suggestion.type == SuggestionType.PATTERN for suggestion in pattern_suggestions)
         )
