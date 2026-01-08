@@ -16,7 +16,7 @@ class TestAISuggestionsResearchDiscovery(unittest.TestCase):
         )
 
         research_suggestion = next(
-            s for s in suggestions if "research" in s.keywords
+            (s for s in suggestions if "research" in s.keywords), None
         )
+        self.assertIsNotNone(research_suggestion)
         self.assertEqual(research_suggestion.type, SuggestionType.PATTERN)
-
