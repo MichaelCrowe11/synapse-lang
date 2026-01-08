@@ -95,7 +95,7 @@ class SynapsePatterns:
                 "example": "quantum[2] {\n    H(q0)\n    CNOT(q0, q1)\n    measure(q0, q1)\n}"
             },
             "research_discovery": {
-                "trigger": ["research", "discovery", "insight", "publish findings", "share results", "communicate findings"],
+                "trigger": ["research", "discovery", "insight", "publication", "communication", "dissemination"],
                 "template": "research \"{topic}\" {\n    hypothesis {hypothesis}\n    method {method}\n    share findings via {channel}\n}",
                 "description": "Structure research workflows with explicit communication steps",
                 "example": "research \"quantum advantage\" {\n    hypothesis advantage_exists\n    method simulate(circuit_library)\n    share findings via publish(\"preprint\")\n}"

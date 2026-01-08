@@ -16,19 +16,19 @@ class TestAISuggestionsResearchDiscovery(unittest.TestCase):
         ]
         self.assertTrue(pattern_suggestions)
 
+        expected_keywords = {
+            "research",
+            "discovery",
+            "insight",
+            "publication",
+            "communication",
+            "dissemination",
+        }
         self.assertTrue(
             any(
-                keyword
-                in {
-                    "research",
-                    "discovery",
-                    "insight",
-                    "publish findings",
-                    "share results",
-                    "communicate findings",
-                }
-                for s in pattern_suggestions
-                for keyword in s.keywords
+                keyword in expected_keywords
+                for suggestion in pattern_suggestions
+                for keyword in suggestion.keywords
             )
         )
         self.assertTrue(
