@@ -26,6 +26,9 @@ pymongo==4.5.0
 qiskit>=0.34.0
 pennylane>=0.20.0
 cirq>=0.13.0
+pyqpanda3>=0.3.0
+pyqpanda_alg>=2.0.0
+scikit-learn>=1.0
 
 # Scientific computing and networking
 networkx>=2.6
