@@ -200,6 +200,99 @@ class QuantumRunNode(ASTNode):
 RunNode = QuantumRunNode
 
 
+# ---------------------------------------------------------------------------
+# QPanda3-backed algorithm AST nodes
+# ---------------------------------------------------------------------------
+
+class QPandaAlgorithmNode(ASTNode):
+    """Base class for all QPanda3-backed algorithm nodes."""
+
+    def __init__(self, name: str = "", parameters: dict = None, **kwargs):
+        kwargs.setdefault("line", 0)
+        kwargs.setdefault("column", 0)
+        super().__init__(node_type=NodeType.QUANTUM_ALGORITHM, **kwargs)
+        self.name = name
+        self.parameters = parameters or {}
+
+
+class GroverSearchNode(QPandaAlgorithmNode):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("name", "grover_search")
+        super().__init__(**kwargs)
+
+
+class QAOANode(QPandaAlgorithmNode):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("name", "qaoa_solve")
+        super().__init__(**kwargs)
+
+
+class QAENode(QPandaAlgorithmNode):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("name", "qae")
+        super().__init__(**kwargs)
+
+
+class QARMNode(QPandaAlgorithmNode):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("name", "qarm")
+        super().__init__(**kwargs)
+
+
+class QCmpNode(QPandaAlgorithmNode):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("name", "qcmp")
+        super().__init__(**kwargs)
+
+
+class QKmeansNode(QPandaAlgorithmNode):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("name", "qkmeans")
+        super().__init__(**kwargs)
+
+
+class QPCANode(QPandaAlgorithmNode):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("name", "qpca")
+        super().__init__(**kwargs)
+
+
+class QSEncodeNode(QPandaAlgorithmNode):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("name", "qsencode")
+        super().__init__(**kwargs)
+
+
+class QSVDNode(QPandaAlgorithmNode):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("name", "qsvd")
+        super().__init__(**kwargs)
+
+
+class QSVMNode(QPandaAlgorithmNode):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("name", "qsvm")
+        super().__init__(**kwargs)
+
+
+class QSVRNode(QPandaAlgorithmNode):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("name", "qsvr")
+        super().__init__(**kwargs)
+
+
+class QUBONode(QPandaAlgorithmNode):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("name", "qubo")
+        super().__init__(**kwargs)
+
+
+class QmRMRNode(QPandaAlgorithmNode):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("name", "qmrmr")
+        super().__init__(**kwargs)
+
+
 @dataclass
 class BinaryOpNode(ASTNode):
     operator: str
