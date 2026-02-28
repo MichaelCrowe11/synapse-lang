@@ -95,6 +95,35 @@ class TokenType(Enum):
     COST_FUNCTION = "cost_function"
     OPTIMIZE = "optimize"
 
+    # QPanda3 algorithm keywords
+    GROVER_SEARCH = "grover_search"
+    QAOA_SOLVE = "qaoa_solve"
+    QAE = "qae"
+    QARM = "qarm"
+    QCMP = "qcmp"
+    QKMEANS = "qkmeans"
+    QPCA = "qpca"
+    QSENCODE = "qsencode"
+    QSVD = "qsvd"
+    QSVM = "qsvm"
+    QSVR = "qsvr"
+    QUBO = "qubo"
+    QMRMR = "qmrmr"
+
+    # QPanda3 backend / parameter tokens
+    QPANDA3 = "qpanda3"
+    TRAIN_DATA = "train_data"
+    TRAIN_LABELS = "train_labels"
+    TEST_DATA = "test_data"
+    CLUSTERS = "clusters"
+    FEATURES = "features"
+    ORACLE_KW = "oracle"
+    THRESHOLD = "threshold"
+    LAYERS = "layers"
+    COMPONENTS = "components"
+    ENCODING = "encoding"
+    MARKED = "marked"
+
     # Gate names (as keywords)
     H = "h"
     X = "x"
@@ -214,7 +243,8 @@ class Lexer:
         }
         self.keywords = {
             k.value: k for k in TokenType
-            if k.value and k.value.isalpha() and k not in (TokenType.IDENTIFIER,) and k not in gate_types
+            if k.value and k.value.replace("_", "").isalnum() and k.value[0].isalpha()
+            and k not in (TokenType.IDENTIFIER,) and k not in gate_types
         }
 
     def current_char(self) -> str | None:
