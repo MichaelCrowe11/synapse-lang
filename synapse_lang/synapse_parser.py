@@ -1,6 +1,40 @@
 """Packaged parser with run/noise additions."""
 from .synapse_ast import *
+from .synapse_ast import (
+    GroverSearchNode, QAOANode, QAENode, QARMNode, QCmpNode,
+    QKmeansNode, QPCANode, QSEncodeNode, QSVDNode, QSVMNode,
+    QSVRNode, QUBONode, QmRMRNode, QPandaAlgorithmNode,
+)
 from .synapse_lexer import Lexer, Token, TokenType
+
+# Mapping from QPanda3 algorithm token types to their AST node classes.
+_QPANDA_ALGORITHM_MAP = {
+    TokenType.GROVER_SEARCH: GroverSearchNode,
+    TokenType.QAOA_SOLVE: QAOANode,
+    TokenType.QAE: QAENode,
+    TokenType.QARM: QARMNode,
+    TokenType.QCMP: QCmpNode,
+    TokenType.QKMEANS: QKmeansNode,
+    TokenType.QPCA: QPCANode,
+    TokenType.QSENCODE: QSEncodeNode,
+    TokenType.QSVD: QSVDNode,
+    TokenType.QSVM: QSVMNode,
+    TokenType.QSVR: QSVRNode,
+    TokenType.QUBO: QUBONode,
+    TokenType.QMRMR: QmRMRNode,
+}
+
+# Token types that the lexer emits for QPanda3 parameter keywords.
+# When these appear as keys in key:value pairs we treat them as plain strings.
+_QPANDA_PARAM_KEYWORDS = {
+    TokenType.MARKED, TokenType.TRAIN_DATA, TokenType.TRAIN_LABELS,
+    TokenType.TEST_DATA, TokenType.CLUSTERS, TokenType.FEATURES,
+    TokenType.ORACLE_KW, TokenType.THRESHOLD, TokenType.LAYERS,
+    TokenType.COMPONENTS, TokenType.ENCODING,
+    # Also accept algorithm-level keywords that could double as param names
+    TokenType.PARAMETERS, TokenType.ANSATZ, TokenType.COST_FUNCTION,
+    TokenType.OPTIMIZE,
+}
 
 
 class ParseError(Exception):
@@ -177,7 +211,13 @@ class Parser:
         return QuantumBackendNode(name, cfg, b_tok.line, b_tok.column)
 
     def parse_quantum_algorithm(self):
-        a_tok = self.advance()
+        a_tok = self.advance()  # consume 'algorithm'
+
+        # --- QPanda3 algorithm path ---
+        if self.peek().type in _QPANDA_ALGORITHM_MAP:
+            return self._parse_qpanda_algorithm(a_tok)
+
+        # --- Existing VQE-style algorithm path ---
         name = self.consume(TokenType.IDENTIFIER, "Expected algorithm name").value
         self.consume(TokenType.LEFT_BRACE, "Expected '{'")
         params: list[ASTNode] = []
@@ -216,6 +256,94 @@ class Parser:
         self.consume(TokenType.RIGHT_BRACE, "Expected '}'")
         return QuantumAlgorithmNode(name, params, ansatz, cost, opt, a_tok.line, a_tok.column)
 
+    # ------------------------------------------------------------------ #
+    # QPanda3 algorithm parsing helper
+    # ------------------------------------------------------------------ #
+    def _parse_qpanda_algorithm(self, a_tok: Token):
+        """Parse a QPanda3 algorithm call: algorithm <keyword>( key: val, ... )"""
+        algo_tok = self.advance()  # consume the algorithm keyword (e.g. QSVM)
+        node_cls = _QPANDA_ALGORITHM_MAP[algo_tok.type]
+
+        self.consume(TokenType.LEFT_PAREN, "Expected '(' after algorithm name")
+
+        parameters: dict[str, object] = {}
+        if not self.check(TokenType.RIGHT_PAREN):
+            self._parse_qpanda_kv_pair(parameters)
+            while self.check(TokenType.COMMA):
+                self.advance()  # consume ','
+                self._parse_qpanda_kv_pair(parameters)
+
+        self.consume(TokenType.RIGHT_PAREN, "Expected ')' after algorithm parameters")
+
+        return node_cls(
+            parameters=parameters,
+            line=a_tok.line,
+            column=a_tok.column,
+        )
+
+    def _parse_qpanda_kv_pair(self, params: dict):
+        """Parse a single key: value pair inside QPanda3 algorithm parens.
+
+        Keys may be normal IDENTIFIER tokens or lexer keywords (MARKED,
+        TRAIN_DATA, etc.) that are tokenised with their own TokenType.
+        """
+        tok = self.peek()
+        if tok.type == TokenType.IDENTIFIER:
+            key = tok.value
+            self.advance()
+        elif tok.type in _QPANDA_PARAM_KEYWORDS:
+            key = tok.value  # e.g. "marked", "train_data"
+            self.advance()
+        else:
+            raise ParseError(f"Expected parameter name, got {tok.type.name}", tok)
+
+        self.consume(TokenType.COLON, f"Expected ':' after parameter name '{key}'")
+
+        # Parse the value and convert to a raw Python value where possible
+        # so that tests can assert e.g. node.parameters["kernel"] == "quantum"
+        params[key] = self._parse_qpanda_value()
+
+    def _parse_qpanda_value(self):
+        """Parse a parameter value, returning raw Python values for literals."""
+        tok = self.peek()
+
+        # String literal -> raw str
+        if tok.type == TokenType.STRING:
+            self.advance()
+            return tok.value
+
+        # Number literal -> raw int/float
+        if tok.type == TokenType.NUMBER:
+            self.advance()
+            return tok.value
+
+        # List literal [expr, expr, ...]
+        if tok.type == TokenType.LEFT_BRACKET:
+            return self._parse_qpanda_list()
+
+        # Identifier reference -> raw string (variable name)
+        if tok.type == TokenType.IDENTIFIER:
+            self.advance()
+            return tok.value
+
+        # Fallback: use the generic expression parser, return the AST node
+        return self.parse_expression()
+
+    def _parse_qpanda_list(self):
+        """Parse a bracket-delimited list: [expr, expr, ...]
+
+        Returns a Python list of raw values (numbers, strings, identifiers).
+        """
+        self.consume(TokenType.LEFT_BRACKET, "Expected '['")
+        elements = []
+        if not self.check(TokenType.RIGHT_BRACKET):
+            elements.append(self._parse_qpanda_value())
+            while self.check(TokenType.COMMA):
+                self.advance()
+                elements.append(self._parse_qpanda_value())
+        self.consume(TokenType.RIGHT_BRACKET, "Expected ']' after list elements")
+        return elements
+
     # --- blocks / expressions ---
     def parse_block(self):
         start = self.consume(TokenType.LEFT_BRACE, "Expected '{'")
@@ -243,9 +371,23 @@ class Parser:
             self.advance(); return IdentifierNode(tok.value, tok.line, tok.column)
         if self.check(TokenType.LEFT_PAREN):
             self.advance(); expr = self.parse_expression(); self.consume(TokenType.RIGHT_PAREN, "Expected ')' after expr"); return expr
+        if self.check(TokenType.LEFT_BRACKET):
+            return self._parse_list_node()
         if self.check(TokenType.LEFT_BRACE):
             return self.parse_block()
         return IdentifierNode("<error>", tok.line, tok.column)
+
+    def _parse_list_node(self):
+        """Parse a list literal into a ListNode: [expr, expr, ...]"""
+        start = self.consume(TokenType.LEFT_BRACKET, "Expected '['")
+        elements = []
+        if not self.check(TokenType.RIGHT_BRACKET):
+            elements.append(self.parse_expression())
+            while self.check(TokenType.COMMA):
+                self.advance()
+                elements.append(self.parse_expression())
+        self.consume(TokenType.RIGHT_BRACKET, "Expected ']' after list elements")
+        return ListNode(elements, start.line, start.column)
 
 
 def parse(source: str) -> ProgramNode:
