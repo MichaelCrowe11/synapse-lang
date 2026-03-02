@@ -1,5 +1,7 @@
 """Security sandboxing and resource management for Synapse execution."""
 
+from __future__ import annotations
+
 import ast
 import multiprocessing
 import sys

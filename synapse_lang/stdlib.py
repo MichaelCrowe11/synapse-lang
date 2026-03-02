@@ -3,6 +3,8 @@ Synapse Language - Standard Library
 Comprehensive scientific computing functions and utilities
 """
 
+from __future__ import annotations
+
 import asyncio
 import multiprocessing as mp
 import warnings

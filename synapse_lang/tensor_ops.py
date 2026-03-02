@@ -1,5 +1,7 @@
 """TensorEngine - High-performance tensor operations for Synapse language."""
 
+from __future__ import annotations
+
 import functools
 import warnings
 from collections.abc import Callable

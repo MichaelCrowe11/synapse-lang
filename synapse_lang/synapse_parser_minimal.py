@@ -3,6 +3,8 @@ Minimal Parser for Synapse Language
 Focuses on core functionality that we can test
 """
 
+from __future__ import annotations
+
 from synapse_lang.synapse_ast_enhanced import *
 from synapse_lang.synapse_lexer import Lexer, Token, TokenType
 

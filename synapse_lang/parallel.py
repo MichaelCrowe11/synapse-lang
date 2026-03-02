@@ -3,6 +3,8 @@ Parallel computing module for Synapse language.
 Provides parallel execution, distributed computing, and parameter sweep capabilities.
 """
 
+from __future__ import annotations
+
 import asyncio
 import concurrent.futures
 import itertools

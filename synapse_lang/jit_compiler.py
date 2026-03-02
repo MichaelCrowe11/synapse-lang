@@ -1,5 +1,7 @@
 """Complete JIT compiler implementation for Synapse language."""
 
+from __future__ import annotations
+
 import ast as python_ast
 import functools
 import hashlib

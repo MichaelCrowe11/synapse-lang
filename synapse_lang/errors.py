@@ -5,6 +5,8 @@ This module provides a hierarchical error system with detailed error information
 recovery mechanisms, and debugging support.
 """
 
+from __future__ import annotations
+
 import traceback
 from dataclasses import dataclass
 from enum import Enum

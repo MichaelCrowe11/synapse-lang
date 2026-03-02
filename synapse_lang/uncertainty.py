@@ -1,5 +1,7 @@
 """UncertaintyEngine - Complete uncertainty quantification for Synapse language."""
 
+from __future__ import annotations
+
 import functools
 import math
 import warnings

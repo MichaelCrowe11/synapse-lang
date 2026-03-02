@@ -3,6 +3,8 @@ Machine Learning Integration for Synapse Language
 Provides uncertainty-aware ML capabilities for scientific computing
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from typing import Any
 

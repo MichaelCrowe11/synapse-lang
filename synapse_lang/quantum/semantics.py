@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Quantum semantic validation: gate registry, backend + noise configuration.
 
 Error Codes Implemented:

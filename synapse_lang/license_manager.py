@@ -3,6 +3,8 @@ Synapse Language - License Management System
 Handles license validation, feature gating, and telemetry
 """
 
+from __future__ import annotations
+
 import hashlib
 import os
 import platform

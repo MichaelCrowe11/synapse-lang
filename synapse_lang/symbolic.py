@@ -1,5 +1,7 @@
 """SymbolicEngine - Advanced symbolic mathematics for Synapse language."""
 
+from __future__ import annotations
+
 import warnings
 from collections.abc import Callable
 from dataclasses import dataclass

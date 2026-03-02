@@ -1,5 +1,7 @@
 """Enhanced Synapse Parser - Complete implementation matching language specification."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Optional
 

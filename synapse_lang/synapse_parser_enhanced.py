@@ -4,6 +4,7 @@ Phase 1, Week 1, Day 1-2
 Implements complete parsing for all language constructs
 """
 
+from typing import Optional, List
 from synapse_lang.synapse_ast_enhanced import *
 from synapse_lang.synapse_lexer import Lexer, Token, TokenType
 
@@ -44,7 +45,7 @@ class EnhancedParser:
 
     # ========== Statement Parsing ==========
 
-    def parse_statement(self) -> ASTNode | None:
+    def parse_statement(self) -> Optional[ASTNode]:
         """Parse a single statement"""
         # Skip newlines
         while self.match(TokenType.NEWLINE):
@@ -1132,7 +1133,7 @@ class EnhancedParser:
 
         return BlockNode(statements, self.previous().line, self.previous().column)
 
-    def parse_expression_list(self) -> list[ASTNode]:
+    def parse_expression_list(self) -> List[ASTNode]:
         """Parse comma-separated expression list"""
         expressions = []
 
@@ -1173,7 +1174,7 @@ class EnhancedParser:
         """Return current token without consuming"""
         return self.tokens[self.current]
 
-    def peek_next(self) -> Token | None:
+    def peek_next(self) -> Optional[Token]:
         """Return next token without consuming"""
         if self.current + 1 < len(self.tokens):
             return self.tokens[self.current + 1]

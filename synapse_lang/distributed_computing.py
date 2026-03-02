@@ -3,6 +3,8 @@ Distributed Computing Support for Synapse Language
 Enables parallel and distributed execution of scientific computations
 """
 
+from __future__ import annotations
+
 import asyncio
 import concurrent.futures
 import multiprocessing as mp
