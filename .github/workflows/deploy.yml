@@ -242,7 +242,7 @@ jobs:
           --chrome-flags="--headless"
     
     - name: Upload performance results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v5
       with:
         name: lighthouse-report
         path: lighthouse-report.json
