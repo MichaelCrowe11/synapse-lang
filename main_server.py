@@ -4,6 +4,7 @@ Integrates CroweHub IDE and main website
 """
 
 import json
+import os
 import sqlite3
 import uuid
 from datetime import datetime
@@ -569,4 +570,7 @@ def server_error(error):
 
 if __name__ == "__main__":
     # Run the main platform server
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    # PORT is set automatically by Railway (and other PaaS platforms)
+    port = int(os.environ.get("PORT", 8000))
+    debug = os.environ.get("FLASK_ENV") == "development"
+    app.run(host="0.0.0.0", port=port, debug=debug)
