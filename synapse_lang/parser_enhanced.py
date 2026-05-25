@@ -424,7 +424,9 @@ class EnhancedParser:
             for error in self.errors[:5]:  # Show first 5 errors
                 print(f"  - {error}")
 
-        return ProgramNode(statements)
+        from .synapse_ast import ProgramNode as AstProgramNode
+
+        return AstProgramNode(statements)
 
     def parse_statement(self) -> ASTNode | None:
         """Parse a single statement with all language constructs."""

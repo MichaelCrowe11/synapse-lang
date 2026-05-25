@@ -185,6 +185,16 @@ class QuantumAnsatzNode(ASTNode):
         self.layers = layers
 
 @dataclass
+class QuantumNoiseNode(ASTNode):
+    noise_type: str
+    parameters: dict[str, ASTNode]
+    def __init__(self, noise_type: str, parameters: dict[str, ASTNode], line: int, column: int):
+        super().__init__(NodeType.QUANTUM_BACKEND, line, column)
+        self.noise_type = noise_type
+        self.parameters = parameters
+
+
+@dataclass
 class QuantumRunNode(ASTNode):
     """Quantum circuit execution (run) configuration.
     Represents: run <circuit> [with backend <backend>] { shots: N, noise_model: depolarizing, p1q: 0.001, ... }

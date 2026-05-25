@@ -87,15 +87,15 @@ def compile(code: str, optimize: bool = True) -> callable:
     return compile_synapse_code(code, config)
 
 
-def execute(code: str, sandbox: bool = True, context: dict = None) -> any:
-    """Execute Synapse code with optional sandboxing."""
-    if sandbox:
-        sandbox_exec = create_scientific_sandbox()
-        return sandbox_exec.execute(code, context)
-    else:
-        ast = parse(code)
-        interpreter = Interpreter()
-        return interpreter.execute(ast, context or {})
+def execute(code: str, sandbox: bool = True, context: dict | None = None) -> any:
+    """Execute Synapse source via the Synapse interpreter.
+
+    *sandbox* is accepted for API compatibility; execution always uses Synapse.
+    """
+    interpreter = Interpreter()
+    if context:
+        interpreter.variables.update(context)
+    return interpreter.execute(code)
 
 
 def run_file(filepath: str, sandbox: bool = True) -> any:

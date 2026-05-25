@@ -9,9 +9,17 @@ import types
 from collections.abc import Callable
 from dataclasses import dataclass
 
-import numba
 import numpy as np
-from numba import cuda, jit, njit, vectorize
+
+try:
+    import numba
+    from numba import cuda, jit, njit, vectorize
+
+    NUMBA_AVAILABLE = True
+except ImportError:
+    numba = None  # type: ignore[assignment]
+    cuda = jit = njit = vectorize = None  # type: ignore[misc, assignment]
+    NUMBA_AVAILABLE = False
 
 from .ast_consolidated import *
 

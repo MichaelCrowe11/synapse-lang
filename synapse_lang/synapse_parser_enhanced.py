@@ -5,7 +5,9 @@ Implements complete parsing for all language constructs
 """
 
 from typing import Optional, List
-from synapse_lang.synapse_ast_enhanced import *
+
+from synapse_lang.synapse_ast import *  # noqa: F403
+from synapse_lang.synapse_ast_enhanced import *  # noqa: F403
 from synapse_lang.synapse_lexer import Lexer, Token, TokenType
 
 
