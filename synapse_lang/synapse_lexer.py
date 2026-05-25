@@ -52,6 +52,8 @@ class TokenType(Enum):
     BREAK = "break"
     CONTINUE = "continue"
     RETURN = "return"
+    TRUE = "true"
+    FALSE = "false"
 
     # Additional keywords for compatibility
     FROM = "from"
@@ -71,6 +73,10 @@ class TokenType(Enum):
     COST = "cost"
     OPTIMIZER = "optimizer"
     UNCERTAINTY = "uncertainty"
+    TENSOR = "tensor"
+    ANALYZE = "analyze"
+    NOISE = "noise"
+    ON = "on"
 
     # Quantum computing keywords
     QUANTUM = "quantum"

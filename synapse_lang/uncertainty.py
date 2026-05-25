@@ -52,6 +52,24 @@ class UncertainValue:
         self._samples_cache = None
 
     @property
+    def value(self) -> float:
+        """Alias for nominal (API compatibility)."""
+        return self.nominal
+
+    @classmethod
+    def from_string(cls, text: str) -> "UncertainValue":
+        """Parse 'value ± uncertainty' notation."""
+        import re
+
+        match = re.match(
+            r"^\s*([+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\s*±\s*([+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\s*$",
+            text.strip(),
+        )
+        if not match:
+            raise ValueError(f"Invalid uncertain value format: {text!r}")
+        return cls(float(match.group(1)), float(match.group(2)))
+
+    @property
     def relative_uncertainty(self) -> float:
         """Relative uncertainty as fraction."""
         if self.nominal == 0:
@@ -572,6 +590,32 @@ def propagate_uncertainty(func: Callable, **kwargs) -> UncertainValue:
 
     return engine.propagate(func, variables)
 
+
+def monte_carlo(
+    function,
+    inputs=None,
+    samples=10000,
+    parallel=False,
+    n_cores=4,
+    **kwargs,
+):
+    inputs = dict(inputs or {})
+    inputs.update(kwargs)
+    if not inputs:
+        raise ValueError("monte_carlo requires at least one uncertain input")
+    var_names = list(inputs.keys())
+    matrix = CorrelationMatrix()
+    for name, val in inputs.items():
+        if not isinstance(val, UncertainValue):
+            val = UncertainValue(float(val), 0.0)
+        matrix.add_variable(name, val)
+
+    def expression(*args):
+        bound = {var_names[i]: args[i] for i in range(len(var_names))}
+        return float(function(**bound))
+
+    return matrix.propagate_correlated(expression, var_names, samples)
+
 # Decorator for uncertainty propagation
 def uncertain_function(method: PropagationMethod = PropagationMethod.LINEAR):
     """Decorator to automatically propagate uncertainties."""
@@ -605,3 +649,23 @@ def uncertain_function(method: PropagationMethod = PropagationMethod.LINEAR):
 
         return wrapper
     return decorator
+
+
+def chi_squared_test(observed, expected):
+    import numpy as np
+    obs = np.asarray(observed, dtype=float)
+    exp = np.asarray(expected, dtype=float)
+    return float(np.sum((obs - exp) ** 2 / exp))
+
+
+def weighted_mean(values, weights):
+    import numpy as np
+    v = np.asarray(values, dtype=float)
+    w = np.asarray(weights, dtype=float)
+    return float(np.average(v, weights=w))
+
+
+class MultivariateUncertain:
+    def __init__(self, values, covariance=None):
+        self.values = values
+        self.covariance = covariance

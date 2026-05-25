@@ -5,6 +5,7 @@ Implements complete parsing for all language constructs
 """
 
 from typing import Optional, List
+from synapse_lang.synapse_ast import *  # noqa: F403
 
 from synapse_lang.synapse_ast import *  # noqa: F403
 from synapse_lang.synapse_ast_enhanced import *  # noqa: F403
@@ -71,7 +72,7 @@ class EnhancedParser:
             return self.parse_stream()
 
         # Reasoning constructs
-        if self.match(TokenType.REASON_CHAIN):
+        if self.match(TokenType.REASON):
             return self.parse_reason_chain()
 
         # Pipeline constructs
@@ -179,13 +180,13 @@ class EnhancedParser:
     def parse_quantum_gate(self) -> QuantumGateNode:
         """Parse quantum gate operation"""
         gate_type = self.consume(TokenType.IDENTIFIER, "Expected gate type").value
-        self.consume(TokenType.LPAREN, "Expected '(' after gate name")
+        self.consume(TokenType.LEFT_PAREN, "Expected '(' after gate name")
 
         qubits = []
         parameters = []
 
         # Parse arguments
-        if not self.check(TokenType.RPAREN):
+        if not self.check(TokenType.RIGHT_PAREN):
             while True:
                 arg = self.parse_expression()
                 if isinstance(arg, NumberNode):
@@ -196,7 +197,7 @@ class EnhancedParser:
                 if not self.match(TokenType.COMMA):
                     break
 
-        self.consume(TokenType.RPAREN, "Expected ')' after gate arguments")
+        self.consume(TokenType.RIGHT_PAREN, "Expected ')' after gate arguments")
 
         return QuantumGateNode(gate_type, qubits, parameters,
                               self.previous().line, self.previous().column)
@@ -206,7 +207,7 @@ class EnhancedParser:
         qubits = "all"  # default
         classical_bits = None
 
-        if self.match(TokenType.LPAREN):
+        if self.match(TokenType.LEFT_PAREN):
             if self.check(TokenType.STRING) and self.peek().value == "all":
                 self.advance()
                 qubits = "all"
@@ -217,7 +218,7 @@ class EnhancedParser:
                     if not self.match(TokenType.COMMA):
                         break
 
-            self.consume(TokenType.RPAREN, "Expected ')' after measure arguments")
+            self.consume(TokenType.RIGHT_PAREN, "Expected ')' after measure arguments")
 
         return QuantumMeasureNode(qubits, classical_bits,
                                  self.previous().line, self.previous().column)
@@ -270,9 +271,9 @@ class EnhancedParser:
         layers = 1
         gates = []
 
-        if self.match(TokenType.LPAREN):
+        if self.match(TokenType.LEFT_PAREN):
             layers = int(self.consume(TokenType.NUMBER, "Expected number of layers").value)
-            self.consume(TokenType.RPAREN, "Expected ')'")
+            self.consume(TokenType.RIGHT_PAREN, "Expected ')'")
 
         return QuantumAnsatzNode(name, layers, gates,
                                 self.previous().line, self.previous().column)
@@ -282,9 +283,9 @@ class EnhancedParser:
         name = self.consume(TokenType.IDENTIFIER, "Expected backend name").value
         config = {}
 
-        if self.match(TokenType.LPAREN):
+        if self.match(TokenType.LEFT_PAREN):
             # Parse configuration parameters
-            while not self.check(TokenType.RPAREN):
+            while not self.check(TokenType.RIGHT_PAREN):
                 key = self.consume(TokenType.IDENTIFIER, "Expected parameter name").value
                 self.consume(TokenType.ASSIGN, "Expected '='")
                 value = self.parse_expression()
@@ -293,7 +294,7 @@ class EnhancedParser:
                 if not self.match(TokenType.COMMA):
                     break
 
-            self.consume(TokenType.RPAREN, "Expected ')'")
+            self.consume(TokenType.RIGHT_PAREN, "Expected ')'")
 
         return QuantumBackendNode(name, config,
                                  self.previous().line, self.previous().column)
@@ -303,9 +304,9 @@ class EnhancedParser:
         noise_type = self.consume(TokenType.IDENTIFIER, "Expected noise type").value
         parameters = {}
 
-        if self.match(TokenType.LPAREN):
+        if self.match(TokenType.LEFT_PAREN):
             # Parse noise parameters
-            while not self.check(TokenType.RPAREN):
+            while not self.check(TokenType.RIGHT_PAREN):
                 key = self.consume(TokenType.IDENTIFIER, "Expected parameter name").value
                 self.consume(TokenType.ASSIGN, "Expected '='")
                 value = self.parse_expression()
@@ -314,7 +315,7 @@ class EnhancedParser:
                 if not self.match(TokenType.COMMA):
                     break
 
-            self.consume(TokenType.RPAREN, "Expected ')'")
+            self.consume(TokenType.RIGHT_PAREN, "Expected ')'")
 
         return QuantumNoiseNode(noise_type, parameters,
                                self.previous().line, self.previous().column)
@@ -506,9 +507,9 @@ class EnhancedParser:
         name = self.consume(TokenType.IDENTIFIER, "Expected stage name").value
 
         parallel_factor = None
-        if self.match(TokenType.LBRACKET):
+        if self.match(TokenType.LEFT_BRACKET):
             parallel_factor = int(self.consume(TokenType.NUMBER, "Expected parallel factor").value)
-            self.consume(TokenType.RBRACKET, "Expected ']'")
+            self.consume(TokenType.RIGHT_BRACKET, "Expected ']'")
 
         self.consume(TokenType.COLON, "Expected ':'")
 
@@ -646,13 +647,13 @@ class EnhancedParser:
         name = self.consume(TokenType.IDENTIFIER, "Expected variable name").value
 
         parameters = None
-        if self.match(TokenType.LPAREN):
+        if self.match(TokenType.LEFT_PAREN):
             parameters = []
-            while not self.check(TokenType.RPAREN):
+            while not self.check(TokenType.RIGHT_PAREN):
                 parameters.append(self.consume(TokenType.IDENTIFIER, "Expected parameter name").value)
                 if not self.match(TokenType.COMMA):
                     break
-            self.consume(TokenType.RPAREN, "Expected ')'")
+            self.consume(TokenType.RIGHT_PAREN, "Expected ')'")
 
         self.consume(TokenType.ASSIGN, "Expected '='")
         expression = self.parse_expression()
@@ -691,13 +692,13 @@ class EnhancedParser:
         name = self.consume(TokenType.IDENTIFIER, "Expected tensor name").value
 
         dimensions = None
-        if self.match(TokenType.LBRACKET):
+        if self.match(TokenType.LEFT_BRACKET):
             dimensions = []
-            while not self.check(TokenType.RBRACKET):
+            while not self.check(TokenType.RIGHT_BRACKET):
                 dimensions.append(int(self.consume(TokenType.NUMBER, "Expected dimension").value))
                 if not self.match(TokenType.COMMA):
                     break
-            self.consume(TokenType.RBRACKET, "Expected ']'")
+            self.consume(TokenType.RIGHT_BRACKET, "Expected ']'")
 
         values = None
         if self.match(TokenType.ASSIGN):
@@ -921,7 +922,7 @@ class EnhancedParser:
         """Parse equality expression"""
         left = self.parse_comparison()
 
-        while self.match(TokenType.EQ, TokenType.NE):
+        while self.match(TokenType.EQUALS, TokenType.NOT_EQUALS):
             op = self.previous().value
             right = self.parse_comparison()
             left = BinaryOpNode(op, left, right,
@@ -933,7 +934,7 @@ class EnhancedParser:
         """Parse comparison expression"""
         left = self.parse_addition()
 
-        while self.match(TokenType.LT, TokenType.LE, TokenType.GT, TokenType.GE):
+        while self.match(TokenType.LESS_THAN, TokenType.LESS_EQUAL, TokenType.GREATER_THAN, TokenType.GREATER_EQUAL):
             op = self.previous().value
             right = self.parse_addition()
             left = BinaryOpNode(op, left, right,
@@ -957,7 +958,7 @@ class EnhancedParser:
         """Parse multiplication/division expression"""
         left = self.parse_unary()
 
-        while self.match(TokenType.STAR, TokenType.SLASH, TokenType.PERCENT):
+        while self.match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.PERCENT):
             op = self.previous().value
             right = self.parse_unary()
             left = BinaryOpNode(op, left, right,
@@ -980,12 +981,12 @@ class EnhancedParser:
         expr = self.parse_primary()
 
         while True:
-            if self.match(TokenType.LPAREN):
+            if self.match(TokenType.LEFT_PAREN):
                 # Function call
                 arguments = []
                 kwargs = {}
 
-                if not self.check(TokenType.RPAREN):
+                if not self.check(TokenType.RIGHT_PAREN):
                     while True:
                         # Check for keyword argument
                         if self.check(TokenType.IDENTIFIER) and self.peek_next() and self.peek_next().type == TokenType.ASSIGN:
@@ -998,20 +999,20 @@ class EnhancedParser:
                         if not self.match(TokenType.COMMA):
                             break
 
-                self.consume(TokenType.RPAREN, "Expected ')' after arguments")
+                self.consume(TokenType.RIGHT_PAREN, "Expected ')' after arguments")
 
                 expr = FunctionCallNode(expr, arguments, kwargs,
                                        self.previous().line, self.previous().column)
 
-            elif self.match(TokenType.LBRACKET):
+            elif self.match(TokenType.LEFT_BRACKET):
                 # Indexing/slicing
                 indices = []
-                while not self.check(TokenType.RBRACKET):
+                while not self.check(TokenType.RIGHT_BRACKET):
                     indices.append(self.parse_expression())
                     if not self.match(TokenType.COMMA):
                         break
 
-                self.consume(TokenType.RBRACKET, "Expected ']' after indices")
+                self.consume(TokenType.RIGHT_BRACKET, "Expected ']' after indices")
 
                 expr = TensorAccessNode(expr, indices,
                                        self.previous().line, self.previous().column)
@@ -1027,7 +1028,7 @@ class EnhancedParser:
             value = float(self.previous().value)
 
             # Check for uncertain value
-            if self.match(TokenType.PLUSMINUS):
+            if self.match(TokenType.PLUS_MINUS):
                 uncertainty = float(self.consume(TokenType.NUMBER, "Expected uncertainty value").value)
                 return UncertainNode(value, uncertainty,
                                    self.previous().line, self.previous().column)
@@ -1051,58 +1052,58 @@ class EnhancedParser:
                                  self.previous().line, self.previous().column)
 
         # Lists
-        if self.match(TokenType.LBRACKET):
+        if self.match(TokenType.LEFT_BRACKET):
             elements = []
 
             # Check for matrix (list of lists)
             is_matrix = False
-            if not self.check(TokenType.RBRACKET):
+            if not self.check(TokenType.RIGHT_BRACKET):
                 # Peek to see if first element is a list
                 save_pos = self.current
-                if self.check(TokenType.LBRACKET):
+                if self.check(TokenType.LEFT_BRACKET):
                     is_matrix = True
                 self.current = save_pos
 
             if is_matrix:
                 rows = []
-                while not self.check(TokenType.RBRACKET):
-                    if self.match(TokenType.LBRACKET):
+                while not self.check(TokenType.RIGHT_BRACKET):
+                    if self.match(TokenType.LEFT_BRACKET):
                         row = []
-                        while not self.check(TokenType.RBRACKET):
+                        while not self.check(TokenType.RIGHT_BRACKET):
                             row.append(self.parse_expression())
                             if not self.match(TokenType.COMMA):
                                 break
-                        self.consume(TokenType.RBRACKET, "Expected ']'")
+                        self.consume(TokenType.RIGHT_BRACKET, "Expected ']'")
                         rows.append(row)
 
                     if not self.match(TokenType.COMMA):
                         break
 
-                self.consume(TokenType.RBRACKET, "Expected ']'")
+                self.consume(TokenType.RIGHT_BRACKET, "Expected ']'")
                 return MatrixNode(rows, self.previous().line, self.previous().column)
             else:
                 # Regular list
-                while not self.check(TokenType.RBRACKET):
+                while not self.check(TokenType.RIGHT_BRACKET):
                     elements.append(self.parse_expression())
                     if not self.match(TokenType.COMMA):
                         break
 
-                self.consume(TokenType.RBRACKET, "Expected ']'")
+                self.consume(TokenType.RIGHT_BRACKET, "Expected ']'")
                 return ListNode(elements, self.previous().line, self.previous().column)
 
         # Parenthesized expression
-        if self.match(TokenType.LPAREN):
+        if self.match(TokenType.LEFT_PAREN):
             expr = self.parse_expression()
-            self.consume(TokenType.RPAREN, "Expected ')' after expression")
+            self.consume(TokenType.RIGHT_PAREN, "Expected ')' after expression")
             return expr
 
         # Distributions
         if self.match(TokenType.NORMAL, TokenType.UNIFORM, TokenType.POISSON):
             dist_type = self.previous().value
-            self.consume(TokenType.LPAREN, "Expected '(' after distribution")
+            self.consume(TokenType.LEFT_PAREN, "Expected '(' after distribution")
 
             parameters = {}
-            while not self.check(TokenType.RPAREN):
+            while not self.check(TokenType.RIGHT_PAREN):
                 key = self.consume(TokenType.IDENTIFIER, "Expected parameter name").value
                 self.consume(TokenType.ASSIGN, "Expected '='")
                 value = self.parse_expression()
@@ -1111,7 +1112,7 @@ class EnhancedParser:
                 if not self.match(TokenType.COMMA):
                     break
 
-            self.consume(TokenType.RPAREN, "Expected ')'")
+            self.consume(TokenType.RIGHT_PAREN, "Expected ')'")
 
             return DistributionNode(dist_type, parameters,
                                    self.previous().line, self.previous().column)

@@ -452,10 +452,15 @@ class MinimalParser:
             return StringNode(value)
 
         # Boolean literals
-        if self.check(TokenType.IDENTIFIER):
-            if self.peek().value in ["true", "false"]:
-                value = self.advance().value == "true"
-                return BooleanNode(value)
+        if self.check(TokenType.TRUE):
+            self.advance()
+            return BooleanNode(True)
+        if self.check(TokenType.FALSE):
+            self.advance()
+            return BooleanNode(False)
+        if self.check(TokenType.IDENTIFIER) and self.peek().value in ("true", "false"):
+            value = self.advance().value == "true"
+            return BooleanNode(value)
 
         # Identifier
         if self.check(TokenType.IDENTIFIER):
