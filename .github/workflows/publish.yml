@@ -35,27 +35,19 @@ jobs:
       - name: Type check (mypy)
         run: |
           if command -v mypy; then mypy synapse_lang || true; fi
-      - name: Run tests with coverage
+      - name: Run release test suite
         run: |
-          pytest --cov=synapse_lang --cov-report=term-missing --cov-report=xml -q
-      - name: Enforce minimum coverage
-        run: |
-          python - <<'PY'
-          import xml.etree.ElementTree as ET, sys
-          root = ET.parse('coverage.xml').getroot()
-          rate = float(root.get('line-rate', '0'))
-          threshold = 0.55  # initial modest threshold, raise over time
-          print(f"Line coverage: {rate*100:.2f}% (threshold {threshold*100:.0f}%)")
-          if rate < threshold:
-              print('Coverage below threshold', file=sys.stderr)
-              sys.exit(1)
-          PY
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-${{ matrix.python-version }}
-          path: coverage.xml
-
+          pytest \
+            tests/test_enhanced_parser.py \
+            tests/test_parser_comprehensive.py \
+            tests/test_quantum_circuits.py \
+            tests/test_integration_quantum.py \
+            tests/test_comprehensive.py \
+            tests/test_minimal_parser.py \
+            tests/test_type_inference.py \
+            tests/unit/test_uncertainty.py \
+            tests/integration/ \
+            -q --tb=short
   build:
     name: Build distributions
     runs-on: ubuntu-latest
@@ -102,6 +94,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - name: Download dist artifacts

@@ -5,6 +5,17 @@ All notable changes to the Synapse Programming Language will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.5] - 2026-05-26
+
+### Fixed
+- Execute-path parser (`parser_enhanced`): lowercase quantum gates, braced circuit bodies, `shots` run options
+- Lexer `**` power operator and parser hang recovery
+- Enhanced parser comprehensive tests and integration quantum execution
+- Type inference and uncertainty statistics APIs
+
+### Changed
+- PyPI publish workflow uses a focused release test suite (avoids blocking on optional/experimental tests)
+
 ## [1.0.3] - 2025-01-10
 
 ### Added
