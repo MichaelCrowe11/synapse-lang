@@ -1,6 +1,7 @@
 """Packaged interpreter with expression evaluation and quantum run support."""
 from __future__ import annotations
 
+import math
 from typing import Any
 
 from .parser_enhanced import EnhancedParser
@@ -44,7 +45,9 @@ class SynapseInterpreter:
         target = node.target
         if isinstance(target, IdentifierNode):
             return target.name
-        return str(target)
+        if isinstance(target, str):
+            return target
+        return getattr(target, "name", str(target))
 
     def interpret(self, node: ASTNode) -> Any:
         if node is None:
@@ -85,8 +88,9 @@ class SynapseInterpreter:
         if isinstance(node, StringNode):
             return node.value
         if isinstance(node, IdentifierNode):
-            if node.name in _BOOL_LITERALS:
-                return _BOOL_LITERALS[node.name]
+            name = node.name.lower()
+            if name in _BOOL_LITERALS:
+                return _BOOL_LITERALS[name]
             if node.name not in self.variables:
                 raise NameError(f"Variable '{node.name}' is not defined")
             return self.variables[node.name]
@@ -97,6 +101,16 @@ class SynapseInterpreter:
                 if r is not None:
                     results.append(r)
             return results[-1] if results else None
+        if isinstance(node, ParallelNode):
+            return self._run_parallel(node)
+        if isinstance(node, BranchNode):
+            body = node.body
+            if isinstance(body, list):
+                result = None
+                for stmt in body:
+                    result = self.interpret(stmt)
+                return result
+            return self.interpret(body)
         if isinstance(node, QuantumAlgorithmNode):
             self.variables[f"algorithm_{node.name}"] = node
             return f"Algorithm {node.name} registered"
@@ -112,6 +126,26 @@ class SynapseInterpreter:
         left = self.interpret(node.left)
         right = self.interpret(node.right)
 
+        try:
+            from .uncertainty import UncertainValue
+        except ImportError:
+            UncertainValue = None  # type: ignore[misc, assignment]
+
+        if UncertainValue and isinstance(left, UncertainValue) and isinstance(right, UncertainValue):
+            if op in ("+", "PLUS"):
+                return UncertainValue(
+                    left.value + right.value,
+                    math.sqrt(left.uncertainty ** 2 + right.uncertainty ** 2),
+                )
+            if op in ("*", "MULTIPLY"):
+                rel = math.sqrt((left.uncertainty / left.value) ** 2 + (right.uncertainty / right.value) ** 2)
+                product = left.value * right.value
+                return UncertainValue(product, abs(product) * rel)
+            if op in ("**", "POWER"):
+                val = left.value ** right.value
+                rel = abs(right.value) * (left.uncertainty / left.value) if left.value else 0.0
+                return UncertainValue(val, abs(val) * rel)
+
         if op in ("+", "PLUS"):
             return left + right
         if op in ("-", "MINUS"):
@@ -125,6 +159,8 @@ class SynapseInterpreter:
         if op in ("%", "MODULO"):
             return left % right
         if op in ("<", "LESS_THAN"):
+            if UncertainValue and isinstance(left, UncertainValue) and isinstance(right, UncertainValue):
+                return left.value < right.value
             return left < right
         if op in (">", "GREATER_THAN"):
             return left > right
@@ -165,6 +201,13 @@ class SynapseInterpreter:
             raise NameError(f"Function '{name}' is not defined")
         args = [self.interpret(a) for a in node.arguments]
         return func(*args)
+
+    def _run_parallel(self, node: ParallelNode) -> Any:
+        """Execute parallel branches sequentially (shared interpreter state)."""
+        result = None
+        for branch in node.branches:
+            result = self.interpret(branch)
+        return result
 
     def _define_circuit(self, node: QuantumCircuitNode):
         self.variables[f"circuit_{node.name}"] = node
