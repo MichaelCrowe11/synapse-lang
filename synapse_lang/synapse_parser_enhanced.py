@@ -5,10 +5,15 @@ Implements complete parsing for all language constructs
 """
 
 from typing import Optional, List
-from synapse_lang.synapse_ast import *  # noqa: F403
-
-from synapse_lang.synapse_ast import *  # noqa: F403
 from synapse_lang.synapse_ast_enhanced import *  # noqa: F403
+from synapse_lang.synapse_ast import (  # noqa: F401
+    QuantumAlgorithmNode,
+    QuantumAnsatzNode,
+    QuantumBackendNode,
+    QuantumNoiseNode,
+    StreamNode,
+    UncertainNode,
+)
 from synapse_lang.synapse_lexer import Lexer, Token, TokenType
 
 
@@ -117,6 +122,9 @@ class EnhancedParser:
         if self.match(TokenType.RUN):
             return self.parse_run()
 
+        if self.is_at_end():
+            return None
+
         # Expression statement or assignment
         return self.parse_expression_statement()
 
@@ -149,7 +157,9 @@ class EnhancedParser:
         self.consume(TokenType.INDENT, "Expected indent after circuit declaration")
 
         while not self.check(TokenType.DEDENT):
-            if self.match(TokenType.IDENTIFIER):
+            if self.match(TokenType.MEASURE):
+                measurements.append(self.parse_quantum_measure())
+            elif self.match(TokenType.IDENTIFIER):
                 keyword = self.previous().value
 
                 if keyword == "qubits":
@@ -167,9 +177,6 @@ class EnhancedParser:
 
                     self.consume(TokenType.DEDENT, "Expected dedent after gates")
 
-                elif keyword == "measure":
-                    measurements.append(self.parse_quantum_measure())
-
             self.skip_newlines()
 
         self.consume(TokenType.DEDENT, "Expected dedent after circuit body")
@@ -177,9 +184,34 @@ class EnhancedParser:
         return QuantumCircuitNode(name, qubits, gates, measurements,
                                  self.previous().line, self.previous().column)
 
+    _GATE_TOKEN_TYPES = (
+        TokenType.IDENTIFIER,
+        TokenType.H,
+        TokenType.X,
+        TokenType.Y,
+        TokenType.Z,
+        TokenType.CX,
+        TokenType.CNOT,
+        TokenType.SWAP,
+        TokenType.RX,
+        TokenType.RY,
+        TokenType.RZ,
+    )
+
+    def _consume_gate_name(self) -> str:
+        """Consume a gate name token (identifier or built-in gate keyword)."""
+        tok = self.peek()
+        if tok.type not in self._GATE_TOKEN_TYPES:
+            raise ParserError("Expected gate type", tok)
+        self.advance()
+        name = tok.value
+        if tok.type != TokenType.IDENTIFIER:
+            return name.upper()
+        return name
+
     def parse_quantum_gate(self) -> QuantumGateNode:
         """Parse quantum gate operation"""
-        gate_type = self.consume(TokenType.IDENTIFIER, "Expected gate type").value
+        gate_type = self._consume_gate_name()
         self.consume(TokenType.LEFT_PAREN, "Expected '(' after gate name")
 
         qubits = []
@@ -202,10 +234,9 @@ class EnhancedParser:
         return QuantumGateNode(gate_type, qubits, parameters,
                               self.previous().line, self.previous().column)
 
-    def parse_quantum_measure(self) -> QuantumMeasureNode:
+    def parse_quantum_measure(self) -> QuantumMeasurementNode:
         """Parse quantum measurement"""
-        qubits = "all"  # default
-        classical_bits = None
+        qubits = "all"
 
         if self.match(TokenType.LEFT_PAREN):
             if self.check(TokenType.STRING) and self.peek().value == "all":
@@ -220,8 +251,9 @@ class EnhancedParser:
 
             self.consume(TokenType.RIGHT_PAREN, "Expected ')' after measure arguments")
 
-        return QuantumMeasureNode(qubits, classical_bits,
-                                 self.previous().line, self.previous().column)
+        return QuantumMeasurementNode(
+            qubits, None, self.previous().line, self.previous().column
+        )
 
     def parse_quantum_algorithm(self) -> QuantumAlgorithmNode:
         """Parse quantum algorithm definition"""
@@ -405,7 +437,7 @@ class EnhancedParser:
             if self.match(TokenType.BRANCH):
                 name = self.consume(TokenType.IDENTIFIER, "Expected branch name").value
                 self.consume(TokenType.COLON, "Expected ':'")
-                body = self.parse_block()
+                body = self.parse_expression()
                 branches.append(BranchNode(name, body,
                                           self.previous().line, self.previous().column))
 
@@ -709,7 +741,10 @@ class EnhancedParser:
 
     def parse_uncertain_declaration(self) -> AssignmentNode:
         """Parse uncertain variable declaration"""
-        name = self.consume(TokenType.IDENTIFIER, "Expected variable name").value
+        if self.check(TokenType.IDENTIFIER) or self.check(TokenType.VALUE):
+            name = self.advance().value
+        else:
+            raise ParserError("Expected variable name", self.peek())
         self.consume(TokenType.ASSIGN, "Expected '='")
         value = self.parse_expression()
 
@@ -717,8 +752,9 @@ class EnhancedParser:
         if self.match(TokenType.WHERE):
             constraint = self.parse_expression()
 
-        return AssignmentNode(name, value, True, constraint,
-                             self.previous().line, self.previous().column)
+        return AssignmentNode(
+            name, value, True, self.previous().line, self.previous().column
+        )
 
     def parse_constrain(self) -> ConstrainNode:
         """Parse constrain statement"""
@@ -862,9 +898,17 @@ class EnhancedParser:
             backend = self.consume(TokenType.IDENTIFIER, "Expected backend name").value
 
         if self.match(TokenType.WITH):
-            # Parse options
+            _option_tokens = (
+                TokenType.IDENTIFIER,
+                TokenType.SHOTS,
+                TokenType.NOISE,
+                TokenType.BACKEND,
+            )
             while True:
-                key = self.consume(TokenType.IDENTIFIER, "Expected option name").value
+                tok = self.peek()
+                if tok.type not in _option_tokens:
+                    break
+                key = self.advance().value
                 self.consume(TokenType.ASSIGN, "Expected '='")
                 value = self.parse_expression()
                 options[key] = value
@@ -885,8 +929,9 @@ class EnhancedParser:
         if self.match(TokenType.ASSIGN):
             if isinstance(expr, IdentifierNode):
                 value = self.parse_expression()
-                return AssignmentNode(expr.name, value, False, None,
-                                     expr.line, expr.column)
+                return AssignmentNode(
+                    expr.name, value, False, expr.line, expr.column
+                )
 
         return expr
 
@@ -1001,8 +1046,12 @@ class EnhancedParser:
 
                 self.consume(TokenType.RIGHT_PAREN, "Expected ')' after arguments")
 
-                expr = FunctionCallNode(expr, arguments, kwargs,
-                                       self.previous().line, self.previous().column)
+                call = FunctionCallNode(
+                    expr, arguments, self.previous().line, self.previous().column
+                )
+                if kwargs:
+                    call.kwargs = kwargs  # type: ignore[attr-defined]
+                expr = call
 
             elif self.match(TokenType.LEFT_BRACKET):
                 # Indexing/slicing
@@ -1028,7 +1077,7 @@ class EnhancedParser:
             value = float(self.previous().value)
 
             # Check for uncertain value
-            if self.match(TokenType.PLUS_MINUS):
+            if self.match(TokenType.PLUS_MINUS, TokenType.UNCERTAINTY_OP):
                 uncertainty = float(self.consume(TokenType.NUMBER, "Expected uncertainty value").value)
                 return UncertainNode(value, uncertainty,
                                    self.previous().line, self.previous().column)
@@ -1098,7 +1147,13 @@ class EnhancedParser:
             return expr
 
         # Distributions
-        if self.match(TokenType.NORMAL, TokenType.UNIFORM, TokenType.POISSON):
+        if self.check(TokenType.IDENTIFIER) and self.peek().value.lower() in (
+            "normal",
+            "uniform",
+            "poisson",
+            "gaussian",
+        ):
+            self.advance()
             dist_type = self.previous().value
             self.consume(TokenType.LEFT_PAREN, "Expected '(' after distribution")
 

@@ -276,6 +276,22 @@ class UncertainValue:
         new_uncertainty = derivative * self.uncertainty
         return UncertainValue(new_nominal, new_uncertainty)
 
+    def significantly_different_from(
+        self, other: "UncertainValue", sigma: float = 2.0
+    ) -> bool:
+        if not isinstance(other, UncertainValue):
+            other = UncertainValue(other, 0.0)
+        combined = math.sqrt(self.uncertainty**2 + other.uncertainty**2)
+        if combined == 0:
+            return self.nominal != other.nominal
+        return abs(self.nominal - other.nominal) > sigma * combined
+
+    def format(self, decimals: int = 3) -> str:
+        return f"{self.nominal:.{decimals}f} ± {self.uncertainty:.{decimals}f}"
+
+    def format_scientific(self) -> str:
+        return f"{self.nominal:.3e} ± {self.uncertainty:.3e}"
+
     def __repr__(self) -> str:
         return f"{self.nominal} ± {self.uncertainty}"
 
@@ -577,18 +593,46 @@ def uncertain(nominal: float, uncertainty: float, distribution: str = "normal") 
     """Create an uncertain value."""
     return UncertainValue(nominal, uncertainty, distribution)
 
-def propagate_uncertainty(func: Callable, **kwargs) -> UncertainValue:
+def propagate_uncertainty(
+    func: Callable | None = None,
+    *,
+    expression: Callable | None = None,
+    variables: dict[str, UncertainValue] | None = None,
+    method: str | None = None,
+    **kwargs,
+) -> UncertainValue:
     """Propagate uncertainty through a function."""
-    engine = UncertaintyEngine()
-    variables = {}
+    if func is None and "function" in kwargs:
+        func = kwargs.pop("function")
+    func = func or expression
+    if func is None:
+        raise TypeError("propagate_uncertainty requires a function")
 
-    for name, value in kwargs.items():
+    var_map: dict[str, UncertainValue] = {}
+    source = variables if variables is not None else kwargs
+    for name, value in source.items():
         if isinstance(value, UncertainValue):
-            variables[name] = value
+            var_map[name] = value
         else:
-            variables[name] = UncertainValue(value, 0)
+            var_map[name] = UncertainValue(float(value), 0.0)
 
-    return engine.propagate(func, variables)
+    var_names = list(var_map.keys())
+
+    def expr(*args: float) -> float:
+        bound = {var_names[i]: args[i] for i in range(len(var_names))}
+        try:
+            return float(func(**bound))
+        except TypeError:
+            return float(func(*args))
+
+    propagation = PropagationMethod.LINEAR
+    if method in ("monte_carlo",):
+        propagation = PropagationMethod.MONTE_CARLO
+    elif method in ("analytical", "linear", "numerical"):
+        propagation = PropagationMethod.LINEAR
+
+    engine = UncertaintyEngine(UncertaintyConfig(method=propagation))
+    return engine.propagate(expr, var_map)
 
 
 def monte_carlo(
@@ -597,8 +641,11 @@ def monte_carlo(
     samples=10000,
     parallel=False,
     n_cores=4,
+    seed=None,
     **kwargs,
 ):
+    if seed is not None:
+        np.random.seed(seed)
     inputs = dict(inputs or {})
     inputs.update(kwargs)
     if not inputs:
@@ -612,7 +659,10 @@ def monte_carlo(
 
     def expression(*args):
         bound = {var_names[i]: args[i] for i in range(len(var_names))}
-        return float(function(**bound))
+        try:
+            return float(function(**bound))
+        except TypeError:
+            return float(function(*args))
 
     return matrix.propagate_correlated(expression, var_names, samples)
 
@@ -652,20 +702,112 @@ def uncertain_function(method: PropagationMethod = PropagationMethod.LINEAR):
 
 
 def chi_squared_test(observed, expected):
-    import numpy as np
-    obs = np.asarray(observed, dtype=float)
-    exp = np.asarray(expected, dtype=float)
-    return float(np.sum((obs - exp) ** 2 / exp))
+    """Chi-squared goodness-of-fit with measurement uncertainties."""
+
+    def _nominal_and_sigma(x):
+        if isinstance(x, UncertainValue):
+            return x.nominal, x.uncertainty
+        return float(x), 0.0
+
+    obs_vals = []
+    obs_sigmas = []
+    for item in observed:
+        v, s = _nominal_and_sigma(item)
+        obs_vals.append(v)
+        obs_sigmas.append(s)
+
+    if isinstance(expected, (list, tuple, np.ndarray)):
+        exp_vals = []
+        exp_sigmas = []
+        for item in expected:
+            v, s = _nominal_and_sigma(item)
+            exp_vals.append(v)
+            exp_sigmas.append(s)
+    else:
+        exp_nom, exp_sigma = _nominal_and_sigma(expected)
+        exp_vals = [exp_nom] * len(obs_vals)
+        exp_sigmas = [exp_sigma] * len(obs_vals)
+
+    obs = np.asarray(obs_vals, dtype=float)
+    exp = np.asarray(exp_vals, dtype=float)
+    sigma = np.sqrt(np.asarray(obs_sigmas, dtype=float) ** 2 + np.asarray(exp_sigmas, dtype=float) ** 2)
+    sigma = np.where(sigma > 0, sigma, 1e-12)
+
+    chi2 = float(np.sum(((obs - exp) / sigma) ** 2))
+    df = max(len(obs) - 1, 1)
+    p_value = float(stats.chi2.sf(chi2, df))
+    return chi2, p_value
 
 
-def weighted_mean(values, weights):
-    import numpy as np
-    v = np.asarray(values, dtype=float)
+def weighted_mean(values, weights=None, *, uncertainties=None):
+    """Weighted mean; supports explicit weights or inverse-variance from uncertainties."""
+    if weights is None and all(isinstance(v, UncertainValue) for v in values):
+        weights = [1.0 / (v.uncertainty**2) if v.uncertainty else 1.0 for v in values]
+    if weights is None and uncertainties is not None:
+        weights = [1.0 / (u**2) if u else 1.0 for u in uncertainties]
+    if weights is None:
+        raise TypeError("weighted_mean() missing required argument: 'weights'")
+
+    v = np.asarray(
+        [val.nominal if isinstance(val, UncertainValue) else float(val) for val in values],
+        dtype=float,
+    )
     w = np.asarray(weights, dtype=float)
-    return float(np.average(v, weights=w))
+    w_sum = float(np.sum(w))
+    if w_sum == 0:
+        raise ValueError("Sum of weights must be non-zero")
+
+    mean = float(np.sum(w * v) / w_sum)
+    combined_uncertainty = float(1.0 / np.sqrt(w_sum))
+    return UncertainValue(mean, combined_uncertainty)
 
 
 class MultivariateUncertain:
-    def __init__(self, values, covariance=None):
-        self.values = values
-        self.covariance = covariance
+    """Correlated multivariate uncertain variables."""
+
+    def __init__(
+        self,
+        means=None,
+        uncertainties=None,
+        correlations=None,
+        labels=None,
+        *,
+        values=None,
+        covariance=None,
+    ):
+        if means is not None:
+            labels = labels or [f"x{i}" for i in range(len(means))]
+            self.labels = list(labels)
+            self._vars = {
+                label: UncertainValue(m, u)
+                for label, m, u in zip(self.labels, means, uncertainties or [], strict=False)
+            }
+            n = len(self.labels)
+            if correlations is not None:
+                corr = np.asarray(correlations, dtype=float)
+                std = np.asarray(uncertainties, dtype=float)
+                self._cov = corr * np.outer(std, std)
+            else:
+                self._cov = np.diag(np.asarray(uncertainties, dtype=float) ** 2)
+        else:
+            self._vars = values or {}
+            self.labels = list(self._vars.keys())
+            self._cov = np.asarray(covariance) if covariance is not None else np.eye(len(self.labels))
+
+    def __len__(self) -> int:
+        return len(self._vars)
+
+    def __getitem__(self, key: str) -> UncertainValue:
+        return self._vars[key]
+
+    def sample(self, n_samples: int) -> np.ndarray:
+        n = len(self.labels)
+        if n == 0:
+            return np.empty((n_samples, 0))
+        means = np.array([self._vars[k].nominal for k in self.labels])
+        try:
+            chol = np.linalg.cholesky(self._cov)
+            z = np.random.standard_normal((n_samples, n))
+            return means + z @ chol.T
+        except np.linalg.LinAlgError:
+            return np.random.multivariate_normal(means, self._cov, size=n_samples)
