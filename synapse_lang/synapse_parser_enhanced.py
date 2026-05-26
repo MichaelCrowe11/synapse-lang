@@ -79,6 +79,9 @@ class EnhancedParser:
         # Reasoning constructs
         if self.match(TokenType.REASON):
             return self.parse_reason_chain()
+        if self.check(TokenType.IDENTIFIER) and self.peek().value == "reason_chain":
+            self.advance()
+            return self.parse_reason_chain()
 
         # Pipeline constructs
         if self.match(TokenType.PIPELINE):
@@ -383,18 +386,25 @@ class EnhancedParser:
 
         self.consume(TokenType.DEDENT, "Expected dedent")
 
-        return HypothesisNode(name, assumptions, predictions, validations,
-                             self.previous().line, self.previous().column)
+        validation = validations[0] if validations else None
+        return HypothesisNode(
+            name, assumptions, predictions, validation,
+            self.previous().line, self.previous().column,
+        )
+
+    def _statements_from_block(self, block: BlockNode | None) -> list:
+        if block is None:
+            return []
+        return list(block.statements)
 
     def parse_experiment(self) -> ExperimentNode:
         """Parse experiment block"""
         name = self.consume(TokenType.IDENTIFIER, "Expected experiment name").value
         self.consume(TokenType.COLON, "Expected ':'")
 
-        setup = None
-        body = []
-        analyze = None
-        synthesize = None
+        setup: list = []
+        parallel = None
+        analyze: list = []
 
         self.consume(TokenType.NEWLINE, "Expected newline")
         self.consume(TokenType.INDENT, "Expected indent")
@@ -402,26 +412,23 @@ class EnhancedParser:
         while not self.check(TokenType.DEDENT):
             if self.match(TokenType.SETUP):
                 self.consume(TokenType.COLON, "Expected ':'")
-                setup = self.parse_block()
+                setup = self._statements_from_block(self.parse_block())
 
             elif self.match(TokenType.ANALYZE):
                 self.consume(TokenType.COLON, "Expected ':'")
-                analyze = self.parse_block()
+                analyze = self._statements_from_block(self.parse_block())
 
-            elif self.match(TokenType.SYNTHESIZE):
-                self.consume(TokenType.COLON, "Expected ':'")
-                synthesize = self.parse_expression()
-            else:
-                stmt = self.parse_statement()
-                if stmt:
-                    body.append(stmt)
+            elif self.match(TokenType.PARALLEL):
+                parallel = self.parse_parallel()
 
             self.skip_newlines()
 
         self.consume(TokenType.DEDENT, "Expected dedent")
 
-        return ExperimentNode(name, setup, body, analyze, synthesize,
-                             self.previous().line, self.previous().column)
+        return ExperimentNode(
+            name, setup, parallel, analyze,
+            self.previous().line, self.previous().column,
+        )
 
     def parse_parallel(self) -> ParallelNode:
         """Parse parallel execution block"""
@@ -477,14 +484,13 @@ class EnhancedParser:
 
         while not self.check(TokenType.DEDENT):
             if self.match(TokenType.PREMISE):
-                name = self.consume(TokenType.IDENTIFIER, "Expected premise name").value
+                premise_name = self.consume(TokenType.IDENTIFIER, "Expected premise name").value
                 self.consume(TokenType.COLON, "Expected ':'")
                 statement = self.parse_expression()
-                premises.append(PremiseNode(name, statement,
-                                           self.previous().line, self.previous().column))
+                premises.append((premise_name, statement))
 
             elif self.match(TokenType.DERIVE):
-                name = self.consume(TokenType.IDENTIFIER, "Expected derivation name").value
+                derive_name = self.consume(TokenType.IDENTIFIER, "Expected derivation name").value
                 self.consume(TokenType.FROM, "Expected 'from'")
                 from_premises = []
                 while True:
@@ -493,14 +499,11 @@ class EnhancedParser:
                         break
                 self.consume(TokenType.COLON, "Expected ':'")
                 statement = self.parse_expression()
-                derivations.append(DeriveNode(name, from_premises, statement,
-                                             self.previous().line, self.previous().column))
+                derivations.append((derive_name, from_premises, statement))
 
             elif self.match(TokenType.CONCLUDE):
                 self.consume(TokenType.COLON, "Expected ':'")
-                statement = self.parse_expression()
-                conclusion = ConcludeNode(statement,
-                                         self.previous().line, self.previous().column)
+                conclusion = self.parse_expression()
 
             self.skip_newlines()
 
@@ -562,7 +565,7 @@ class EnhancedParser:
 
         self.consume(TokenType.DEDENT, "Expected dedent")
 
-        return StageNode(name, parallel_factor, operations, fork,
+        return StageNode(name, operations, parallel_factor, fork,
                         self.previous().line, self.previous().column)
 
     def parse_fork(self) -> ForkNode:
@@ -591,8 +594,7 @@ class EnhancedParser:
 
                 self.consume(TokenType.DEDENT, "Expected dedent")
 
-                paths.append(PathNode(name, operations,
-                                     self.previous().line, self.previous().column))
+                paths.append((name, BlockNode(operations)))
 
             self.skip_newlines()
 
@@ -619,16 +621,12 @@ class EnhancedParser:
             if self.match(TokenType.TRY):
                 name = self.consume(TokenType.IDENTIFIER, "Expected attempt name").value
                 self.consume(TokenType.COLON, "Expected ':'")
-                body = self.parse_block()
-                attempts.append(TryNode(name, body,
-                                       self.previous().line, self.previous().column))
+                attempts.append((name, self.parse_expression()))
 
             elif self.match(TokenType.FALLBACK):
                 name = self.consume(TokenType.IDENTIFIER, "Expected fallback name").value
                 self.consume(TokenType.COLON, "Expected ':'")
-                body = self.parse_block()
-                fallbacks.append(FallbackNode(name, body,
-                                             self.previous().line, self.previous().column))
+                fallbacks.append((name, self.parse_expression()))
 
             elif self.match(TokenType.ACCEPT):
                 self.consume(TokenType.IF, "Expected 'if' after 'accept'")
@@ -642,8 +640,10 @@ class EnhancedParser:
 
         self.consume(TokenType.DEDENT, "Expected dedent")
 
-        return ExploreNode(target, attempts, fallbacks, accept_condition, reject_condition,
-                          self.previous().line, self.previous().column)
+        return ExploreNode(
+            target, attempts, fallbacks, accept_condition,
+            self.previous().line, self.previous().column,
+        )
 
     # ========== Symbolic Math Parsing ==========
 
@@ -736,7 +736,7 @@ class EnhancedParser:
         if self.match(TokenType.ASSIGN):
             values = self.parse_expression()
 
-        return TensorNode(dimensions, values, name,
+        return TensorNode(name, dimensions or [], values,
                          self.previous().line, self.previous().column)
 
     def parse_uncertain_declaration(self) -> AssignmentNode:
@@ -778,11 +778,23 @@ class EnhancedParser:
         return EvolveNode(variable, var_type, initial_value,
                          self.previous().line, self.previous().column)
 
+    def _consume_type_name(self) -> str:
+        """Consume a type name (identifier or type keyword)."""
+        tok = self.peek()
+        type_tokens = (
+            TokenType.IDENTIFIER,
+            TokenType.QUANTUM,
+        )
+        if tok.type not in type_tokens:
+            raise ParserError("Expected type name", tok)
+        self.advance()
+        return tok.value
+
     def parse_observe(self) -> ObserveNode:
         """Parse observe statement"""
         variable = self.consume(TokenType.IDENTIFIER, "Expected variable name").value
         self.consume(TokenType.COLON, "Expected ':'")
-        var_type = self.consume(TokenType.IDENTIFIER, "Expected type").value
+        var_type = self._consume_type_name()
 
         condition = None
         if self.match(TokenType.WHEN):
@@ -1001,9 +1013,21 @@ class EnhancedParser:
 
     def parse_multiplication(self) -> ASTNode:
         """Parse multiplication/division expression"""
-        left = self.parse_unary()
+        left = self.parse_power()
 
         while self.match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.PERCENT):
+            op = self.previous().value
+            right = self.parse_power()
+            left = BinaryOpNode(op, left, right,
+                               self.previous().line, self.previous().column)
+
+        return left
+
+    def parse_power(self) -> ASTNode:
+        """Parse exponentiation expression"""
+        left = self.parse_unary()
+
+        while self.match(TokenType.POWER):
             op = self.previous().value
             right = self.parse_unary()
             left = BinaryOpNode(op, left, right,
@@ -1031,10 +1055,20 @@ class EnhancedParser:
                 arguments = []
                 kwargs = {}
 
+                _kwarg_tokens = (
+                    TokenType.IDENTIFIER,
+                    TokenType.PARALLEL,
+                    TokenType.NOISE,
+                    TokenType.SHOTS,
+                )
                 if not self.check(TokenType.RIGHT_PAREN):
                     while True:
                         # Check for keyword argument
-                        if self.check(TokenType.IDENTIFIER) and self.peek_next() and self.peek_next().type == TokenType.ASSIGN:
+                        if (
+                            self.peek().type in _kwarg_tokens
+                            and self.peek_next()
+                            and self.peek_next().type == TokenType.ASSIGN
+                        ):
                             key = self.advance().value
                             self.advance()  # consume '='
                             kwargs[key] = self.parse_expression()
@@ -1095,8 +1129,8 @@ class EnhancedParser:
         if self.match(TokenType.FALSE):
             return BooleanNode(False, self.previous().line, self.previous().column)
 
-        # Identifiers
-        if self.match(TokenType.IDENTIFIER):
+        # Identifiers (VALUE is a keyword used as a variable name in tests)
+        if self.match(TokenType.IDENTIFIER, TokenType.VALUE):
             return IdentifierNode(self.previous().value,
                                  self.previous().line, self.previous().column)
 
@@ -1189,7 +1223,7 @@ class EnhancedParser:
 
         self.consume(TokenType.DEDENT, "Expected dedent")
 
-        return BlockNode(statements, self.previous().line, self.previous().column)
+        return BlockNode(statements)
 
     def parse_expression_list(self) -> List[ASTNode]:
         """Parse comma-separated expression list"""

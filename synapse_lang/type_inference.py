@@ -12,6 +12,14 @@ import ast
 class TypeKind(Enum):
     """Categories of types in Synapse"""
     SCALAR = auto()
+    INT = auto()
+    FLOAT = auto()
+    STRING = auto()
+    BOOL = auto()
+    LIST = auto()
+    DICT = auto()
+    OPTIONAL = auto()
+    UNKNOWN = auto()
     UNCERTAIN = auto()
     TENSOR = auto()
     QUANTUM = auto()
@@ -25,9 +33,13 @@ class TypeKind(Enum):
 class Type:
     """Base type representation"""
     kind: TypeKind
-    name: str
+    name: str = ""
     params: List['Type'] = field(default_factory=list)
     constraints: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self):
+        if not self.name:
+            self.name = self.kind.name.lower()
 
     def __str__(self):
         if self.params:
@@ -97,10 +109,11 @@ class TypeInference:
     def _init_builtin_types(self):
         """Initialize built-in types"""
         # Scalar types
-        self.int_type = Type(TypeKind.SCALAR, "int")
-        self.float_type = Type(TypeKind.SCALAR, "float")
-        self.bool_type = Type(TypeKind.SCALAR, "bool")
-        self.string_type = Type(TypeKind.SCALAR, "string")
+        self.int_type = Type(TypeKind.INT, "int")
+        self.float_type = Type(TypeKind.FLOAT, "float")
+        self.bool_type = Type(TypeKind.BOOL, "bool")
+        self.string_type = Type(TypeKind.STRING, "string")
+        self.unknown_type = Type(TypeKind.UNKNOWN, "unknown")
 
         # Scientific types
         self.uncertain_type = lambda t: Type(
@@ -143,7 +156,7 @@ class TypeInference:
 
     def infer_generic(self, node: ast.AST) -> Type:
         """Generic inference fallback"""
-        return self.env.fresh_type_var("Unknown")
+        return self.unknown_type
 
     def infer_Constant(self, node: ast.Constant) -> Type:
         """Infer type of constant"""
@@ -163,10 +176,40 @@ class TypeInference:
         """Infer type of variable"""
         type_ = self.env.lookup(node.id)
         if type_ is None:
-            # Create fresh type variable for unknown
-            type_ = self.env.fresh_type_var(node.id)
-            self.env.bind(node.id, type_)
+            return self.unknown_type
+        if isinstance(type_, TypeVar):
+            return self.apply_substitutions(type_)
         return type_
+
+    def infer_List(self, node: ast.List) -> Type:
+        """Infer homogeneous list type."""
+        if not node.elts:
+            elem = Type(TypeKind.GENERIC, "T")
+            return Type(TypeKind.LIST, "list", [elem])
+        elem_type = self.infer(node.elts[0])
+        for elt in node.elts[1:]:
+            self.unify(elem_type, self.infer(elt))
+        return Type(TypeKind.LIST, "list", [self.apply_substitutions(elem_type)])
+
+    def infer_Dict(self, node: ast.Dict) -> Type:
+        """Infer dictionary key/value types."""
+        if not node.keys or node.keys[0] is None:
+            return Type(TypeKind.DICT, "dict", [
+                Type(TypeKind.STRING, "str"),
+                self.unknown_type,
+            ])
+        key_type = self.infer(node.keys[0])
+        val_type = self.infer(node.values[0])
+        for key, val in zip(node.keys[1:], node.values[1:], strict=False):
+            if key is not None:
+                self.unify(key_type, self.infer(key))
+            if val is not None:
+                self.unify(val_type, self.infer(val))
+        return Type(
+            TypeKind.DICT,
+            "dict",
+            [self.apply_substitutions(key_type), self.apply_substitutions(val_type)],
+        )
 
     def infer_BinOp(self, node: ast.BinOp) -> Type:
         """Infer type of binary operation"""
@@ -254,6 +297,38 @@ class TypeInference:
 
         return body_type
 
+    def infer_function(self, node: ast.FunctionDef) -> Type:
+        """Infer function type from annotations when present."""
+        param_types: list[Type] = []
+        for arg in node.args.args:
+            if arg.annotation:
+                param_types.append(self._type_from_annotation(arg.annotation))
+            else:
+                param_types.append(self.int_type)
+
+        if node.returns:
+            return_type = self._type_from_annotation(node.returns)
+        else:
+            return_type = self.infer_block(node.body)
+
+        func_type = self.function_type(param_types, return_type)
+        return Type(
+            TypeKind.FUNCTION,
+            "function",
+            param_types + [return_type],
+        )
+
+    def _type_from_annotation(self, annotation: ast.AST) -> Type:
+        if isinstance(annotation, ast.Name):
+            mapping = {
+                "int": self.int_type,
+                "float": self.float_type,
+                "str": self.string_type,
+                "bool": self.bool_type,
+            }
+            return mapping.get(annotation.id, self.unknown_type)
+        return self.unknown_type
+
     def infer_FunctionDef(self, node: ast.FunctionDef) -> Type:
         """Infer type of function definition"""
         # Create child environment for function scope
@@ -291,33 +366,35 @@ class TypeInference:
 
         return result_type
 
-    def unify(self, type1: Type, type2: Type):
-        """Unify two types"""
-        # Apply substitutions
+    def unify(self, type1: Type, type2: Type) -> Type:
+        """Unify two types and return the unified result."""
         type1 = self.apply_substitutions(type1)
         type2 = self.apply_substitutions(type2)
 
-        # If same type, done
         if type1 == type2:
-            return
+            return type1
 
-        # If either is type variable
         if isinstance(type1, TypeVar):
             self.bind_type_var(type1, type2)
-        elif isinstance(type2, TypeVar):
+            return self.apply_substitutions(type2)
+        if isinstance(type2, TypeVar):
             self.bind_type_var(type2, type1)
+            return self.apply_substitutions(type1)
 
-        # If both are concrete types
-        elif type1.kind == type2.kind and type1.name == type2.name:
-            # Unify parameters
+        # Promote int to float
+        if type1.kind == TypeKind.INT and type2.kind == TypeKind.FLOAT:
+            return type2
+        if type1.kind == TypeKind.FLOAT and type2.kind == TypeKind.INT:
+            return type1
+
+        if type1.kind == type2.kind and type1.name == type2.name:
             if len(type1.params) != len(type2.params):
                 raise TypeError(f"Cannot unify {type1} with {type2}")
-
             for p1, p2 in zip(type1.params, type2.params):
                 self.unify(p1, p2)
+            return self.apply_substitutions(type1)
 
-        else:
-            raise TypeError(f"Cannot unify {type1} with {type2}")
+        raise TypeError(f"Cannot unify {type1} with {type2}")
 
     def bind_type_var(self, var: TypeVar, type_: Type):
         """Bind type variable to type"""
@@ -338,7 +415,7 @@ class TypeInference:
         if isinstance(type_, TypeVar):
             if type_ in self.substitutions:
                 return self.apply_substitutions(self.substitutions[type_])
-            return type_
+            return Type(TypeKind.UNKNOWN, type_.name)
 
         # Apply to parameters
         new_params = [self.apply_substitutions(p) for p in type_.params]
