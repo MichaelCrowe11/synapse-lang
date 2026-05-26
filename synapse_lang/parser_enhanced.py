@@ -405,8 +405,8 @@ class EnhancedParser:
             self.advance()
 
     def skip_newlines(self):
-        """Skip newline tokens."""
-        while self.check(TokenType.NEWLINE):
+        """Skip newline and layout tokens (indent inside braced blocks)."""
+        while self.peek().type in (TokenType.NEWLINE, TokenType.INDENT, TokenType.DEDENT):
             self.advance()
 
     def _skip_to_statement_end(self):
@@ -1171,9 +1171,77 @@ class EnhancedParser:
             # Quantum block
             return self.parse_block()
 
+    _GATE_TOKEN_TYPES = (
+        TokenType.IDENTIFIER,
+        TokenType.H,
+        TokenType.X,
+        TokenType.Y,
+        TokenType.Z,
+        TokenType.S,
+        TokenType.T,
+        TokenType.CX,
+        TokenType.CNOT,
+        TokenType.CZ,
+        TokenType.SWAP,
+        TokenType.CCX,
+        TokenType.RX,
+        TokenType.RY,
+        TokenType.RZ,
+        TokenType.U,
+    )
+
+    def _is_gate_name(self, name: str) -> bool:
+        return name.upper() in {
+            "H", "X", "Y", "Z", "S", "T", "CX", "CNOT", "CZ", "SWAP",
+            "RX", "RY", "RZ", "U", "CCX", "TOFFOLI", "CSWAP",
+        }
+
+    def _is_gate_token(self) -> bool:
+        tok = self.peek()
+        return tok.type in self._GATE_TOKEN_TYPES and (
+            tok.type != TokenType.IDENTIFIER or self._is_gate_name(tok.value)
+        )
+
+    def _consume_gate_name(self) -> str:
+        tok = self.peek()
+        if tok.type not in self._GATE_TOKEN_TYPES:
+            raise ParseError("Expected gate type", tok)
+        self.advance()
+        if tok.type != TokenType.IDENTIFIER:
+            return tok.value.upper()
+        return tok.value
+
+    def _parse_quantum_gate_in_brace_block(self) -> "QuantumGateNode":
+        from .synapse_ast import QuantumGateNode
+
+        gate_line = self.peek().line
+        gate_col = self.peek().column
+        gate_type = self._consume_gate_name()
+        qubits_list: list = []
+        params: list = []
+
+        if self.match(TokenType.LEFT_PAREN):
+            if not self.check(TokenType.RIGHT_PAREN):
+                while True:
+                    expr = self.parse_expression()
+                    if gate_type.upper() in {"RX", "RY", "RZ"} and len(qubits_list) == 1:
+                        params.append(expr)
+                    else:
+                        qubits_list.append(expr)
+                    if not self.match(TokenType.COMMA):
+                        break
+            self.consume(TokenType.RIGHT_PAREN, "Expected ')' after gate arguments")
+        else:
+            while self.check(TokenType.NUMBER):
+                qubits_list.append(self.parse_expression())
+                if not self.match(TokenType.COMMA):
+                    break
+
+        return QuantumGateNode(gate_type, qubits_list, params, gate_line, gate_col)
+
     def parse_quantum_circuit(self) -> QuantumCircuitNode:
         """Parse quantum circuit definition."""
-        from .synapse_ast import QuantumCircuitNode, QuantumGateNode, QuantumMeasureNode
+        from .synapse_ast import QuantumCircuitNode, QuantumMeasureNode
 
         circ_tok = self.advance()  # consume 'circuit'
         name = self.consume(TokenType.IDENTIFIER, "Expected circuit name").value
@@ -1194,32 +1262,8 @@ class EnhancedParser:
         while not self.check(TokenType.RIGHT_BRACE):
             self.skip_newlines()
 
-            # Parse quantum gates
-            if self.match(TokenType.H, TokenType.X, TokenType.Y, TokenType.Z,
-                         TokenType.CNOT, TokenType.CX, TokenType.RX,
-                         TokenType.RY, TokenType.RZ):
-                gate_tok = self.advance()
-                self.consume(TokenType.LEFT_PAREN, "Expected '(' after gate")
-
-                qubits_list = []
-                params = []
-
-                if not self.check(TokenType.RIGHT_PAREN):
-                    qubits_list.append(self.parse_expression())
-
-                    while self.check(TokenType.COMMA):
-                        self.advance()
-                        expr = self.parse_expression()
-                        # Rotation gates take angle as second parameter
-                        if gate_tok.value.lower() in {"rx", "ry", "rz"} and len(qubits_list) == 1:
-                            params.append(expr)
-                        else:
-                            qubits_list.append(expr)
-
-                self.consume(TokenType.RIGHT_PAREN, "Expected ')' after gate arguments")
-
-                gates.append(QuantumGateNode(gate_tok.value, qubits_list, params,
-                                            gate_tok.line, gate_tok.column))
+            if self._is_gate_token():
+                gates.append(self._parse_quantum_gate_in_brace_block())
 
             # Parse measurements
             elif self.check(TokenType.MEASURE):
@@ -1356,6 +1400,21 @@ class EnhancedParser:
         return QuantumAlgorithmNode(name, parameters, ansatz, cost_function, optimizer,
                                    algo_tok.line, algo_tok.column)
 
+    _RUN_OPTION_KEY_TYPES = (
+        TokenType.IDENTIFIER,
+        TokenType.SHOTS,
+        TokenType.NOISE,
+        TokenType.NOISE_MODEL,
+        TokenType.SEED,
+        TokenType.BACKEND,
+    )
+
+    def _consume_run_option_key(self) -> str:
+        tok = self.peek()
+        if tok.type not in self._RUN_OPTION_KEY_TYPES:
+            self.consume(TokenType.IDENTIFIER, "Expected option key")
+        return self.advance().value
+
     def parse_run(self) -> ASTNode:
         """Parse run statement for circuit execution."""
         from .synapse_ast import IdentifierNode, NumberNode, RunNode, StringNode
@@ -1379,7 +1438,7 @@ class EnhancedParser:
             while not self.check(TokenType.RIGHT_BRACE):
                 self.skip_newlines()
 
-                key = self.consume(TokenType.IDENTIFIER, "Expected option key").value
+                key = self._consume_run_option_key()
                 self.consume(TokenType.COLON, "Expected ':' after key")
 
                 # Parse option value

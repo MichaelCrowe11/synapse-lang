@@ -7,6 +7,7 @@ Implements complete parsing for all language constructs
 from typing import Optional, List
 from synapse_lang.synapse_ast_enhanced import *  # noqa: F403
 from synapse_lang.synapse_ast import (  # noqa: F401
+    ListNode,
     QuantumAlgorithmNode,
     QuantumAnsatzNode,
     QuantumBackendNode,
@@ -34,6 +35,7 @@ class EnhancedParser:
         self.tokens = []
         self.current = 0
         self.errors = []
+        self.raise_on_error = False
 
     def parse(self) -> ProgramNode:
         """Parse entire program"""
@@ -47,6 +49,8 @@ class EnhancedParser:
                     statements.append(stmt)
             except ParserError as e:
                 self.errors.append(e)
+                if self.raise_on_error:
+                    raise
                 self.synchronize()
 
         return ProgramNode(statements)
@@ -162,8 +166,12 @@ class EnhancedParser:
         while not self.check(TokenType.DEDENT):
             if self.match(TokenType.MEASURE):
                 measurements.append(self.parse_quantum_measure())
+            elif self._is_gate_token() or (
+                self.check(TokenType.IDENTIFIER) and self._is_gate_name(self.peek().value)
+            ):
+                gates.append(self.parse_quantum_gate())
             elif self.match(TokenType.IDENTIFIER):
-                keyword = self.previous().value
+                keyword = self.previous().value.lower()
 
                 if keyword == "qubits":
                     self.consume(TokenType.COLON, "Expected ':' after 'qubits'")
@@ -175,7 +183,13 @@ class EnhancedParser:
                     self.consume(TokenType.INDENT, "Expected indent after 'gates:'")
 
                     while not self.check(TokenType.DEDENT):
-                        gates.append(self.parse_quantum_gate())
+                        if self._is_gate_token() or (
+                            self.check(TokenType.IDENTIFIER)
+                            and self._is_gate_name(self.peek().value)
+                        ):
+                            gates.append(self.parse_quantum_gate())
+                        else:
+                            break
                         self.skip_newlines()
 
                     self.consume(TokenType.DEDENT, "Expected dedent after gates")
@@ -193,13 +207,30 @@ class EnhancedParser:
         TokenType.X,
         TokenType.Y,
         TokenType.Z,
+        TokenType.S,
+        TokenType.T,
         TokenType.CX,
         TokenType.CNOT,
+        TokenType.CZ,
         TokenType.SWAP,
+        TokenType.CCX,
         TokenType.RX,
         TokenType.RY,
         TokenType.RZ,
+        TokenType.U,
     )
+
+    def _is_gate_name(self, name: str) -> bool:
+        return name.upper() in {
+            "H", "X", "Y", "Z", "S", "T", "CX", "CNOT", "CZ", "SWAP",
+            "RX", "RY", "RZ", "U", "CCX", "TOFFOLI", "CSWAP",
+        }
+
+    def _is_gate_token(self) -> bool:
+        return self.peek().type in self._GATE_TOKEN_TYPES and (
+            self.peek().type != TokenType.IDENTIFIER
+            or self._is_gate_name(self.peek().value)
+        )
 
     def _consume_gate_name(self) -> str:
         """Consume a gate name token (identifier or built-in gate keyword)."""
@@ -213,33 +244,36 @@ class EnhancedParser:
         return name
 
     def parse_quantum_gate(self) -> QuantumGateNode:
-        """Parse quantum gate operation"""
+        """Parse quantum gate: H(0) or h 0 or cx 0, 1"""
         gate_type = self._consume_gate_name()
-        self.consume(TokenType.LEFT_PAREN, "Expected '(' after gate name")
+        qubits: list[int] = []
+        parameters: list = []
 
-        qubits = []
-        parameters = []
-
-        # Parse arguments
-        if not self.check(TokenType.RIGHT_PAREN):
-            while True:
-                arg = self.parse_expression()
-                if isinstance(arg, NumberNode):
-                    qubits.append(int(arg.value))
-                else:
-                    parameters.append(arg)
-
+        if self.match(TokenType.LEFT_PAREN):
+            if not self.check(TokenType.RIGHT_PAREN):
+                while True:
+                    arg = self.parse_expression()
+                    if isinstance(arg, NumberNode):
+                        qubits.append(int(arg.value))
+                    else:
+                        parameters.append(arg)
+                    if not self.match(TokenType.COMMA):
+                        break
+            self.consume(TokenType.RIGHT_PAREN, "Expected ')' after gate arguments")
+        else:
+            while self.check(TokenType.NUMBER):
+                qubits.append(int(self.advance().value))
                 if not self.match(TokenType.COMMA):
                     break
 
-        self.consume(TokenType.RIGHT_PAREN, "Expected ')' after gate arguments")
-
-        return QuantumGateNode(gate_type, qubits, parameters,
-                              self.previous().line, self.previous().column)
+        return QuantumGateNode(
+            gate_type, qubits, parameters,
+            self.previous().line, self.previous().column,
+        )
 
     def parse_quantum_measure(self) -> QuantumMeasurementNode:
-        """Parse quantum measurement"""
-        qubits = "all"
+        """Parse quantum measurement: measure(0), measure("all"), measure all"""
+        qubits: str | list[int] = "all"
 
         if self.match(TokenType.LEFT_PAREN):
             if self.check(TokenType.STRING) and self.peek().value == "all":
@@ -251,8 +285,11 @@ class EnhancedParser:
                     qubits.append(int(self.consume(TokenType.NUMBER, "Expected qubit index").value))
                     if not self.match(TokenType.COMMA):
                         break
-
             self.consume(TokenType.RIGHT_PAREN, "Expected ')' after measure arguments")
+        elif self.match(TokenType.IDENTIFIER) and self.previous().value.lower() == "all":
+            qubits = "all"
+        elif self.check(TokenType.NUMBER):
+            qubits = [int(self.advance().value)]
 
         return QuantumMeasurementNode(
             qubits, None, self.previous().line, self.previous().column
