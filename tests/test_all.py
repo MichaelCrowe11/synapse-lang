@@ -10,9 +10,14 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import all test modules
-from test_type_inference import TestTypeInference
-from test_quantum_designer import TestQuantumCircuit, TestQuantumSimulator
-from test_collaboration import TestOperationalTransform, TestCollaborationManager
+from tests.test_type_inference import TestTypeInference
+from tests.test_quantum_designer import TestQuantumCircuit
+from tests.test_collaboration import TestOperationalTransform, TestCollaborationManager
+
+try:
+    from tests.test_quantum_designer import TestQuantumSimulator
+except ImportError:
+    TestQuantumSimulator = None
 
 def run_all_tests():
     """Run all tests and generate report"""

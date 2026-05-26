@@ -18,10 +18,14 @@ quantum circuit rot(1) {
 run rot { shots: 128 }
 """
 
-def _find_counts(result_list):
-    for item in result_list:
-        if isinstance(item, dict) and "counts" in item:
-            return item["counts"]
+def _find_counts(result):
+    if isinstance(result, dict) and "counts" in result:
+        return result["counts"]
+    if isinstance(result, list):
+        for item in result:
+            counts = _find_counts(item)
+            if counts is not None:
+                return counts
     return None
 
 def test_bell_circuit_counts():

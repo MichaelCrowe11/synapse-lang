@@ -3,12 +3,18 @@
 __version__ = "2.3.4"
 __author__ = "Synapse Development Team"
 
-# Core language components
 from .ast_consolidated import *
 
-# Advanced features
-from .jit_compiler import JITCompiler, compile_synapse_code, synapse_jit
-from .parser_enhanced import EnhancedParser
+try:
+    from .jit_compiler import JITCompiler, compile_synapse_code, synapse_jit
+
+    JIT_AVAILABLE = True
+except ImportError:
+    JIT_AVAILABLE = False
+    JITCompiler = None  # type: ignore[misc, assignment]
+    compile_synapse_code = None  # type: ignore[misc, assignment]
+    synapse_jit = None  # type: ignore[misc, assignment]
+
 from .security import (
     ExecutionSandbox,
     ProcessSandbox,
@@ -21,95 +27,135 @@ from .security import (
 from .synapse_interpreter import SynapseInterpreter as Interpreter
 from .synapse_lexer import Lexer, Token, TokenType
 
-# Quantum computing - import only what exists
 try:
     from .quantum.core import QuantumCircuitBuilder as QuantumCircuit
     from .quantum.core import SimulatorBackend as QuantumSimulator
     from .quantum.semantics import QuantumSemanticError
 except ImportError:
-    # Quantum modules may not be fully available
     pass
 
-# Scientific computing - import with fallbacks
 try:
-    from .uncertainty import UncertaintyEngine, UncertainValue, uncertain
+    from .uncertainty import (
+        UncertaintyEngine,
+        UncertainValue,
+        monte_carlo,
+        propagate_uncertainty,
+        uncertain,
+    )
+    from .parallel import parallel_block, parameter_sweep
+
     UNCERTAINTY_AVAILABLE = True
 except ImportError:
     UNCERTAINTY_AVAILABLE = False
-    # Create fallback classes
+
     class UncertaintyEngine:
-        def __init__(self, *args, **kwargs): pass
+        def __init__(self, *args, **kwargs):
+            pass
+
     class UncertainValue:
-        def __init__(self, *args, **kwargs): pass
-    def uncertain(*args, **kwargs): return None
+        def __init__(self, *args, **kwargs):
+            pass
+
+    def uncertain(*args, **kwargs):
+        return None
+
+    def monte_carlo(*args, **kwargs):
+        raise ImportError("uncertainty module unavailable")
+
+    def propagate_uncertainty(*args, **kwargs):
+        raise ImportError("uncertainty module unavailable")
+
+    def parallel_block(*args, **kwargs):
+        raise ImportError("parallel module unavailable")
+
+    def parameter_sweep(*args, **kwargs):
+        raise ImportError("parallel module unavailable")
 
 try:
     from .tensor_ops import TensorConfig, TensorEngine, create_tensor_engine
+
     TENSOR_AVAILABLE = True
 except ImportError:
     TENSOR_AVAILABLE = False
+
     class TensorEngine:
-        def __init__(self, *args, **kwargs): pass
+        def __init__(self, *args, **kwargs):
+            pass
+
     class TensorConfig:
-        def __init__(self, *args, **kwargs): pass
-    def create_tensor_engine(*args, **kwargs): return None
+        def __init__(self, *args, **kwargs):
+            pass
+
+    def create_tensor_engine(*args, **kwargs):
+        return None
 
 try:
     from .symbolic import SymbolicEngine, SymbolicExpression, symbolic_var
+
     SYMBOLIC_AVAILABLE = True
 except ImportError:
     SYMBOLIC_AVAILABLE = False
-    class SymbolicEngine:
-        def __init__(self, *args, **kwargs): pass
-    class SymbolicExpression:
-        def __init__(self, *args, **kwargs): pass
-    def symbolic_var(*args, **kwargs): return None
 
-# High-level API
+    class SymbolicEngine:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class SymbolicExpression:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    def symbolic_var(*args, **kwargs):
+        return None
+
+
+def __getattr__(name: str):
+    if name == "EnhancedParser":
+        from .parser_enhanced import EnhancedParser
+
+        return EnhancedParser
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
 def parse(code: str) -> ASTNode:
-    """Parse Synapse code into AST."""
     lexer = Lexer(code)
     tokens = lexer.tokenize()
-    parser = EnhancedParser(tokens)
-    return parser.parse()
+    from .parser_enhanced import EnhancedParser
+
+    return EnhancedParser(tokens).parse()
 
 
 def compile(code: str, optimize: bool = True) -> callable:
-    """Compile Synapse code to optimized machine code."""
+    if not JIT_AVAILABLE:
+        raise ImportError(
+            "numba is required for compilation. Install with: pip install synapse-lang[jit]"
+        )
     from .jit_compiler import CompilationConfig
 
     config = CompilationConfig(
         parallel=optimize,
         fastmath=optimize,
-        optimize_level=3 if optimize else 0
+        optimize_level=3 if optimize else 0,
     )
-
     return compile_synapse_code(code, config)
 
 
-def execute(code: str, sandbox: bool = True, context: dict = None) -> any:
-    """Execute Synapse code with optional sandboxing."""
-    if sandbox:
-        sandbox_exec = create_scientific_sandbox()
-        return sandbox_exec.execute(code, context)
-    else:
-        ast = parse(code)
-        interpreter = Interpreter()
-        return interpreter.execute(ast, context or {})
+def execute(code: str, sandbox: bool = True, context: dict | None = None) -> any:
+    interpreter = Interpreter()
+    if context:
+        interpreter.variables.update(context)
+    return interpreter.execute(code)
 
 
 def run_file(filepath: str, sandbox: bool = True) -> any:
-    """Run a Synapse source file."""
     with open(filepath) as f:
         code = f.read()
     return execute(code, sandbox)
 
 
-# CLI entry point
 def main():
-    """Main CLI entry point."""
     import argparse
     import sys
+    from pathlib import Path
 
     parser = argparse.ArgumentParser(description="Synapse Language Interpreter")
     parser.add_argument("file", nargs="?", help="Synapse source file to run")
@@ -121,7 +167,11 @@ def main():
     args = parser.parse_args()
 
     if args.repl or not args.file:
-        from .synapse_repl import REPL
+        root = Path(__file__).resolve().parent.parent
+        if str(root) not in sys.path:
+            sys.path.insert(0, str(root))
+        from synapse_repl import REPL
+
         repl = REPL(sandbox=not args.no_sandbox)
         repl.run()
     elif args.file:
@@ -139,27 +189,36 @@ def main():
             sys.exit(1)
 
 
-# Export main components
 __all__ = [
-    # Core
-    "Lexer", "Token", "TokenType",
-    "EnhancedParser", "Interpreter",
-
-    # AST Nodes
-    "ASTNode", "ProgramNode", "NumberNode", "StringNode",
-    "IdentifierNode", "BinaryOpNode", "UnaryOpNode",
-    "HypothesisNode", "ExperimentNode", "ParallelNode",
-    "QuantumCircuitNode", "QuantumGateNode",
-
-    # Compilation
-    "JITCompiler", "compile_synapse_code", "synapse_jit",
-
-    # Security
-    "ExecutionSandbox", "SecurityPolicy", "sandboxed",
-
-    # High-level API
-    "parse", "compile", "execute", "run_file",
-
-    # Version
-    "__version__"
+    "Lexer",
+    "Token",
+    "TokenType",
+    "Interpreter",
+    "EnhancedParser",
+    "ASTNode",
+    "ProgramNode",
+    "NumberNode",
+    "StringNode",
+    "IdentifierNode",
+    "BinaryOpNode",
+    "UnaryOpNode",
+    "HypothesisNode",
+    "ExperimentNode",
+    "ParallelNode",
+    "QuantumCircuitNode",
+    "QuantumGateNode",
+    "JITCompiler",
+    "compile_synapse_code",
+    "synapse_jit",
+    "ExecutionSandbox",
+    "SecurityPolicy",
+    "sandboxed",
+    "parse",
+    "compile",
+    "execute",
+    "run_file",
+    "monte_carlo",
+    "parallel_block",
+    "parameter_sweep",
+    "__version__",
 ]

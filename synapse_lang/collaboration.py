@@ -179,6 +179,49 @@ class Operation:
         return self
 
 
+class OperationalTransform:
+    """Dict-based operational transformation API for tests and clients."""
+
+    @staticmethod
+    def _to_operation(op: dict) -> Operation:
+        op_type_name = op.get("type", "insert")
+        op_type = OperationType.INSERT if op_type_name == "insert" else OperationType.DELETE
+        return Operation(
+            user_id=op.get("user_id", ""),
+            type=op_type,
+            position=int(op.get("position", 0)),
+            content=op.get("text", op.get("content", "")),
+            length=int(op.get("length", 0)),
+        )
+
+    def transform(self, op1: dict, op2: dict) -> dict:
+        result = dict(op2)
+        t1, t2 = op1.get("type"), op2.get("type")
+        p1, p2 = int(op1.get("position", 0)), int(op2.get("position", 0))
+        if t1 == "insert" and t2 == "insert":
+            text1 = op1.get("text", "")
+            if p1 < p2 and p1 + len(text1) <= p2:
+                return result
+            if p1 < p2:
+                result["position"] = p2 + len(text1)
+            elif p1 == p2 and op1.get("user_id", "") < op2.get("user_id", ""):
+                result["position"] = p2 + len(text1)
+            return result
+        if t1 == "insert" and t2 == "delete" and p1 <= p2:
+            result["position"] = p2 + len(op1.get("text", ""))
+            return result
+        if t1 == "delete" and t2 == "delete":
+            len1 = int(op1.get("length", 0))
+            if p1 < p2:
+                result["position"] = p2 - len1
+            elif p1 == p2:
+                result["length"] = max(0, int(op2.get("length", 0)) - len1)
+            return result
+        if t1 == "delete" and t2 == "insert" and p1 < p2:
+            result["position"] = p2 - int(op1.get("length", 0))
+        return result
+
+
 @dataclass
 class Document:
     """Collaborative document state"""
@@ -384,37 +427,79 @@ class CollaborationManager:
     """Manages multiple collaboration sessions"""
 
     def __init__(self):
-        self.sessions: Dict[str, CollaborationSession] = {}
-        self.user_sessions: Dict[str, str] = {}  # user_id -> session_id
+        self._sessions: Dict[str, CollaborationSession] = {}
+        self.user_sessions: Dict[str, str] = {}
 
-    def create_session(self, name: str = "New Session") -> CollaborationSession:
-        """Create new collaboration session"""
+    @property
+    def sessions(self) -> Dict[str, Dict[str, Any]]:
+        return {
+            sid: {"users": s.users, "operations": s.document.operations}
+            for sid, s in self._sessions.items()
+        }
+
+    def create_session(self, name: str = "New Session") -> str:
         session = CollaborationSession()
         session.document.name = name
-        self.sessions[session.id] = session
-        return session
+        self._sessions[session.id] = session
+        return session.id
 
     def get_session(self, session_id: str) -> Optional[CollaborationSession]:
-        """Get session by ID"""
-        return self.sessions.get(session_id)
+        return self._sessions.get(session_id)
 
-    def join_session(self, session_id: str, user: User) -> Dict[str, Any]:
-        """Join user to session"""
+    def join_session(self, session_id: str, user):
         session = self.get_session(session_id)
-        if session:
-            result = session.join(user)
-            self.user_sessions[user.id] = session_id
-            return result
-        return {'error': 'Session not found'}
+        if not session:
+            return False if isinstance(user, str) else {"error": "Session not found"}
+        if isinstance(user, str):
+            session.join(User(id=user, name=user))
+            self.user_sessions[user] = session_id
+            return True
+        result = session.join(user)
+        self.user_sessions[user.id] = session_id
+        return result
 
-    def leave_session(self, user_id: str):
-        """Remove user from their current session"""
+    def apply_operation(self, session_id: str, operation: dict) -> bool:
+        session = self.get_session(session_id)
+        if not session:
+            return False
+        op_type = OperationType.INSERT if operation.get("type") == "insert" else OperationType.DELETE
+        op = Operation(
+            user_id=operation.get("user_id", ""),
+            type=op_type,
+            position=int(operation.get("position", 0)),
+            content=operation.get("text", operation.get("content", "")),
+            length=int(operation.get("length", 0)),
+        )
+        session.apply_operation(op)
+        return True
+
+    def get_session_state(self, session_id: str) -> dict:
+        session = self.get_session(session_id)
+        if not session:
+            return {}
+        return {
+            "version": session.document.version,
+            "users": list(session.users.keys()),
+            "operations": session.document.operations,
+        }
+
+    def leave_session(self, session_id: str, user_id: str = None):
+        if user_id is None:
+            uid = session_id
+            if uid in self.user_sessions:
+                sid = self.user_sessions[uid]
+                session = self.get_session(sid)
+                if session:
+                    session.leave(uid)
+                del self.user_sessions[uid]
+            return None
+        session = self.get_session(session_id)
+        if not session or user_id not in session.users:
+            return False
+        session.leave(user_id)
         if user_id in self.user_sessions:
-            session_id = self.user_sessions[user_id]
-            session = self.get_session(session_id)
-            if session:
-                session.leave(user_id)
             del self.user_sessions[user_id]
+        return True
 
     def list_sessions(self) -> List[Dict[str, Any]]:
         """List all active sessions"""
@@ -425,7 +510,7 @@ class CollaborationManager:
                 'users': len(session.users),
                 'version': session.document.version
             }
-            for session in self.sessions.values()
+            for session in self._sessions.values()
             if session.is_active
         ]
 
@@ -434,7 +519,7 @@ class CollaborationManager:
         current_time = time.time()
         to_remove = []
 
-        for session_id, session in self.sessions.items():
+        for session_id, session in self._sessions.items():
             if not session.users:  # No users
                 last_activity = max(
                     [op.timestamp for op in session.document.operations]
@@ -444,7 +529,7 @@ class CollaborationManager:
                     to_remove.append(session_id)
 
         for session_id in to_remove:
-            del self.sessions[session_id]
+            del self._sessions[session_id]
 
 
 # WebSocket-compatible message handler
@@ -496,8 +581,9 @@ if __name__ == "__main__":
     manager = CollaborationManager()
 
     # Create a new session
-    session = manager.create_session("quantum_simulation.syn")
-    print(f"Created session: {session.id}")
+    session_id = manager.create_session("quantum_simulation.syn")
+    session = manager.get_session(session_id)
+    print(f"Created session: {session_id}")
 
     # Create users
     alice = User(name="Alice", color="#ff6b6b")

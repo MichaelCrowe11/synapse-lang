@@ -356,13 +356,21 @@ class EnhancedParser:
             self.current += 1
         return token
 
+    def previous(self) -> Token:
+        """Return the most recently consumed token."""
+        return self.tokens[max(self.current - 1, 0)]
+
     def check(self, token_type: TokenType) -> bool:
         """Check if current token matches type."""
         return self.peek().type == token_type
 
     def match(self, *token_types: TokenType) -> bool:
-        """Check if current token matches any of the given types."""
-        return any(self.check(t) for t in token_types)
+        """Match and consume current token if it matches any of the given types."""
+        for token_type in token_types:
+            if self.check(token_type):
+                self.advance()
+                return True
+        return False
 
     def consume(self, token_type: TokenType, message: str) -> Token:
         """Consume token of expected type or raise/recover from error."""
@@ -397,17 +405,50 @@ class EnhancedParser:
             self.advance()
 
     def skip_newlines(self):
-        """Skip newline tokens."""
-        while self.check(TokenType.NEWLINE):
+        """Skip newline and layout tokens (indent inside braced blocks)."""
+        while self.peek().type in (TokenType.NEWLINE, TokenType.INDENT, TokenType.DEDENT):
+            self.advance()
+
+    def _skip_to_statement_end(self):
+        """Advance to next statement boundary (avoids infinite parse loops)."""
+        while not self.check(TokenType.EOF):
+            if self.check(TokenType.NEWLINE):
+                self.advance()
+                return
+            if self.match(
+                TokenType.HYPOTHESIS,
+                TokenType.EXPERIMENT,
+                TokenType.PARALLEL,
+                TokenType.STREAM,
+                TokenType.REASON,
+                TokenType.PIPELINE,
+                TokenType.EXPLORE,
+                TokenType.QUANTUM,
+            ):
+                return
             self.advance()
 
     def parse(self) -> ASTNode:
         """Parse tokens into complete AST."""
         statements = []
 
+        self.skip_newlines()
+        if self.check(TokenType.INDENT):
+            self.advance()
+
         while not self.check(TokenType.EOF):
+            if self.check(TokenType.DEDENT):
+                self.advance()
+                self.skip_newlines()
+                if self.check(TokenType.INDENT):
+                    self.advance()
+                continue
             self.skip_newlines()
+            if self.check(TokenType.SEMICOLON):
+                self.advance()
+                continue
             if not self.check(TokenType.EOF):
+                start = self.current
                 try:
                     stmt = self.parse_statement()
                     if stmt:
@@ -416,6 +457,8 @@ class EnhancedParser:
                     if not self.error_recovery:
                         raise
                     # Continue parsing after error
+                if self.current == start:
+                    self._skip_to_statement_end()
             self.skip_newlines()
 
         # Report collected errors if any
@@ -424,7 +467,9 @@ class EnhancedParser:
             for error in self.errors[:5]:  # Show first 5 errors
                 print(f"  - {error}")
 
-        return ProgramNode(statements)
+        from .synapse_ast import ProgramNode as AstProgramNode
+
+        return AstProgramNode(statements)
 
     def parse_statement(self) -> ASTNode | None:
         """Parse a single statement with all language constructs."""
@@ -601,9 +646,12 @@ class EnhancedParser:
                 self.skip_newlines()
             self.consume(TokenType.RIGHT_BRACE, "Expected '}' to close branch")
         else:
-            body.append(self.parse_expression())
+            body.append(self.parse_expression_statement())
 
-        return BranchNode(name, body, branch_tok.line, branch_tok.column)
+        from .synapse_ast import BlockNode as AstBlockNode, BranchNode as AstBranchNode
+
+        body_node = body[0] if len(body) == 1 else AstBlockNode(body, branch_tok.line, branch_tok.column)
+        return AstBranchNode(name, body_node, branch_tok.line, branch_tok.column)
 
     def parse_parallel(self) -> ParallelNode:
         """Parse parallel execution block."""
@@ -648,21 +696,39 @@ class EnhancedParser:
             # Regular parallel block
             self.consume(TokenType.LEFT_BRACE, "Expected '{' after 'parallel'")
             self.skip_newlines()
+            if self.check(TokenType.INDENT):
+                self.advance()
 
             while not self.check(TokenType.RIGHT_BRACE):
                 self.skip_newlines()
+                if self.check(TokenType.DEDENT):
+                    self.advance()
+                    break
                 if self.check(TokenType.BRANCH):
                     branches.append(self.parse_branch())
+                elif self.check(TokenType.RIGHT_BRACE):
+                    break
                 else:
-                    # Allow inline expressions
-                    expr = self.parse_expression()
-                    branches.append(BranchNode(f"branch_{len(branches)}", [expr],
-                                              expr.line, expr.column))
+                    expr = self.parse_expression_statement()
+                    from .synapse_ast import BranchNode as AstBranchNode
+
+                    branches.append(
+                        AstBranchNode(
+                            f"branch_{len(branches)}",
+                            expr,
+                            expr.line if hasattr(expr, "line") else par_tok.line,
+                            expr.column if hasattr(expr, "column") else par_tok.column,
+                        )
+                    )
                 self.skip_newlines()
 
+            if self.check(TokenType.DEDENT):
+                self.advance()
             self.consume(TokenType.RIGHT_BRACE, "Expected '}' to close parallel")
 
-        return ParallelNode(branches, num_workers, par_tok.line, par_tok.column)
+        from .synapse_ast import ParallelNode as AstParallelNode
+
+        return AstParallelNode(branches, par_tok.line, par_tok.column, num_workers)
 
     def parse_stream(self) -> StreamNode:
         """Parse thought stream definition."""
@@ -1019,38 +1085,38 @@ class EnhancedParser:
 
         return AsyncNode(name, body, parallel_count, async_tok.line, async_tok.column)
 
-    def parse_uncertain_declaration(self) -> UncertaintyNode:
+    def parse_uncertain_declaration(self) -> AssignmentNode:
         """Parse uncertain value declaration."""
+        from .synapse_ast import AssignmentNode, IdentifierNode, UncertainNode
+
         unc_tok = self.advance()  # consume 'uncertain'
 
         if self.check(TokenType.VALUE):
             self.advance()
 
-        self.consume(TokenType.IDENTIFIER, "Expected variable name").value
-        self.consume(TokenType.EQUAL, "Expected '=' after variable")
+        name = self.consume(TokenType.IDENTIFIER, "Expected variable name").value
+        self.consume(TokenType.ASSIGN, "Expected '=' after variable")
 
         value = float(self.consume(TokenType.NUMBER, "Expected value").value)
 
         uncertainty = 0.0
-        distribution = None
 
-        if self.check(TokenType.PLUS_MINUS):
-            self.advance()
+        if self.match(TokenType.PLUS_MINUS, TokenType.UNCERTAINTY_OP):
             uncertainty = float(self.consume(TokenType.NUMBER, "Expected uncertainty").value)
-
         elif self.check(TokenType.TILDE):
             self.advance()
-            distribution = self.consume(TokenType.IDENTIFIER, "Expected distribution").value
-            # Parse distribution parameters
+            self.consume(TokenType.IDENTIFIER, "Expected distribution").value
             if self.check(TokenType.LEFT_PAREN):
                 self.advance()
-                # Parse parameters (simplified)
                 while not self.check(TokenType.RIGHT_PAREN):
                     self.advance()
                 self.consume(TokenType.RIGHT_PAREN, "Expected ')' after parameters")
 
-        return UncertaintyNode(value, uncertainty, distribution,
-                             unc_tok.line, unc_tok.column)
+        target = IdentifierNode(name, unc_tok.line, unc_tok.column)
+        uncertain_value = UncertainNode(value, uncertainty, unc_tok.line, unc_tok.column)
+        return AssignmentNode(
+            target, uncertain_value, unc_tok.line, unc_tok.column, is_uncertain=True
+        )
 
     def parse_evolve_declaration(self) -> ASTNode:
         """Parse evolving variable declaration."""
@@ -1105,9 +1171,77 @@ class EnhancedParser:
             # Quantum block
             return self.parse_block()
 
+    _GATE_TOKEN_TYPES = (
+        TokenType.IDENTIFIER,
+        TokenType.H,
+        TokenType.X,
+        TokenType.Y,
+        TokenType.Z,
+        TokenType.S,
+        TokenType.T,
+        TokenType.CX,
+        TokenType.CNOT,
+        TokenType.CZ,
+        TokenType.SWAP,
+        TokenType.CCX,
+        TokenType.RX,
+        TokenType.RY,
+        TokenType.RZ,
+        TokenType.U,
+    )
+
+    def _is_gate_name(self, name: str) -> bool:
+        return name.upper() in {
+            "H", "X", "Y", "Z", "S", "T", "CX", "CNOT", "CZ", "SWAP",
+            "RX", "RY", "RZ", "U", "CCX", "TOFFOLI", "CSWAP",
+        }
+
+    def _is_gate_token(self) -> bool:
+        tok = self.peek()
+        return tok.type in self._GATE_TOKEN_TYPES and (
+            tok.type != TokenType.IDENTIFIER or self._is_gate_name(tok.value)
+        )
+
+    def _consume_gate_name(self) -> str:
+        tok = self.peek()
+        if tok.type not in self._GATE_TOKEN_TYPES:
+            raise ParseError("Expected gate type", tok)
+        self.advance()
+        if tok.type != TokenType.IDENTIFIER:
+            return tok.value.upper()
+        return tok.value
+
+    def _parse_quantum_gate_in_brace_block(self) -> "QuantumGateNode":
+        from .synapse_ast import QuantumGateNode
+
+        gate_line = self.peek().line
+        gate_col = self.peek().column
+        gate_type = self._consume_gate_name()
+        qubits_list: list = []
+        params: list = []
+
+        if self.match(TokenType.LEFT_PAREN):
+            if not self.check(TokenType.RIGHT_PAREN):
+                while True:
+                    expr = self.parse_expression()
+                    if gate_type.upper() in {"RX", "RY", "RZ"} and len(qubits_list) == 1:
+                        params.append(expr)
+                    else:
+                        qubits_list.append(expr)
+                    if not self.match(TokenType.COMMA):
+                        break
+            self.consume(TokenType.RIGHT_PAREN, "Expected ')' after gate arguments")
+        else:
+            while self.check(TokenType.NUMBER):
+                qubits_list.append(self.parse_expression())
+                if not self.match(TokenType.COMMA):
+                    break
+
+        return QuantumGateNode(gate_type, qubits_list, params, gate_line, gate_col)
+
     def parse_quantum_circuit(self) -> QuantumCircuitNode:
         """Parse quantum circuit definition."""
-        from .synapse_ast import QuantumCircuitNode, QuantumGateNode, QuantumMeasureNode
+        from .synapse_ast import QuantumCircuitNode, QuantumMeasureNode
 
         circ_tok = self.advance()  # consume 'circuit'
         name = self.consume(TokenType.IDENTIFIER, "Expected circuit name").value
@@ -1128,32 +1262,8 @@ class EnhancedParser:
         while not self.check(TokenType.RIGHT_BRACE):
             self.skip_newlines()
 
-            # Parse quantum gates
-            if self.match(TokenType.H, TokenType.X, TokenType.Y, TokenType.Z,
-                         TokenType.CNOT, TokenType.CX, TokenType.RX,
-                         TokenType.RY, TokenType.RZ):
-                gate_tok = self.advance()
-                self.consume(TokenType.LEFT_PAREN, "Expected '(' after gate")
-
-                qubits_list = []
-                params = []
-
-                if not self.check(TokenType.RIGHT_PAREN):
-                    qubits_list.append(self.parse_expression())
-
-                    while self.check(TokenType.COMMA):
-                        self.advance()
-                        expr = self.parse_expression()
-                        # Rotation gates take angle as second parameter
-                        if gate_tok.value.lower() in {"rx", "ry", "rz"} and len(qubits_list) == 1:
-                            params.append(expr)
-                        else:
-                            qubits_list.append(expr)
-
-                self.consume(TokenType.RIGHT_PAREN, "Expected ')' after gate arguments")
-
-                gates.append(QuantumGateNode(gate_tok.value, qubits_list, params,
-                                            gate_tok.line, gate_tok.column))
+            if self._is_gate_token():
+                gates.append(self._parse_quantum_gate_in_brace_block())
 
             # Parse measurements
             elif self.check(TokenType.MEASURE):
@@ -1290,6 +1400,21 @@ class EnhancedParser:
         return QuantumAlgorithmNode(name, parameters, ansatz, cost_function, optimizer,
                                    algo_tok.line, algo_tok.column)
 
+    _RUN_OPTION_KEY_TYPES = (
+        TokenType.IDENTIFIER,
+        TokenType.SHOTS,
+        TokenType.NOISE,
+        TokenType.NOISE_MODEL,
+        TokenType.SEED,
+        TokenType.BACKEND,
+    )
+
+    def _consume_run_option_key(self) -> str:
+        tok = self.peek()
+        if tok.type not in self._RUN_OPTION_KEY_TYPES:
+            self.consume(TokenType.IDENTIFIER, "Expected option key")
+        return self.advance().value
+
     def parse_run(self) -> ASTNode:
         """Parse run statement for circuit execution."""
         from .synapse_ast import IdentifierNode, NumberNode, RunNode, StringNode
@@ -1313,7 +1438,7 @@ class EnhancedParser:
             while not self.check(TokenType.RIGHT_BRACE):
                 self.skip_newlines()
 
-                key = self.consume(TokenType.IDENTIFIER, "Expected option key").value
+                key = self._consume_run_option_key()
                 self.consume(TokenType.COLON, "Expected ':' after key")
 
                 # Parse option value
@@ -1357,14 +1482,33 @@ class EnhancedParser:
         """Parse expression or assignment statement."""
         expr = self.parse_expression()
 
-        # Check for assignment
-        if self.check(TokenType.EQUAL):
+        if self.check(TokenType.PLUS) and self.peek_ahead(1).type == TokenType.ASSIGN:
             self.advance()
+            self.advance()
+            from .synapse_ast import AssignmentNode, BinaryOpNode, IdentifierNode
+
+            if isinstance(expr, IdentifierNode):
+                target = expr
+            elif hasattr(expr, "name"):
+                target = IdentifierNode(expr.name, expr.line, expr.column)
+            else:
+                return expr
+            rhs = self.parse_expression()
+            value = BinaryOpNode("+", target, rhs, target.line, target.column)
+            return AssignmentNode(target, value, target.line, target.column)
+
+        # Check for assignment
+        if self.match(TokenType.ASSIGN, TokenType.EQUALS):
             value = self.parse_expression()
-            # Create assignment node
-            from .synapse_ast import AssignmentNode
-            if hasattr(expr, "name"):
-                return AssignmentNode(expr.name, value, expr.line, expr.column)
+            from .synapse_ast import AssignmentNode, IdentifierNode
+
+            if isinstance(expr, IdentifierNode):
+                target = expr
+            elif hasattr(expr, "name"):
+                target = IdentifierNode(expr.name, expr.line, expr.column)
+            else:
+                return expr
+            return AssignmentNode(target, value, expr.line, expr.column)
 
         return expr
 
@@ -1393,8 +1537,8 @@ class EnhancedParser:
         """Parse logical OR expression."""
         left = self.parse_logical_and()
 
-        while self.check(TokenType.OR):
-            op_tok = self.advance()
+        while self.match(TokenType.OR):
+            op_tok = self.previous()
             right = self.parse_logical_and()
             from .synapse_ast import BinaryOpNode
             left = BinaryOpNode("||", left, right, op_tok.line, op_tok.column)
@@ -1405,8 +1549,8 @@ class EnhancedParser:
         """Parse logical AND expression."""
         left = self.parse_equality()
 
-        while self.check(TokenType.AND):
-            op_tok = self.advance()
+        while self.match(TokenType.AND):
+            op_tok = self.previous()
             right = self.parse_equality()
             from .synapse_ast import BinaryOpNode
             left = BinaryOpNode("&&", left, right, op_tok.line, op_tok.column)
@@ -1418,7 +1562,7 @@ class EnhancedParser:
         left = self.parse_comparison()
 
         while self.match(TokenType.EQUAL_EQUAL, TokenType.NOT_EQUAL):
-            op_tok = self.advance()
+            op_tok = self.previous()
             right = self.parse_comparison()
             from .synapse_ast import BinaryOpNode
             left = BinaryOpNode(op_tok.value, left, right, op_tok.line, op_tok.column)
@@ -1431,7 +1575,7 @@ class EnhancedParser:
 
         while self.match(TokenType.LESS_THAN, TokenType.LESS_EQUAL,
                          TokenType.GREATER_THAN, TokenType.GREATER_EQUAL):
-            op_tok = self.advance()
+            op_tok = self.previous()
             right = self.parse_additive()
             from .synapse_ast import BinaryOpNode
             left = BinaryOpNode(op_tok.value, left, right, op_tok.line, op_tok.column)
@@ -1443,7 +1587,10 @@ class EnhancedParser:
         left = self.parse_multiplicative()
 
         while self.match(TokenType.PLUS, TokenType.MINUS):
-            op_tok = self.advance()
+            if self.check(TokenType.ASSIGN):
+                self.current -= 1  # leave += / -= for assignment statement
+                break
+            op_tok = self.previous()
             right = self.parse_multiplicative()
             from .synapse_ast import BinaryOpNode
             left = BinaryOpNode(op_tok.value, left, right, op_tok.line, op_tok.column)
@@ -1454,8 +1601,8 @@ class EnhancedParser:
         """Parse multiplication/division expression."""
         left = self.parse_exponential()
 
-        while self.match(TokenType.STAR, TokenType.SLASH, TokenType.PERCENT):
-            op_tok = self.advance()
+        while self.match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.PERCENT):
+            op_tok = self.previous()
             right = self.parse_exponential()
             from .synapse_ast import BinaryOpNode
             left = BinaryOpNode(op_tok.value, left, right, op_tok.line, op_tok.column)
@@ -1477,7 +1624,7 @@ class EnhancedParser:
     def parse_unary(self) -> ASTNode:
         """Parse unary expression."""
         if self.match(TokenType.NOT, TokenType.MINUS):
-            op_tok = self.advance()
+            op_tok = self.previous()
             expr = self.parse_unary()
             from .synapse_ast import UnaryOpNode
             return UnaryOpNode(op_tok.value, expr, op_tok.line, op_tok.column)
@@ -1531,6 +1678,10 @@ class EnhancedParser:
     def parse_primary(self) -> ASTNode:
         """Parse primary expression."""
         from .synapse_ast import IdentifierNode, ListNode, MatrixNode, NumberNode, StringNode
+
+        if self.match(TokenType.TRUE, TokenType.FALSE):
+            id_tok = self.previous()
+            return IdentifierNode(id_tok.value, id_tok.line, id_tok.column)
 
         # Numbers
         if self.check(TokenType.NUMBER):

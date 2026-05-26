@@ -344,38 +344,45 @@ class TypeChecker:
 
     def infer_type(self, node: Any) -> SynapseType | None:
         """Infer type of an AST node."""
-        from .ast_consolidated import (
+        from .synapse_ast import (
+            AssignmentNode,
             BinaryOpNode,
-            BooleanNode,
-            DictNode,
             IdentifierNode,
             ListNode,
             NumberNode,
+            ProgramNode,
             QuantumCircuitNode,
             StringNode,
             UnaryOpNode,
-            UncertainValueNode,
+            UncertainNode,
         )
 
+        if isinstance(node, ProgramNode):
+            result = None
+            for stmt in node.body:
+                result = self.infer_type(stmt)
+            return result
+
+        if isinstance(node, AssignmentNode):
+            return self.infer_type(node.value)
+
         if isinstance(node, NumberNode):
-            if isinstance(node.value, int):
+            if isinstance(node.value, int) or (
+                isinstance(node.value, float) and node.value.is_integer()
+            ):
                 return self.types["int"]
-            else:
-                return self.types["float"]
+            return self.types["float"]
 
         elif isinstance(node, StringNode):
             return self.types["string"]
 
-        elif isinstance(node, BooleanNode):
-            return self.types["bool"]
-
         elif isinstance(node, IdentifierNode):
+            if node.name.lower() in ("true", "false"):
+                return self.types["bool"]
             return self.variables.get(node.name)
 
-        elif isinstance(node, UncertainValueNode):
-            base_type = self.infer_type(node.value)
-            if base_type:
-                return UncertainType(base_type)
+        elif isinstance(node, UncertainNode):
+            return UncertainType(self.types["float"])
 
         elif isinstance(node, BinaryOpNode):
             return self._infer_binary_op_type(node)
@@ -391,14 +398,6 @@ class TypeChecker:
                 element_type = self.infer_type(node.elements[0])
                 if element_type:
                     return ListType(element_type)
-
-        elif isinstance(node, DictNode):
-            if node.pairs:
-                key_node, value_node = node.pairs[0]
-                key_type = self.infer_type(key_node)
-                value_type = self.infer_type(value_node)
-                if key_type and value_type:
-                    return DictType(key_type, value_type)
 
         return None
 
