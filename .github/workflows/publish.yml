@@ -68,17 +68,21 @@ jobs:
           pip install build twine
       - name: Verify version matches tag
         run: |
-          # Prefer pyproject.toml version; fallback to setup.py
-          if [ -f pyproject.toml ]; then
-            FILE_VERSION=$(grep -E '^version *= *"' pyproject.toml | head -1 | sed -E 's/version *= *"([^"]+)"/\1/')
-          fi
-          if [ -z "$FILE_VERSION" ] && [ -f setup.py ]; then
-            FILE_VERSION=$(python -c "import re, pathlib; txt=pathlib.Path('setup.py').read_text(); m=re.search(r'version=\\\"([^\\\"]+)\\\"', txt); print(m.group(1) if m else '0.0.0')")
-          fi
-          if [ -z "$FILE_VERSION" ]; then FILE_VERSION="0.0.0"; fi
-          echo "File version: $FILE_VERSION";
-          echo "Tag version: $TAG_VERSION";
-          if [ "$FILE_VERSION" != "$TAG_VERSION" ]; then echo "Version mismatch"; exit 1; fi
+          python - <<'PY'
+          import os, re, pathlib, sys
+          tag = os.environ.get("TAG_VERSION", "").strip()
+          text = pathlib.Path("pyproject.toml").read_text(encoding="utf-8")
+          m = re.search(r'^version\s*=\s*"([^"]+)"', text, re.M)
+          file_version = m.group(1).strip() if m else ""
+          if not file_version and pathlib.Path("setup.py").exists():
+              st = pathlib.Path("setup.py").read_text(encoding="utf-8")
+              m2 = re.search(r'version\s*=\s*"([^"]+)"', st)
+              file_version = m2.group(1).strip() if m2 else ""
+          print(f"File version: {file_version!r}")
+          print(f"Tag version: {tag!r}")
+          if file_version != tag:
+              sys.exit("Version mismatch")
+          PY
       - name: Build
         run: python -m build
       - name: Twine check
