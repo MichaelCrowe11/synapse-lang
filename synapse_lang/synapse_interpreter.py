@@ -26,7 +26,9 @@ _BOOL_LITERALS = {"true": True, "false": False}
 
 class SynapseInterpreter:
     def __init__(self):
-        self.variables: dict[str, Any] = {}
+        from .builtins import default_builtins
+
+        self.variables: dict[str, Any] = default_builtins()
         self._active_backend_name = None
         self._current_backend_config: dict[str, Any] = {}
 

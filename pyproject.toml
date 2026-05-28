@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "synapse_lang"  # PEP 625 compliant naming
-version = "2.3.5"
-description = "Revolutionary scientific programming language with quantum computing, AI assistance, real-time collaboration, and blockchain verification"
+version = "2.4.0"
+description = "An interpreted language for uncertainty-aware scientific computing, with built-in quantum circuit simulation and parallel blocks"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
@@ -16,21 +16,17 @@ maintainers = [
     {name = "Michael Benjamin Crowe"},
 ]
 keywords = [
-    "quantum-computing",
-    "cloud-platform",
-    "microservices",
-    "distributed-computing",
-    "enterprise-software",
-    "quantum-algorithms",
     "scientific-computing",
+    "uncertainty",
+    "uncertainty-propagation",
+    "quantum-computing",
+    "quantum-simulation",
     "parallel-computing",
     "programming-language",
-    "docker",
-    "kubernetes",
-    "fastapi",
+    "interpreter",
 ]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Education",
@@ -137,8 +133,6 @@ Changelog = "https://github.com/michaelcrowe11/synapse-lang/blob/main/CHANGELOG.
 synapse = "synapse_lang.cli:main"
 synapse-repl = "synapse_lang.repl:main"
 synapse-bench = "synapse_lang.benchmark:main"
-synapse-cloud = "synapse_lang.cloud.cli:main"
-synapse-deploy = "synapse_lang.cloud.deploy:main"
 qflow = "qubit_flow_lang:placeholder"
 qnet = "quantum_net_lang:placeholder"
 

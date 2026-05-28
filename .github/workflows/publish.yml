@@ -45,6 +45,7 @@ jobs:
             tests/test_comprehensive.py \
             tests/test_minimal_parser.py \
             tests/test_type_inference.py \
+            tests/test_examples_run.py \
             tests/integration/ \
             -q --tb=short
   build:

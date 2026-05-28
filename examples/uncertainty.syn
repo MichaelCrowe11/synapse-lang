@@ -1,0 +1,14 @@
+# Uncertainty-aware computing
+# A value declared `uncertain` carries an uncertainty that propagates
+# automatically through arithmetic.
+# Run with:  synapse uncertainty.syn
+
+uncertain measurement = 42.3 ± 0.5
+uncertain temperature = 300 ± 10
+
+print("measurement =", measurement)
+print("temperature =", temperature)
+
+# Multiplying two uncertain values propagates the uncertainty.
+energy = measurement * temperature
+print("energy = measurement * temperature =", energy)

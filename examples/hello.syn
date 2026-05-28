@@ -1,0 +1,13 @@
+# Synapse - hello world
+# Run with:  synapse hello.syn
+
+print("Hello from Synapse!")
+
+# Variables and arithmetic
+x = 21
+y = 21
+print("x + y =", x + y)
+
+# Built-in math functions and constants
+print("sqrt(144) =", sqrt(144))
+print("pi =", pi)
