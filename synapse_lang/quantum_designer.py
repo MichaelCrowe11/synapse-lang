@@ -94,11 +94,26 @@ class QuantumGate:
 
     def to_dict(self) -> dict:
         return {
+            'name': self.gate_type.name,
             'type': self.gate_type.name,
             'qubits': self.qubits,
             'parameters': self.parameters,
             'label': self.label
         }
+
+    def __getitem__(self, key: str):
+        """Dictionary-style compatibility for legacy tests/callers."""
+        if key == "name":
+            return self.gate_type.name
+        if key == "type":
+            return self.gate_type.name
+        if key == "qubits":
+            return self.qubits
+        if key == "parameters":
+            return self.parameters
+        if key == "label":
+            return self.label
+        raise KeyError(key)
 
 
 @dataclass
@@ -110,7 +125,33 @@ class QuantumCircuit:
     measurements: Dict[int, int] = field(default_factory=dict)  # qubit -> classical bit
     name: str = "Circuit"
 
-    def add_gate(self, gate: QuantumGate):
+    def add_gate(
+        self,
+        gate: QuantumGate | str,
+        qubits: Optional[List[int]] = None,
+        parameters: Optional[List[float]] = None,
+    ):
+        """Add gate to circuit.
+
+        Supports both modern and legacy forms:
+        - add_gate(QuantumGate(...))
+        - add_gate("H", [0], [theta])
+        """
+        if isinstance(gate, str):
+            if qubits is None:
+                raise ValueError("qubits are required when adding gate by name")
+            try:
+                gate_type = GateType[gate.upper()]
+            except KeyError as exc:
+                raise ValueError(f"Unknown gate type: {gate}") from exc
+            gate = QuantumGate(gate_type, qubits, parameters or [])
+
+        # Validate arity for common gates when called via legacy API
+        if gate.gate_type in {GateType.CNOT, GateType.CZ, GateType.SWAP} and len(gate.qubits) != 2:
+            raise ValueError(f"{gate.gate_type.name} requires 2 qubits")
+        if gate.gate_type in {GateType.H, GateType.X, GateType.Y, GateType.Z, GateType.S, GateType.T} and len(gate.qubits) != 1:
+            raise ValueError(f"{gate.gate_type.name} requires 1 qubit")
+
         """Add gate to circuit"""
         # Validate qubit indices
         for qubit in gate.qubits:
@@ -301,49 +342,74 @@ class QuantumSimulator:
 
     def apply_gate(self, gate: QuantumGate):
         """Apply quantum gate to state"""
-        if gate.gate_type == GateType.H:
-            self._apply_single_qubit_gate(gate.qubits[0], gate.get_matrix())
-        elif gate.gate_type == GateType.X:
+        if gate.gate_type in {
+            GateType.H,
+            GateType.X,
+            GateType.Y,
+            GateType.Z,
+            GateType.S,
+            GateType.T,
+            GateType.RX,
+            GateType.RY,
+            GateType.RZ,
+        }:
             self._apply_single_qubit_gate(gate.qubits[0], gate.get_matrix())
         elif gate.gate_type == GateType.CNOT:
             self._apply_cnot(gate.qubits[0], gate.qubits[1])
+        elif gate.gate_type == GateType.CZ:
+            self._apply_cz(gate.qubits[0], gate.qubits[1])
 
     def _apply_single_qubit_gate(self, qubit: int, matrix: List[List[complex]]):
         """Apply single qubit gate"""
-        new_state = [0.0] * len(self.state)
+        old_state = self.state.copy()
+        new_state = [0.0j] * len(old_state)
+        bit = 1 << qubit
 
-        for i in range(len(self.state)):
-            # Extract qubit state
-            bit_val = (i >> qubit) & 1
-
-            # Apply gate matrix
-            for j in range(2):
-                if bit_val == 0:
-                    new_i = i
-                    coeff = matrix[j][0]
-                else:
-                    new_i = i ^ (1 << qubit)
-                    coeff = matrix[j][1]
-
-                new_state[new_i] += coeff * self.state[i]
+        for i in range(len(old_state)):
+            if i & bit:
+                continue
+            j = i | bit
+            a0 = old_state[i]
+            a1 = old_state[j]
+            new_state[i] = matrix[0][0] * a0 + matrix[0][1] * a1
+            new_state[j] = matrix[1][0] * a0 + matrix[1][1] * a1
 
         self.state = new_state
 
     def _apply_cnot(self, control: int, target: int):
         """Apply CNOT gate"""
-        new_state = self.state.copy()
-
-        for i in range(len(self.state)):
-            control_bit = (i >> control) & 1
-            if control_bit == 1:
-                # Flip target bit
-                new_i = i ^ (1 << target)
-                new_state[new_i] = self.state[i]
-                new_state[i] = 0
-
+        old_state = self.state.copy()
+        new_state = old_state.copy()
+        tbit = 1 << target
+        for i in range(len(old_state)):
+            if ((i >> control) & 1) == 1 and ((i >> target) & 1) == 0:
+                j = i | tbit
+                new_state[i], new_state[j] = old_state[j], old_state[i]
         self.state = new_state
 
-    def measure(self, qubit: int) -> int:
+    def _apply_cz(self, control: int, target: int):
+        """Apply controlled-Z gate."""
+        for i in range(len(self.state)):
+            if ((i >> control) & 1) == 1 and ((i >> target) & 1) == 1:
+                self.state[i] *= -1
+
+    def simulate(self, circuit: QuantumCircuit) -> Dict[str, float]:
+        """Compatibility API: return final state amplitudes by basis string."""
+        self.initialize(circuit.num_qubits)
+        for gate in circuit.gates:
+            if gate.gate_type != GateType.MEASURE:
+                self.apply_gate(gate)
+        amplitudes = {}
+        for i, amp in enumerate(self.state):
+            if abs(amp) > 1e-10:
+                amplitudes[format(i, f"0{self.num_qubits}b")] = amp
+        return amplitudes
+
+    def measure(self, qubit: int | QuantumCircuit) -> int | str:
+        """Measure specific qubit or sample a full circuit state."""
+        if isinstance(qubit, QuantumCircuit):
+            return self.measure_circuit(qubit)
+
         """Measure specific qubit"""
         prob_0 = 0.0
         prob_1 = 0.0
@@ -378,6 +444,17 @@ class QuantumSimulator:
                     self.state[i] /= norm
 
         return result
+
+    def measure_circuit(self, circuit: QuantumCircuit) -> str:
+        """Measure all qubits after running a circuit once."""
+        probs = self.simulate_circuit(circuit)
+        r = random.random()
+        acc = 0.0
+        for state, prob in probs.items():
+            acc += prob
+            if r <= acc:
+                return state
+        return max(probs, key=probs.get) if probs else ""
 
     def get_probabilities(self) -> Dict[str, float]:
         """Get measurement probabilities for all basis states"""

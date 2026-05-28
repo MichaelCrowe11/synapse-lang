@@ -100,6 +100,11 @@ class ProgramNode(ASTNode):
         super().__init__(NodeType.PROGRAM)
         self.body = body
 
+    @property
+    def statements(self) -> List[ASTNode]:
+        """Backward-compatible alias used by integration tests."""
+        return self.body
+
 
 class BlockNode(ASTNode):
     """Block of statements"""

@@ -31,6 +31,7 @@ else:
 
 setup(
     name="synapse_lang",  # PEP 625 compliant naming (underscore instead of hyphen)
+    version="2.3.6",
     version="2.3.5",
     author="Michael Benjamin Crowe",
     author_email="michael@crowelogic.com",
