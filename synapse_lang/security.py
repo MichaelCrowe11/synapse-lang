@@ -209,11 +209,8 @@ class CodeValidator:
             if self.loop_depth > 10:
                 raise SecurityViolation("Excessive loop nesting depth")
 
-        elif isinstance(node, ast.Exec):
-            raise SecurityViolation("Use of 'exec' is forbidden")
-
-        elif isinstance(node, ast.Eval):
-            raise SecurityViolation("Use of 'eval' is forbidden")
+        # In Python 3, ``exec``/``eval`` are represented as function calls.
+        # They are blocked above via forbidden builtins in ast.Call handling.
 
         # Recursively validate child nodes
         for child in ast.iter_child_nodes(node):
@@ -239,12 +236,18 @@ class ResourceMonitor:
         self.monitoring = True
         self.monitor_thread = threading.Thread(target=self._monitor_loop)
         self.monitor_thread.daemon = True
-        self.monitor_thread.start()
+        try:
+            self.monitor_thread.start()
+        except RuntimeError:
+            # Some restricted environments disallow starting extra threads.
+            # Degrade gracefully by running without background monitoring.
+            self.monitor_thread = None
+            self.monitoring = False
 
     def stop(self):
         """Stop resource monitoring."""
         self.monitoring = False
-        if self.monitor_thread:
+        if self.monitor_thread and self.monitor_thread.is_alive():
             self.monitor_thread.join(timeout=1)
 
     def _monitor_loop(self):

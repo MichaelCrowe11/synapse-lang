@@ -563,6 +563,11 @@ class ProgramNode(ASTNode):
         super().__init__(NodeType.PROGRAM, 0, 0)
         self.body = body
 
+    @property
+    def statements(self) -> list[ASTNode]:
+        """Backward-compatible alias used by older tests/callers."""
+        return self.body
+
 
 def walk(node: ASTNode):  # simple utility for debugging
     yield node
