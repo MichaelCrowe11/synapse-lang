@@ -1,7 +1,7 @@
 """Synapse Language - Complete Implementation Package."""
 
-__version__ = "2.3.4"
-__author__ = "Synapse Development Team"
+from .__version__ import __version__
+__author__ = "Michael Benjamin Crowe"
 
 from .ast_consolidated import *
 

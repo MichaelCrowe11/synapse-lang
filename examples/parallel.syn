@@ -1,0 +1,16 @@
+# Parallel branches
+# Each branch runs in turn; assignments made inside are visible afterward.
+# Run with:  synapse parallel.syn
+
+parallel {
+    branch dataset_1: {
+        print("Processing dataset 1...")
+        result_1 = 100
+    }
+    branch dataset_2: {
+        print("Processing dataset 2...")
+        result_2 = 200
+    }
+}
+
+print("Combined result:", result_1 + result_2)

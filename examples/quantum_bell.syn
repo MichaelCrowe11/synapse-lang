@@ -1,0 +1,14 @@
+# Quantum circuit on the built-in simulator
+# Prepares a 2-qubit Bell state and measures it. A correct Bell state only
+# ever measures as 00 or 11 (the qubits are entangled).
+# Run with:  synapse quantum_bell.syn
+
+print("Preparing a 2-qubit Bell state, measuring 256 shots...")
+
+quantum circuit bell(2) {
+    h(0)
+    cnot(0,1)
+}
+
+# The final statement's value (the measurement counts) is printed by the CLI.
+run bell { shots: 256 }

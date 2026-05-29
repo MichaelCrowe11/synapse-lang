@@ -5,6 +5,23 @@ All notable changes to the Synapse Programming Language will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-05-28
+
+### Added
+- `synapse_lang/builtins.py`: builtin functions and constants available to every program (`print`, `str`, `int`, `float`, `bool`, `len`, `range`, `abs`, `round`, `min`, `max`, `sum`, `sqrt`, `exp`, `log`, `log10`, `sin`, `cos`, `tan`, `floor`, `ceil`, `mean`, `std`, `pi`, `e`)
+- `synapse_lang/cli.py`, `synapse_lang/repl.py`, `synapse_lang/benchmark.py`: the modules the `synapse`, `synapse-repl`, and `synapse-bench` entry points reference (previously declared but missing, so the published commands crashed on launch)
+- Runnable, test-covered examples: `hello.syn`, `uncertainty.syn`, `parallel.syn`, `quantum_bell.syn`
+- `tests/test_examples_run.py`: every shipped example must run and produce output (added to the release suite)
+
+### Fixed
+- Published CLI entry points crashed with `ModuleNotFoundError` because `cli`/`repl`/`benchmark` modules were not shipped; they now exist and work
+- `print` and basic math/stats functions were undefined, so even `print("hi")` failed; builtins are now registered in the interpreter scope
+- Version drift: `__version__` is now sourced from `synapse_lang/__version__.py` (single source of truth)
+
+### Changed
+- README and PyPI summary rewritten to describe what the interpreter actually executes today; aspirational examples moved to `examples/roadmap/`
+- Removed the `synapse-cloud` and `synapse-deploy` entry points (their `synapse_lang.cloud` module does not exist)
+
 ## [2.3.5] - 2026-05-26
 
 ### Fixed
