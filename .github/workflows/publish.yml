@@ -35,8 +35,14 @@ jobs:
       - name: Type check (non-blocking)
         run: |
           if command -v mypy; then mypy synapse_lang || true; fi
+      - name: Diagnostics (env snapshot)
+        run: |
+          python -V
+          pip list > pip_list.txt
+          cat pip_list.txt
       - name: Run release test suite
         run: |
+          set -o pipefail
           pytest \
             tests/test_enhanced_parser.py \
             tests/test_parser_comprehensive.py \
@@ -47,7 +53,16 @@ jobs:
             tests/test_type_inference.py \
             tests/test_examples_run.py \
             tests/integration/ \
-            -q --tb=short
+            -v --tb=long 2>&1 | tee pytest_output.txt
+      - name: Upload diagnostics (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-diagnostics-py${{ matrix.python-version }}
+          path: |
+            pytest_output.txt
+            pip_list.txt
+          if-no-files-found: warn
   build:
     name: Build distributions
     runs-on: ubuntu-latest
