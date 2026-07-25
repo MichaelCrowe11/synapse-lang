@@ -11,9 +11,13 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     strategy:
       matrix:
         python-version: ['3.9', '3.10', '3.11']
@@ -54,6 +58,7 @@ jobs:
 
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     
     steps:
     - uses: actions/checkout@v4
@@ -80,6 +85,7 @@ jobs:
   build:
     needs: [test, lint]
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     permissions:
       contents: read
       packages: write
@@ -123,6 +129,7 @@ jobs:
   deploy-staging:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     if: github.ref == 'refs/heads/main'
     environment: staging
     
@@ -148,6 +155,7 @@ jobs:
   deploy-production:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     if: github.ref == 'refs/heads/production'
     environment: production
     
@@ -202,6 +210,7 @@ jobs:
   security-scan:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     
     steps:
     - uses: actions/checkout@v4
@@ -228,6 +237,7 @@ jobs:
   performance-test:
     needs: deploy-staging
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     if: github.ref == 'refs/heads/main'
     
     steps:

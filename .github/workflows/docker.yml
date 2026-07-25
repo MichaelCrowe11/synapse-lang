@@ -11,9 +11,13 @@ env:
   REGISTRY: docker.io
   IMAGE_NAME: michaelcrowe11/synapse-lang
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     permissions:
       contents: read
       packages: write
