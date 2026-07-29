@@ -38,7 +38,6 @@
     "tensor-operations",
     "synapse"
   ],
-  "main": "./extension.js",
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "webpack --mode production",
@@ -268,6 +267,7 @@
   "devDependencies": {
     "@types/node": "^24.9.1",
     "@types/vscode": "^1.105.0",
+    "@vscode/vsce": "^3.2.1",
     "ts-loader": "^9.5.4",
     "typescript": "^5.9.3",
     "webpack": "^5.102.1",
