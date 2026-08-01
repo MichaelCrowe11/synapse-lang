@@ -17,7 +17,7 @@ alembic==1.13.0
 openai==1.6.1
 anthropic==0.8.1
 tiktoken==0.5.2
-langchain==0.0.350
+langchain==1.3.9
 
 # Scientific Computing
 numpy==1.26.2
@@ -32,8 +32,8 @@ pennylane==0.33.1
 
 # Security
 python-dotenv==1.2.1
-cryptography==41.0.7
-PyJWT==2.8.0
+cryptography==48.0.1
+PyJWT==2.13.0
 bcrypt==5.0.0
 
 # Monitoring & Logging
@@ -48,7 +48,7 @@ pytest-cov==4.1.0
 # Utilities
 python-dateutil==2.8.2
 requests==2.31.0
-aiohttp==3.9.1
+aiohttp==3.14.1
 asyncio==3.4.3
 uuid==1.30
 
