@@ -22,9 +22,9 @@ jobs:
       matrix:
         python-version: ["3.12"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
@@ -59,7 +59,7 @@ jobs:
             -v --tb=long 2>&1 | tee pytest_output.txt
       - name: Upload diagnostics (always)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-diagnostics-py${{ matrix.python-version }}
           path: |
@@ -79,12 +79,12 @@ jobs:
     # install, examples + curated test suite green, twine check passed.
     # Re-add `needs: test` once Actions storage recovers and the test failure can be fixed.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Extract tag version
         id: tag
         run: echo "TAG_VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -114,7 +114,7 @@ jobs:
       - name: Twine check
         run: twine check dist/*
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/*
@@ -128,9 +128,9 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Download dist artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist
