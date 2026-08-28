@@ -263,14 +263,14 @@
   "dependencies": {
     "vscode-languageclient": "^9.0.1",
     "vscode-languageserver": "^9.0.1",
-    "vscode-languageserver-textdocument": "^1.0.12"
+    "vscode-languageserver-textdocument": "^1.0.13"
   },
   "devDependencies": {
     "@types/node": "^24.9.1",
-    "@types/vscode": "^1.105.0",
-    "ts-loader": "^9.5.4",
+    "@types/vscode": "^1.134.0",
+    "ts-loader": "^9.6.2",
     "typescript": "^5.9.3",
-    "webpack": "^5.102.1",
+    "webpack": "^5.109.2",
     "webpack-cli": "^6.0.1"
   }
 }
