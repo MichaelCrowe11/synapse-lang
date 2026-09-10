@@ -1,7 +1,6 @@
 # Include package data
 include README.md
 include LICENSE
-include LICENSE-DUAL.md
 include CHANGELOG.md
 include CONTRIBUTING.md
 include AUTHORS.md
@@ -54,3 +53,8 @@ global-exclude .mypy_cache
 global-exclude .tox
 global-exclude .eggs
 global-exclude *.egg-info
+
+# Historical licensing proposals are not current distribution terms.
+exclude LICENSE-COMMUNITY
+exclude LICENSE-DUAL.md
+exclude LICENSE-PROPRIETARY

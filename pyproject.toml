@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "synapse_lang"  # PEP 625 compliant naming
-version = "2.4.0"
+version = "2.4.1"
 description = "An interpreted language for uncertainty-aware scientific computing, with built-in quantum circuit simulation and parallel blocks"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
+license = {text = "Proprietary"}
 authors = [
     {name = "Michael Benjamin Crowe"},
 ]
@@ -131,6 +131,9 @@ Changelog = "https://github.com/michaelcrowe11/synapse-lang/blob/main/CHANGELOG.
 synapse = "synapse_lang.cli:main"
 synapse-repl = "synapse_lang.repl:main"
 synapse-bench = "synapse_lang.benchmark:main"
+
+[tool.setuptools]
+license-files = ["LICENSE"]
 
 [tool.setuptools.packages.find]
 where = ["."]

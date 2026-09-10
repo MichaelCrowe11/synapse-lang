@@ -5,7 +5,7 @@ built-in quantum circuit simulation and parallel blocks.
 
 [![PyPI](https://img.shields.io/pypi/v/synapse-lang.svg?label=PyPI)](https://pypi.org/project/synapse-lang/)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![License](https://img.shields.io/badge/License-MIT-blue.svg)
+![License](https://img.shields.io/badge/License-Proprietary-red.svg)
 
 Synapse is a small language focused on a few ideas that are awkward in
 general-purpose languages: values that carry uncertainty and propagate it
@@ -136,7 +136,10 @@ test suite. Aspirational examples are under
 
 ## License
 
-Released under the MIT License (see [LICENSE](LICENSE)).
+Proprietary software. All rights reserved. Use, copying, modification, or
+distribution requires a separate written license from the copyright holder; see
+[LICENSE](LICENSE). Earlier copies distributed under MIT retain their granted
+rights, and third-party components retain their own licenses.
 
 ## Citation
 
@@ -145,6 +148,6 @@ Released under the MIT License (see [LICENSE](LICENSE)).
     title = {Synapse: an interpreted language for uncertainty-aware scientific computing},
     author = {Michael Benjamin Crowe},
     year = {2026},
-    version = {2.4.0}
+    version = {2.4.1}
 }
 ```

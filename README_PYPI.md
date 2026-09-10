@@ -264,9 +264,9 @@ If you use Synapse-Lang in your research, please cite:
 
 ## 📄 License
 
-Synapse-Lang is available under a dual-license model:
-- Open source projects: MIT License
-- Commercial use: Contact for licensing
+Synapse-Lang is proprietary software. All rights reserved. Use requires a
+separate written license from the copyright holder. Earlier MIT distributions
+and third-party components retain their respective licenses.
 
 See [LICENSE](LICENSE) for details.
 

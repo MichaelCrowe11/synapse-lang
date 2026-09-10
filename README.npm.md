@@ -1,7 +1,7 @@
 # @synapse-lang/core
 
 [![npm version](https://img.shields.io/npm/v/@synapse-lang/core.svg)](https://www.npmjs.com/package/@synapse-lang/core)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 
 ## 🧠 Synapse Language - JavaScript/Node.js Wrapper
@@ -183,7 +183,8 @@ Checks if Python is installed on the system.
 
 ## License
 
-MIT License - See [LICENSE](https://github.com/michaelcrowe11/synapse-lang/blob/main/LICENSE) for details.
+Proprietary software. All rights reserved. A separate written license is required;
+see [LICENSE](LICENSE). Earlier MIT distributions retain their granted rights.
 
 ## Author
 

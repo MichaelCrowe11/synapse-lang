@@ -1,3 +1,11 @@
+HISTORICAL LICENSING PROPOSAL - NOT TERMS FOR THE CURRENT REVISION
+
+The text below is retained for historical reference only. Current
+Synapse-Lang licensing is governed by LICENSE and any separate written
+agreement with the copyright holder. No prices, free-use grants, or
+runtime enforcement claims below are approved by the current decision.
+Previously granted rights remain unaffected.
+
 # Synapse Programming Language - Dual License
 
 Copyright (c) 2024 Michael Benjamin Crowe. All rights reserved.

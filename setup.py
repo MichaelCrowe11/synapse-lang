@@ -31,8 +31,10 @@ else:
 
 setup(
     name="synapse_lang",  # PEP 625 compliant naming (underscore instead of hyphen)
-    version="2.4.0",
+    version="2.4.1",
     author="Michael Benjamin Crowe",
+    license="Proprietary",
+    license_files=["LICENSE"],
     author_email="michael@crowelogic.com",
     description="An interpreted language for uncertainty-aware scientific computing, with built-in quantum circuit simulation and parallel blocks",
     long_description=long_description,

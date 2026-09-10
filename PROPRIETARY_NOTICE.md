@@ -45,7 +45,9 @@ Any use, modification, or distribution of this software must:
 1. Maintain this proprietary notice
 2. Attribute creation to Michael Benjamin Crowe
 3. Not claim false authorship or originality
-4. Respect the MIT License terms
+4. Comply with [LICENSE](LICENSE) and any separate written license agreement.
+   Previously distributed MIT copies and third-party components retain their
+   respective license terms.
 
 ## Contact
 

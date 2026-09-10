@@ -23,7 +23,7 @@
     "mobile-framework"
   ],
   "author": "Michael Benjamin Crowe",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "files": [
     "synapse_lang/**/*.py",
     "examples/*.py",
