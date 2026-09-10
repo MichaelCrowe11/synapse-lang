@@ -23,3 +23,11 @@ benchmarks/trinity-review/*.log
 benchmarks/trinity-review/*-dist/
 benchmarks/trinity-review/installed-*/
 benchmarks/trinity-review/*.xml
+
+# Local browser verification runtime, not release artifacts
+benchmarks/browser-cache/
+
+# Verification scratch: installed venvs and source snapshots from gate runs
+benchmarks/trinity-implementation/
+benchmarks/trinity-review/installed-*/
+benchmarks/trinity-review/*-dist/

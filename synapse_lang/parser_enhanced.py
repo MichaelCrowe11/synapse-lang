@@ -536,6 +536,26 @@ class EnhancedParser:
         if self.check(TokenType.OBSERVE):
             return self.parse_observe_declaration()
 
+        # `let name = expression` — consumed here so the binding is created;
+        # previously a bare LET fell through to parse_expression and the
+        # statement was silently dropped, leaving the variable undefined.
+        if self.check(TokenType.LET):
+            self.advance()
+            target_tok = self.consume(TokenType.IDENTIFIER, "Expected identifier after 'let'")
+            self.consume(
+                getattr(TokenType, "ASSIGN", None) or getattr(TokenType, "EQUAL"),
+                "Expected '=' after 'let' identifier",
+            )
+            value = self.parse_expression()
+            from .synapse_ast import AssignmentNode, IdentifierNode
+
+            return AssignmentNode(
+                IdentifierNode(target_tok.value, target_tok.line, target_tok.column),
+                value,
+                target_tok.line,
+                target_tok.column,
+            )
+
         # Expression or assignment
         return self.parse_expression_statement()
 

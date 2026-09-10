@@ -1,0 +1,27 @@
+SYNAPSE PROGRAMMING LANGUAGE - PROPRIETARY LICENSE NOTICE
+
+Copyright (c) 2024-2026 Michael Benjamin Crowe. All rights reserved.
+
+This revision of Synapse-Lang and its associated documentation is proprietary.
+Except as permitted by applicable law or a separate written agreement with the
+copyright holder, no permission is granted to use, reproduce, modify,
+distribute, sublicense, or sell this software or its documentation.
+Access to the source code does not itself grant a license.
+
+License fees, permitted uses, support, and any other commercial terms must be
+specified in a separate written agreement. This notice does not establish a
+free trial, a community license, pricing, telemetry consent, or runtime
+license-enforcement behavior.
+
+This notice does not revoke or restrict rights already granted for copies
+previously distributed under the MIT License or another valid license.
+Third-party components remain governed by their respective licenses; this
+notice does not replace their terms or required notices.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. TO THE EXTENT PERMITTED
+BY LAW, THE COPYRIGHT HOLDER SHALL NOT BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY ARISING FROM OR IN CONNECTION WITH THE SOFTWARE OR ITS USE.
+
+For licensing inquiries, contact Michael Benjamin Crowe at michael@crowelogic.com.

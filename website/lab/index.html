@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; worker-src 'self'; connect-src 'self' https://cdn.jsdelivr.net; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Synapse Lab | Crowe Logic</title>
+<link rel="stylesheet" href="lab.css">
+<script src="lab.js" defer></script>
+</head>
+<body>
+<main>
+<header><span class="eyebrow">CROWE LOGIC / COMPUTATIONAL LAB</span><h1>Understand the result. Improve the measurement.</h1><p>Real calculations, a readable method, and results you can inspect. Powered by the Synapse interpreter and explicit scientific analysis, not generated answers.</p></header>
+<div class="layout">
+<section class="card" aria-labelledby="experiment-heading">
+<h2 id="experiment-heading">Choose an experiment</h2>
+<label for="case">Workflow</label>
+<select id="case"><option value="concentration">Research concentration</option><option value="spend">AI spend forecast</option><option value="bell">Bell-state simulation</option></select>
+<p id="description"></p>
+<form id="experiment"><div id="fields"></div><div class="actions"><button id="run" type="submit">Load engine &amp; run</button><button id="stop" type="button" hidden>Stop</button></div></form>
+<p class="note">First run downloads the Python runtime, NumPy, and SciPy from a pinned public CDN and can take a minute. Inputs stay in this browser; no AI tokens are used. Internet is required to initialize.</p>
+<p id="status" role="status" aria-live="polite">Ready. Edit the example inputs, then run.</p>
+</section>
+<section class="card result-card" aria-labelledby="result-heading">
+<div class="result-head"><h2 id="result-heading">Result</h2><button id="export" type="button" disabled>Export JSON</button></div>
+<div id="result" aria-live="polite">Your calculation will appear here.</div>
+<div id="bars" aria-label="Result details"></div>
+<section id="insights" hidden aria-labelledby="meaning-heading">
+<h3 id="meaning-heading">What this means</h3><p id="meaning" class="insight-summary"></p>
+<div id="precision-status" class="precision-status"></div>
+<h3>Where the uncertainty comes from</h3><p id="contribution-basis" class="note"></p><div id="contributions"></div>
+<h3>What would meet your target?</h3><div id="requirements"></div>
+<h3>Compare measurement improvements</h3><p class="note">Hypothetical scenarios, not changes to your observations; lower relative SD means less modeled spread, not proven accuracy.</p>
+<div id="scenarios" class="scenario-grid"></div>
+<p id="planning-note" class="note"></p>
+</section>
+<p id="provenance" class="note"></p>
+<h3>Analysis method</h3><p id="analysis" class="note"></p>
+<h3>Assumptions &amp; limits</h3><ul id="assumptions"><li>Demonstration inputs only. Not clinical, investment, or accounting advice.</li></ul>
+<details><summary>Executed Synapse source</summary><pre id="source">Run an experiment to inspect its exact source.</pre></details>
+</section>
+</div>
+<footer>Synapse Lab is a bounded showcase, not an arbitrary-code service. No patient records, account connections, billing changes, or model routing.</footer>
+</main>
+</body>
+</html>

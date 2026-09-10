@@ -4,6 +4,7 @@ Phase 1, Week 1, Day 1-2
 """
 
 import os
+import subprocess
 import sys
 import textwrap
 
@@ -495,3 +496,22 @@ def run_tests():
 
 if __name__ == "__main__":
     run_tests()
+
+
+def test_let_binding_defines_variable(tmp_path):
+    """Regression: top-level `let name = expr` was silently dropped by
+    parse_statement, leaving the variable undefined at use sites."""
+    from synapse_lang.synapse_interpreter import SynapseInterpreter
+
+    interp = SynapseInterpreter()
+    interp.execute("let y = 4")
+    assert interp.variables["y"] == 4
+
+    out = tmp_path / "prog.syn"
+    out.write_text("let y = 4\nprint(y)\n")
+    result = subprocess.run(
+        [sys.executable, "-m", "synapse_lang.cli", str(out)],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "4" in result.stdout
