@@ -1,4 +1,5 @@
 from enum import Enum, auto
+from typing import NamedTuple
 
 
 class Tok(Enum):
@@ -8,3 +9,8 @@ class Tok(Enum):
     VALIDATE=auto(); RUN=auto(); TRIALS=auto(); REPORT=auto(); USE=auto()
     ID=auto(); NUM=auto(); LBRACE=auto(); RBRACE=auto(); LPAREN=auto(); RPAREN=auto()
     LANGLE=auto(); RANGLE=auto(); COLON=auto(); SEMI=auto(); COMMA=auto(); ASSIGN=auto()
+
+
+class Token(NamedTuple):
+    type: Tok
+    value: object

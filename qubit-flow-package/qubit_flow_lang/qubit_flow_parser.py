@@ -3,8 +3,8 @@
 
 from typing import List, Optional
 
-from qubit_flow_ast import *
-from qubit_flow_lexer import QubitFlowLexer, Token, TokenType
+from .qubit_flow_ast import *
+from .qubit_flow_lexer import QubitFlowLexer, Token, TokenType
 
 
 class ParseError(Exception):
@@ -85,12 +85,17 @@ class QubitFlowParser:
             return self.parse_qft()
         elif self.match(TokenType.IF):
             return self.parse_if_statement()
+        elif self.match(TokenType.H, TokenType.X, TokenType.Y, TokenType.Z,
+                        TokenType.CNOT, TokenType.CZ, TokenType.RX, TokenType.RY,
+                        TokenType.RZ, TokenType.PHASE, TokenType.TOFFOLI):
+            return self.parse_quantum_gate()
         elif self.match(TokenType.IDENTIFIER):
             return self.parse_assignment_or_gate()
         else:
-            # Skip unknown tokens
-            self.advance()
-            return None
+            if self.match(TokenType.SEMICOLON):
+                self.advance()
+                return None
+            raise ParseError("Unsupported statement", self.current_token)
 
     def parse_qubit_declaration(self) -> QubitNode:
         self.expect(TokenType.QUBIT)
@@ -156,7 +161,7 @@ class QubitFlowParser:
         if not self.match(TokenType.H, TokenType.X, TokenType.Y, TokenType.Z,
                          TokenType.CNOT, TokenType.CZ, TokenType.RX, TokenType.RY,
                          TokenType.RZ, TokenType.PHASE, TokenType.TOFFOLI):
-            return None
+            raise ParseError("Expected a supported quantum gate", self.current_token)
 
         gate_token = self.current_token
         gate_type = gate_token.value

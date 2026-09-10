@@ -79,7 +79,7 @@ class MinimalParser:
         self.skip_newlines()
 
         # Tensor declaration
-        if self.check(TokenType.IDENTIFIER) and self.peek().value == "tensor":
+        if self.check(TokenType.TENSOR):
             return self.parse_tensor_declaration()
 
         # Variable assignment
@@ -529,7 +529,7 @@ class MinimalParser:
     def parse_tensor_declaration(self) -> TensorNode:
         """Parse tensor declaration like tensor T[3,3,3] = values"""
         # This would be called from parse_statement when we see 'tensor' keyword
-        self.consume(TokenType.IDENTIFIER, "Expected 'tensor'")  # 'tensor'
+        self.consume(TokenType.TENSOR, "Expected 'tensor'")  # 'tensor'
         name = self.consume(TokenType.IDENTIFIER, "Expected tensor name").value
 
         # Parse dimensions

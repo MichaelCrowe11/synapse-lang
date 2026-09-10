@@ -1,0 +1,5 @@
+network demo {
+  node alice;
+  node bob;
+  fiber(length=10) alice bob;
+}

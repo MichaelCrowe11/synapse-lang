@@ -5,8 +5,9 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
-from qubit_flow_ast import *
-from qubit_flow_parser import parse_qubit_flow
+
+from .qubit_flow_ast import *
+from .qubit_flow_parser import parse_qubit_flow
 
 
 @dataclass
@@ -62,6 +63,7 @@ class QubitRegister:
     name: str
     size: int
     state: QuantumState
+    index: int = 0
 
     def __post_init__(self):
         if self.state is None:
@@ -143,6 +145,7 @@ class QubitFlowInterpreter:
         self.variables: Dict[str, Any] = {}
         self.circuits: Dict[str, QuantumCircuitNode] = {}
         self.gates = QuantumGates()
+        self.state = QuantumState(np.array([1.0], dtype=complex), 0)
 
     def execute(self, source: str) -> List[str]:
         """Execute Qubit-Flow source code"""
@@ -166,10 +169,12 @@ class QubitFlowInterpreter:
         if hasattr(self, method_name):
             return getattr(self, method_name)(node)
         else:
-            return f"Unhandled node type: {node.node_type}"
+            raise NotImplementedError(f"Unsupported node type: {node.node_type}")
 
     def visit_qubit(self, node: QubitNode) -> str:
         """Create a new qubit"""
+        if node.name in self.qubits:
+            raise ValueError(f"Qubit {node.name} already exists")
         initial_state = None
 
         if node.initial_state:
@@ -183,7 +188,7 @@ class QubitFlowInterpreter:
                 elif node.initial_state.state == "-":
                     amplitudes = np.array([1.0, -1.0], dtype=complex) / np.sqrt(2)
                 else:
-                    amplitudes = np.array([1.0, 0.0], dtype=complex)  # Default to |0⟩
+                    raise ValueError(f"Unsupported initial state: {node.initial_state.state}")
 
                 initial_state = QuantumState(amplitudes, 1)
 
@@ -192,17 +197,14 @@ class QubitFlowInterpreter:
             amplitudes = np.array([1.0, 0.0], dtype=complex)
             initial_state = QuantumState(amplitudes, 1)
 
-        self.qubits[node.name] = QubitRegister(node.name, 1, initial_state)
+        index = self.state.num_qubits
+        self.state = self.state.tensor_product(initial_state)
+        self.qubits[node.name] = QubitRegister(node.name, 1, self.state, index)
+        self._share_state()
         return f"qubit {node.name} = {initial_state}"
 
     def visit_qudit(self, node: QuditleNode) -> str:
-        """Create a new qudit (d-dimensional quantum system)"""
-        amplitudes = np.zeros(node.dimension, dtype=complex)
-        amplitudes[0] = 1.0  # Initialize to |0⟩ state
-
-        initial_state = QuantumState(amplitudes, int(np.log2(node.dimension)))
-        self.qubits[node.name] = QubitRegister(node.name, int(np.log2(node.dimension)), initial_state)
-        return f"qudit {node.name}[{node.dimension}] = {initial_state}"
+        raise NotImplementedError("Qudits are not supported by the qubit statevector runtime")
 
     def visit_circuit(self, node: QuantumCircuitNode) -> str:
         """Define a quantum circuit"""
@@ -256,38 +258,38 @@ class QubitFlowInterpreter:
             return self._apply_two_qubit_gate(node.qubits[0], node.qubits[1], self.gates.cz())
 
         else:
-            return f"Unknown or invalid gate: {gate_type}"
+            raise ValueError(f"Unknown or invalid gate: {gate_type}")
 
-    def _apply_single_qubit_gate(self, qubit_name: str, gate_matrix: np.ndarray) -> str:
-        """Apply a single qubit gate"""
-        if qubit_name not in self.qubits:
-            return f"Error: Qubit {qubit_name} not found"
+    def _share_state(self):
+        for register in self.qubits.values():
+            register.state = self.state
 
-        qubit = self.qubits[qubit_name]
+    def _apply_gate(self, names, matrix):
+        if len(set(names)) != len(names):
+            raise ValueError("Gate targets must be distinct")
+        indices = [self.qubits[name].index for name in names]
+        n = self.state.num_qubits
+        axes = indices + [i for i in range(n) if i not in indices]
+        tensor = self.state.amplitudes.reshape([2] * n).transpose(axes)
+        transformed = matrix @ tensor.reshape(2 ** len(names), -1)
+        self.state.amplitudes = transformed.reshape([2] * n).transpose(np.argsort(axes)).reshape(-1)
+        return f"Applied gate to {', '.join(names)}"
 
-        # For single qubit, directly multiply the gate matrix with the state vector
-        new_amplitudes = gate_matrix @ qubit.state.amplitudes
-        qubit.state = QuantumState(new_amplitudes, 1)
+    def _apply_single_qubit_gate(self, qubit_name, gate_matrix):
+        return self._apply_gate([qubit_name], gate_matrix)
 
-        return f"Applied gate to {qubit_name}"
+    def _apply_two_qubit_gate(self, control_qubit, target_qubit, gate_matrix):
+        return self._apply_gate([control_qubit, target_qubit], gate_matrix)
 
-    def _apply_two_qubit_gate(self, control_qubit: str, target_qubit: str, gate_matrix: np.ndarray) -> str:
-        """Apply a two-qubit gate"""
-        if control_qubit not in self.qubits or target_qubit not in self.qubits:
-            return "Error: One or both qubits not found"
+    def probability_one(self, name):
+        index = self.qubits[name].index
+        mask = (np.arange(len(self.state.amplitudes)) >> (self.state.num_qubits - 1 - index)) & 1
+        return float(np.sum(abs(self.state.amplitudes[mask == 1]) ** 2))
 
-        # This is a simplified implementation - in a full system, you'd need to
-        # handle multi-qubit states properly with tensor products
-        control = self.qubits[control_qubit]
-        target = self.qubits[target_qubit]
-
-        # Create a combined 2-qubit state
-        combined_amplitudes = np.kron(control.state.amplitudes, target.state.amplitudes)
-        gate_matrix @ combined_amplitudes
-
-        # Split back into individual qubits (simplified)
-        # In practice, this would require more sophisticated state management
-        return f"Applied two-qubit gate between {control_qubit} and {target_qubit}"
+    def measure_qubit(self, name):
+        result, self.state = self.state.measure(self.qubits[name].index)
+        self._share_state()
+        return result
 
     def _evaluate_parameter(self, param_node: ASTNode) -> float:
         """Evaluate a parameter node to get a numeric value"""
@@ -296,16 +298,14 @@ class QubitFlowInterpreter:
         elif isinstance(param_node, IdentifierNode):
             if param_node.name in self.variables:
                 return float(self.variables[param_node.name])
-        return 0.0
+        raise ValueError("Unknown or unsupported gate parameter")
 
     def visit_measurement(self, node: MeasurementNode) -> str:
         """Perform a quantum measurement"""
         if node.qubit not in self.qubits:
             return f"Error: Qubit {node.qubit} not found"
 
-        qubit = self.qubits[node.qubit]
-        result, new_state = qubit.state.measure(0)
-        qubit.state = new_state
+        result = self.measure_qubit(node.qubit)
 
         if node.classical_bit:
             self.classical_bits[node.classical_bit] = result
@@ -313,92 +313,32 @@ class QubitFlowInterpreter:
         return f"Measured {node.qubit}: {result}"
 
     def visit_entanglement(self, node: EntanglementNode) -> str:
-        """Create entanglement between qubits"""
-        if len(node.qubits) < 2:
-            return "Error: Need at least 2 qubits for entanglement"
-
-        qubit_names = node.qubits[:2]  # Take first two qubits for now
-
-        if any(q not in self.qubits for q in qubit_names):
-            return "Error: One or more qubits not found"
-
-        # Create Bell state (simplified implementation)
-        if node.entanglement_type == "bell":
-            # |Φ+⟩ = (|00⟩ + |11⟩)/√2
-            bell_amplitudes = np.array([1/np.sqrt(2), 0, 0, 1/np.sqrt(2)], dtype=complex)
-
-            # For simplicity, we'll update the first qubit to represent the entangled pair
-            self.qubits[qubit_names[0]].state = QuantumState(bell_amplitudes, 2)
-            return f"Entangled {qubit_names[0]} and {qubit_names[1]} in Bell state"
-
-        return f"Entanglement type {node.entanglement_type} not implemented"
+        """Bell/GHZ preparation by H and CNOT fan-out on zero inputs."""
+        if node.entanglement_type not in ("bell", "ghz"):
+            raise NotImplementedError(f"Unsupported entanglement: {node.entanglement_type}")
+        if len(node.qubits) < 2 or len(set(node.qubits)) != len(node.qubits):
+            raise ValueError("Entanglement needs at least two distinct qubits")
+        if node.entanglement_type == "bell" and len(node.qubits) != 2:
+            raise ValueError("Bell preparation needs exactly two qubits")
+        for name in node.qubits:
+            if self.probability_one(name) > 1e-12:
+                raise ValueError("Entanglement preparation requires zero-state inputs")
+        self._apply_single_qubit_gate(node.qubits[0], self.gates.hadamard())
+        for name in node.qubits[1:]:
+            self._apply_two_qubit_gate(node.qubits[0], name, self.gates.cnot())
+        return f"Prepared {node.entanglement_type} state"
 
     def visit_superposition(self, node: SuperpositionNode) -> str:
-        """Create a superposition state"""
-        if node.qubit not in self.qubits:
-            return f"Error: Qubit {node.qubit} not found"
-
-        # Convert amplitude dictionary to state vector
-        amplitudes = np.zeros(2, dtype=complex)
-
-        for state, amp_node in node.amplitudes.items():
-            if isinstance(amp_node, ComplexNumberNode):
-                amplitude = complex(amp_node.real, amp_node.imag)
-                if state == "0":
-                    amplitudes[0] = amplitude
-                elif state == "1":
-                    amplitudes[1] = amplitude
-
-        self.qubits[node.qubit].state = QuantumState(amplitudes, 1)
-        return f"Set {node.qubit} to superposition state"
+        raise NotImplementedError("Direct state replacement is unsupported; use unitary gates")
 
     def visit_grovers(self, node: GroversAlgorithmNode) -> str:
-        """Execute Grover's search algorithm (simplified)"""
-        n_qubits = int(np.ceil(np.log2(node.search_space)))
-        iterations = node.iterations or int(np.pi/4 * np.sqrt(node.search_space))
-
-        # Initialize qubits in superposition
-        amplitudes = np.ones(2**n_qubits, dtype=complex) / np.sqrt(2**n_qubits)
-        QuantumState(amplitudes, n_qubits)
-
-        # Simplified Grover's algorithm simulation
-        # In practice, this would involve oracle and diffusion operators
-        for _ in range(iterations):
-            # Apply oracle (mark target state)
-            # Apply diffusion operator
-            pass
-
-        return f"Executed Grover's algorithm: {iterations} iterations on {node.search_space} items"
+        raise NotImplementedError("Grover oracle execution is not implemented")
 
     def visit_shors(self, node: ShorsAlgorithmNode) -> str:
-        """Execute Shor's factoring algorithm (simplified)"""
-        number = node.number_to_factor
-
-        # This is a highly simplified simulation
-        # Real Shor's algorithm requires period finding and modular exponentiation
-        factors = []
-        for i in range(2, int(np.sqrt(number)) + 1):
-            if number % i == 0:
-                factors.extend([i, number // i])
-                break
-
-        if not factors:
-            factors = [1, number]
-
-        return f"Shor's algorithm found factors of {number}: {factors}"
+        raise NotImplementedError("Shor period finding is not implemented")
 
     def visit_qft(self, node: QFTNode) -> str:
-        """Execute Quantum Fourier Transform"""
-        qubits_involved = len(node.qubits)
-        direction = "inverse" if node.inverse else "forward"
-
-        # Simplified QFT implementation
-        for qubit_name in node.qubits:
-            if qubit_name in self.qubits:
-                # Apply Hadamard and controlled phase rotations
-                self._apply_single_qubit_gate(qubit_name, self.gates.hadamard())
-
-        return f"Applied {direction} QFT on {qubits_involved} qubits: {', '.join(node.qubits)}"
+        raise NotImplementedError("QFT is not implemented")
 
     def visit_assignment(self, node: AssignmentNode) -> str:
         """Handle variable assignment"""

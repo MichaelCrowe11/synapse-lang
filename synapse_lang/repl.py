@@ -22,10 +22,9 @@ _HELP = "  .help    show this help\n  .vars    list variables\n  .reset   clear 
 class REPL:
     """A line-oriented read-eval-print loop over a persistent interpreter."""
 
-    def __init__(self, sandbox: bool = True):
-        # `sandbox` is accepted for parity with the CLI; the interpreter runs
-        # in-process either way. Kept so callers (cli, __init__.main) have a
-        # stable signature.
+    def __init__(self, sandbox: bool = False):
+        if sandbox:
+            raise NotImplementedError("Synapse REPL isolation is unavailable")
         self.sandbox = sandbox
         self.interpreter = SynapseInterpreter()
 

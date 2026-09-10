@@ -6,28 +6,18 @@ from typing import Any
 
 from .parser_enhanced import EnhancedParser
 from .synapse_ast import *  # includes RunNode alias
+from .synapse_ast import ProgramNode
 from .synapse_lexer import Lexer
-
-try:
-    from .quantum import (
-        BackendConfig,
-        NoiseConfig,
-        QuantumCircuitBuilder,
-        QuantumSemanticError,
-        SimulatorBackend,
-        validate_circuit,
-    )
-    QUANTUM_CORE_AVAILABLE = True
-except Exception:  # fallback if quantum subpackage missing or partial
-    QUANTUM_CORE_AVAILABLE = False
 
 _BOOL_LITERALS = {"true": True, "false": False}
 
 
 class SynapseInterpreter:
-    def __init__(self):
+    def __init__(self, *, parallel: bool = False):
         from .builtins import default_builtins
 
+        self.parallel = parallel
+        self._writes: set[str] = set()
         self.variables: dict[str, Any] = default_builtins()
         self._active_backend_name = None
         self._current_backend_config: dict[str, Any] = {}
@@ -35,10 +25,13 @@ class SynapseInterpreter:
     def execute(self, source: str, context: dict[str, Any] | None = None) -> Any:
         if context:
             self.variables.update(context)
-        lexer = Lexer(source)
-        tokens = lexer.tokenize()
-        ast = EnhancedParser(tokens).parse()
-        return self.interpret(ast)
+        return self.execute_program(parse(source))
+
+    def execute_program(self, program: ProgramNode, context=None) -> Any:
+        """Evaluate a reusable AST without reparsing or mutating it."""
+        if context:
+            self.variables.update(context)
+        return self.interpret(program)
 
     def _program_statements(self, node: ProgramNode) -> list[ASTNode]:
         return getattr(node, "body", None) or getattr(node, "statements", [])
@@ -63,6 +56,7 @@ class SynapseInterpreter:
             value = self.interpret(node.value)
             name = self._assignment_target(node)
             self.variables[name] = value
+            self._writes.add(name)
             return value
         if isinstance(node, BinaryOpNode):
             return self._eval_binary(node)
@@ -128,26 +122,6 @@ class SynapseInterpreter:
         left = self.interpret(node.left)
         right = self.interpret(node.right)
 
-        try:
-            from .uncertainty import UncertainValue
-        except ImportError:
-            UncertainValue = None  # type: ignore[misc, assignment]
-
-        if UncertainValue and isinstance(left, UncertainValue) and isinstance(right, UncertainValue):
-            if op in ("+", "PLUS"):
-                return UncertainValue(
-                    left.value + right.value,
-                    math.sqrt(left.uncertainty ** 2 + right.uncertainty ** 2),
-                )
-            if op in ("*", "MULTIPLY"):
-                rel = math.sqrt((left.uncertainty / left.value) ** 2 + (right.uncertainty / right.value) ** 2)
-                product = left.value * right.value
-                return UncertainValue(product, abs(product) * rel)
-            if op in ("**", "POWER"):
-                val = left.value ** right.value
-                rel = abs(right.value) * (left.uncertainty / left.value) if left.value else 0.0
-                return UncertainValue(val, abs(val) * rel)
-
         if op in ("+", "PLUS"):
             return left + right
         if op in ("-", "MINUS"):
@@ -161,9 +135,7 @@ class SynapseInterpreter:
         if op in ("%", "MODULO"):
             return left % right
         if op in ("<", "LESS_THAN"):
-            if UncertainValue and isinstance(left, UncertainValue) and isinstance(right, UncertainValue):
-                return left.value < right.value
-            return left < right
+            return getattr(left, "nominal", left) < getattr(right, "nominal", right)
         if op in (">", "GREATER_THAN"):
             return left > right
         if op in ("<=", "LESS_EQUAL"):
@@ -205,17 +177,46 @@ class SynapseInterpreter:
         return func(*args)
 
     def _run_parallel(self, node: ParallelNode) -> Any:
-        """Execute parallel branches sequentially (shared interpreter state)."""
-        result = None
-        for branch in node.branches:
-            result = self.interpret(branch)
-        return result
+        """Sequential by default; opt-in snapshot isolation with atomic merge."""
+        if not self.parallel:
+            result = None
+            for branch in node.branches:
+                result = self.interpret(branch)
+            return result
+        import os
+        from concurrent.futures import ThreadPoolExecutor
+        from copy import deepcopy
+
+        def run_branch(branch):
+            child = SynapseInterpreter(parallel=True)
+            child.variables = deepcopy(self.variables)
+            child._active_backend_name = self._active_backend_name
+            child._current_backend_config = deepcopy(self._current_backend_config)
+            result = child.interpret(branch)
+            return result, {key: child.variables[key] for key in child._writes}
+
+        if not node.branches:
+            return None
+        with ThreadPoolExecutor(max_workers=min(len(node.branches), os.cpu_count() or 1, 8)) as pool:
+            outcomes = list(pool.map(run_branch, node.branches))
+        merged = {}
+        for _, writes in outcomes:
+            conflicts = merged.keys() & writes.keys()
+            if conflicts:
+                raise ValueError(f"Parallel branches write the same names: {sorted(conflicts)}")
+            merged.update(writes)
+        self.variables.update(merged)
+        self._writes.update(merged)
+        return outcomes[-1][0]
 
     def _define_circuit(self, node: QuantumCircuitNode):
         self.variables[f"circuit_{node.name}"] = node
+        self._writes.add(f"circuit_{node.name}")
         return f"Circuit {node.name}({node.qubits}) defined"
 
     def _define_backend(self, node: QuantumBackendNode):
+        if self.parallel:
+            raise ValueError("Backend selection requires sequential execution")
         cfg = {k: self.interpret(v) for k, v in node.config.items()}
         self.variables[f"backend_{node.name}"] = cfg
         self._active_backend_name = node.name
@@ -223,6 +224,14 @@ class SynapseInterpreter:
         return f"Backend {node.name} active"
 
     def _run(self, node: RunNode):
+        from .quantum import (
+            BackendConfig,
+            NoiseConfig,
+            QuantumCircuitBuilder,
+            QuantumSemanticError,
+            SimulatorBackend,
+            validate_circuit,
+        )
         circ_key = f"circuit_{node.circuit_name}"
         circuit_node: QuantumCircuitNode = self.variables.get(circ_key)
         if circuit_node is None:
@@ -245,14 +254,6 @@ class SynapseInterpreter:
                 if not (0.0 <= p <= 1.0):
                     return "Error: depolarizing noise parameter p must be in [0,1]"
                 noise_cfg["p"] = p
-        if not QUANTUM_CORE_AVAILABLE:
-            return {
-                "circuit": node.circuit_name,
-                "backend": backend_name,
-                "shots": shots,
-                "simulated": True,
-                "noise": noise_cfg,
-            }
         try:
             builder = QuantumCircuitBuilder(circuit_node.qubits)
             ops_meta = []

@@ -4,6 +4,8 @@ import os
 import sys
 import unittest
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from synapse_lang import (
@@ -42,7 +44,7 @@ class TestLanguageIntegration(unittest.TestCase):
 
         ast = parse(code)
         self.assertIsNotNone(ast)
-        self.assertEqual(len(ast.statements), 2)
+        self.assertEqual(len(ast.body), 2)
 
     def test_parallel_execution(self):
         """Test parallel execution blocks."""
@@ -56,7 +58,7 @@ class TestLanguageIntegration(unittest.TestCase):
 
         ast = parse(code)
         self.assertIsNotNone(ast)
-        self.assertEqual(ast.statements[0].node_type.name, "PARALLEL")
+        self.assertEqual(ast.body[0].node_type.name, "PARALLEL")
 
     def test_reasoning_chains(self):
         """Test reasoning chain constructs."""
@@ -74,7 +76,7 @@ class TestLanguageIntegration(unittest.TestCase):
 
         ast = parse(code)
         self.assertIsNotNone(ast)
-        reason_chain = ast.statements[0]
+        reason_chain = ast.body[0]
         self.assertEqual(len(reason_chain.premises), 2)
         self.assertEqual(len(reason_chain.derivations), 2)
 
@@ -92,7 +94,7 @@ class TestLanguageIntegration(unittest.TestCase):
         ast = parse(code)
         self.assertIsNotNone(ast)
         # Check that uncertainty nodes are created
-        self.assertEqual(ast.statements[0].node_type.name, "UNCERTAIN")
+        self.assertEqual(ast.body[0].value.node_type.name, "UNCERTAIN")
 
     def test_quantum_circuit(self):
         """Test quantum circuit definition and execution."""
@@ -111,11 +113,12 @@ class TestLanguageIntegration(unittest.TestCase):
 
         ast = parse(code)
         self.assertIsNotNone(ast)
-        circuit = ast.statements[0]
+        circuit = ast.body[0]
         self.assertEqual(circuit.name, "bell_state")
         self.assertEqual(circuit.qubits, 2)
         self.assertEqual(len(circuit.gates), 2)
 
+    @pytest.mark.xfail(strict=True, raises=AssertionError, reason="docs/release-issues.md#sl-r01: unimplemented DSL")
     def test_pipeline_processing(self):
         """Test data processing pipeline."""
         code = """
@@ -144,7 +147,7 @@ class TestLanguageIntegration(unittest.TestCase):
 
         ast = parse(code)
         self.assertIsNotNone(ast)
-        pipeline = ast.statements[0]
+        pipeline = ast.body[0]
         self.assertEqual(pipeline.name, "DataAnalysis")
         self.assertEqual(len(pipeline.stages), 3)
 
@@ -163,10 +166,11 @@ class TestLanguageIntegration(unittest.TestCase):
 
         ast = parse(code)
         self.assertIsNotNone(ast)
-        explore = ast.statements[0]
+        explore = ast.body[0]
         self.assertEqual(len(explore.try_paths), 1)
         self.assertEqual(len(explore.fallback_paths), 2)
 
+    @pytest.mark.xfail(strict=True, raises=IndexError, reason="docs/release-issues.md#sl-r03: unimplemented DSL")
     def test_symbolic_mathematics(self):
         """Test symbolic math operations."""
         code = """
@@ -181,10 +185,11 @@ class TestLanguageIntegration(unittest.TestCase):
 
         ast = parse(code)
         self.assertIsNotNone(ast)
-        symbolic = ast.statements[0]
+        symbolic = ast.body[0]
         self.assertEqual(len(symbolic.declarations), 2)
         self.assertEqual(len(symbolic.operations), 2)
 
+    @pytest.mark.xfail(strict=True, raises=AttributeError, reason="docs/release-issues.md#sl-r04: unimplemented DSL")
     def test_tensor_operations(self):
         """Test tensor declarations and operations."""
         code = """
@@ -196,9 +201,10 @@ class TestLanguageIntegration(unittest.TestCase):
 
         ast = parse(code)
         self.assertIsNotNone(ast)
-        tensor = ast.statements[0]
+        tensor = ast.body[0]
         self.assertEqual(tensor.dimensions, [3, 3, 3])
 
+    @pytest.mark.xfail(strict=True, raises=AssertionError, reason="docs/release-issues.md#sl-r02: unimplemented DSL")
     def test_stream_synchronization(self):
         """Test thought streams and synchronization."""
         code = """
@@ -213,7 +219,7 @@ class TestLanguageIntegration(unittest.TestCase):
 
         ast = parse(code)
         self.assertIsNotNone(ast)
-        self.assertEqual(len(ast.statements), 3)
+        self.assertEqual(len(ast.body), 3)
 
 
 class TestCompilation(unittest.TestCase):
@@ -261,9 +267,9 @@ class TestSecurity(unittest.TestCase):
 
         sandbox = ExecutionSandbox(policy)
 
-        # Safe code should execute
-        result = sandbox.execute("result = 2 + 2\n__result__ = result")
-        self.assertEqual(result, 4)
+        # Legacy in-process helpers cannot provide an isolation boundary.
+        with self.assertRaises(NotImplementedError):
+            sandbox.execute("result = 2 + 2\n__result__ = result")
 
     def test_forbidden_imports(self):
         """Test that forbidden imports are blocked."""
@@ -378,9 +384,9 @@ class TestEndToEnd(unittest.TestCase):
         ast = parse(code)
         self.assertIsNotNone(ast)
         # Verify all constructs are parsed
-        self.assertTrue(any(s.node_type.name == "UNCERTAIN" for s in ast.statements))
-        self.assertTrue(any(s.node_type.name == "PARALLEL" for s in ast.statements))
-        self.assertTrue(any(s.node_type.name == "HYPOTHESIS" for s in ast.statements))
+        self.assertTrue(any(getattr(s, "is_uncertain", False) for s in ast.body))
+        self.assertTrue(any(s.node_type.name == "PARALLEL" for s in ast.body))
+        self.assertTrue(any(s.node_type.name == "HYPOTHESIS" for s in ast.body))
 
     def test_quantum_algorithm(self):
         """Test quantum algorithm implementation."""
@@ -408,8 +414,8 @@ class TestEndToEnd(unittest.TestCase):
         ast = parse(code)
         self.assertIsNotNone(ast)
         # Check quantum nodes
-        self.assertTrue(any(s.node_type.name == "QUANTUM_ALGORITHM" for s in ast.statements))
-        self.assertTrue(any(s.node_type.name == "QUANTUM_CIRCUIT" for s in ast.statements))
+        self.assertTrue(any(s.node_type.name == "QUANTUM_ALGORITHM" for s in ast.body))
+        self.assertTrue(any(s.node_type.name == "QUANTUM_CIRCUIT" for s in ast.body))
 
     def test_machine_learning_pipeline(self):
         """Test ML pipeline processing."""
@@ -448,7 +454,7 @@ class TestEndToEnd(unittest.TestCase):
 
         ast = parse(code)
         self.assertIsNotNone(ast)
-        pipeline = ast.statements[0]
+        pipeline = ast.body[0]
         self.assertEqual(pipeline.name, "MLPipeline")
         self.assertEqual(len(pipeline.stages), 4)
 

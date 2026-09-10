@@ -135,22 +135,17 @@ class SimulatorBackend:
             return self._rotation(state, op.qubits[0], n, axis="Z", theta=op.parameters[0])
         return state
     def _x(self, state, q, n):
-        new = np.copy(state); mask = 1 << (n-1-q)
-        for i in range(len(state)):
-            j = i ^ mask
-            new[i] = state[j]
-        return new
+        blocks = state.reshape(-1, 2, 1 << (n - 1 - q))
+        return blocks[:, ::-1, :].copy().reshape(-1)
+
     def _h(self, state, q, n):
-        new = np.zeros_like(state); mask = 1 << (n-1-q)
-        for i in range(len(state)):
-            j = i ^ mask
-            if i & mask:
-                new[i] = (state[j]-state[i])/np.sqrt(2)
-                new[j] = (state[j]+state[i])/np.sqrt(2)
-            elif not new[i]:
-                new[i] = (state[i]+state[j])/np.sqrt(2)
-                new[j] = (state[i]-state[j])/np.sqrt(2)
-        return new
+        blocks = state.reshape(-1, 2, 1 << (n - 1 - q))
+        result = np.empty_like(blocks)
+        np.add(blocks[:, 0], blocks[:, 1], out=result[:, 0])
+        np.subtract(blocks[:, 0], blocks[:, 1], out=result[:, 1])
+        result *= 1 / np.sqrt(2)
+        return result.reshape(-1)
+
     def _cnot(self, state, c, t, n):
         new = np.copy(state); cm=1 << (n-1-c); tm=1 << (n-1-t)
         for i in range(len(state)):
@@ -160,14 +155,12 @@ class SimulatorBackend:
                     new[i], new[j] = state[j], state[i]
         return new
     def _single_unitary(self, state, q, n, U: np.ndarray):
-        new = np.copy(state); mask = 1 << (n-1-q)
-        for i in range(len(state)):
-            j = i ^ mask
-            if i & mask:
-                a = state[j]; b = state[i]
-                new[j] = U[0,0]*a + U[0,1]*b
-                new[i] = U[1,0]*a + U[1,1]*b
-        return new
+        blocks = state.reshape(-1, 2, 1 << (n - 1 - q))
+        result = np.empty_like(blocks)
+        result[:, 0] = U[0, 0] * blocks[:, 0] + U[0, 1] * blocks[:, 1]
+        result[:, 1] = U[1, 0] * blocks[:, 0] + U[1, 1] * blocks[:, 1]
+        return result.reshape(-1)
+
     def _rotation(self, state, q, n, axis: str, theta: float):
         ct = np.cos(theta/2); st = np.sin(theta/2)
         if axis=="X": U = np.array([[ct, -1j*st],[-1j*st, ct]])

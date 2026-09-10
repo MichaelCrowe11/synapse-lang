@@ -162,7 +162,8 @@ class TestMonteCarloSimulation(unittest.TestCase):
         result = monte_carlo(
             function=calculation,
             inputs={"x": x, "y": y},
-            samples=10000
+            samples=10000,
+            seed=42,
         )
 
         # Check result is close to analytical
@@ -195,6 +196,7 @@ class TestMonteCarloSimulation(unittest.TestCase):
             function=slow_calculation,
             inputs={"x": x, "y": y, "z": z},
             samples=1000,
+            seed=42,
             parallel=True,
             n_cores=4
         )
@@ -206,6 +208,7 @@ class TestMonteCarloSimulation(unittest.TestCase):
             function=slow_calculation,
             inputs={"x": x, "y": y, "z": z},
             samples=1000,
+            seed=42,
             parallel=False
         )
         serial_time = time.time() - start_time
@@ -219,27 +222,22 @@ class TestMonteCarloSimulation(unittest.TestCase):
         print(f"Serial time: {serial_time:.2f}s")
 
     def test_monte_carlo_convergence(self):
-        """Test Monte Carlo convergence with sample size."""
-        x = UncertainValue(10.0, 1.0)
-
-        def simple_function(x):
-            return x ** 2
-
-        # Test with different sample sizes
-        sample_sizes = [100, 1000, 10000]
-        uncertainties = []
-
-        for n_samples in sample_sizes:
+        """Check square-normal moments and the decreasing standard error."""
+        # X ~ N(10, 1): E[X^2] = 101, Var(X^2) = 402.
+        expected_mean, expected_variance = 101, 402
+        fourth_central_moment = 504060
+        errors = []
+        for count in (100, 1000, 10000):
             result = monte_carlo(
-                function=simple_function,
-                inputs={"x": x},
-                samples=n_samples
+                lambda x: x**2, {"x": UncertainValue(10, 1)}, samples=count, seed=42
             )
-            uncertainties.append(result.uncertainty)
-
-        # Uncertainty should decrease with more samples
-        for i in range(len(uncertainties) - 1):
-            self.assertLess(uncertainties[i+1], uncertainties[i] * 1.1)
+            self.assertLess(abs(result.value - expected_mean), 5 * sqrt(expected_variance/count))
+            variance_se = sqrt((fourth_central_moment -
+                                (count-3)/(count-1)*expected_variance**2)/count)
+            self.assertLess(abs(result.uncertainty**2-expected_variance), 5*variance_se)
+            errors.append(result.uncertainty/sqrt(count))
+        self.assertLess(errors[1], errors[0])
+        self.assertLess(errors[2], errors[1])
 
 
 class TestCorrelatedUncertainties(unittest.TestCase):

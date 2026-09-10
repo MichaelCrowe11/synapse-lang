@@ -4,7 +4,7 @@ An interpreted language for uncertainty-aware scientific computing, with
 built-in quantum circuit simulation and parallel blocks.
 
 [![PyPI](https://img.shields.io/pypi/v/synapse-lang.svg?label=PyPI)](https://pypi.org/project/synapse-lang/)
-![Python](https://img.shields.io/badge/python-3.8%2B-blue)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 
 Synapse is a small language focused on a few ideas that are awkward in
@@ -23,8 +23,22 @@ design targets and do not execute yet.
 pip install synapse-lang
 ```
 
-Requires Python 3.8+. Core dependencies: numpy, scipy, sympy, matplotlib,
+Requires Python 3.10+. Core dependencies: numpy, scipy, sympy, matplotlib,
 networkx, pandas, colorama.
+
+## Runtime safety
+
+Execution is trusted and in-process, not an operating-system security sandbox.
+Do not run untrusted source or context callables without external isolation.
+`execute(..., sandbox=True)`, `execute_program(..., sandbox=True)`, and
+`--sandbox` fail explicitly rather than silently executing without isolation.
+The default is now `sandbox=False`; `--no-sandbox` remains a compatibility flag.
+The older security helper classes now refuse execution. An opt-in
+[external Docker runner](docs/isolation.md) is available, with tested resource
+and OS restrictions; it is separate from the ordinary interpreter API.
+
+See [runtime optimization and verification](docs/runtime-optimization.md) for
+AST reuse, parallel semantics, benchmark commands, and verification limits.
 
 ## Usage
 

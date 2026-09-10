@@ -332,23 +332,27 @@ class TestQuantumMLExample(unittest.TestCase):
 
     def test_hybrid_training_loop(self):
         """Test hybrid classical-quantum training."""
+        rng = np.random.default_rng(42)
         # Simulate quantum circuit predictions
         def quantum_predict(params, features):
             """Mock quantum circuit execution."""
             # Simple linear combination for testing
             prediction = sum(p * f for p, f in zip(params, features, strict=False))
             # Add shot noise
-            shot_noise = np.random.normal(0, 0.01)
+            shot_noise = rng.normal(0, 0.01)
             return prediction + shot_noise
 
         # Training data
         n_samples = 20
         n_features = 4
-        X = np.random.randn(n_samples, n_features)
-        y = np.random.randint(0, 2, n_samples)
+        X = rng.standard_normal((n_samples, n_features))
+        y = rng.integers(0, 2, n_samples)
 
         # Initialize parameters
-        params = np.random.randn(n_features) * 0.1
+        params = rng.standard_normal(n_features) * 0.1
+
+        initial_scores = X @ params
+        initial_loss = np.mean(np.logaddexp(0, initial_scores) - y * initial_scores)
 
         # Training loop
         learning_rate = 0.01
@@ -366,7 +370,7 @@ class TestQuantumMLExample(unittest.TestCase):
                 loss = -y[i] * np.log(pred_prob + 1e-10) - (1-y[i]) * np.log(1-pred_prob + 1e-10)
                 total_loss += loss
 
-                # Gradient estimation (parameter shift rule simplified)
+                # Finite-difference score derivative for this linear mock, with loss chain rule
                 gradients = []
                 for j in range(n_features):
                     params_plus = params.copy()
@@ -377,7 +381,7 @@ class TestQuantumMLExample(unittest.TestCase):
                     params_minus[j] -= np.pi/4
                     pred_minus = quantum_predict(params_minus, X[i])
 
-                    grad = (pred_plus - pred_minus) / 2
+                    grad = (pred_prob - y[i]) * (pred_plus - pred_minus) / (np.pi/2)
                     gradients.append(grad)
 
                 # Update parameters
@@ -385,6 +389,8 @@ class TestQuantumMLExample(unittest.TestCase):
 
         # Training should reduce loss
         self.assertLess(total_loss / n_samples, 1.0)
+        scores = X @ params
+        self.assertLess(np.mean(np.logaddexp(0, scores) - y*scores), initial_loss)
 
 
 class TestParallelWorkflows(unittest.TestCase):

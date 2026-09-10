@@ -14,70 +14,12 @@ concurrency:
 
 jobs:
   test:
-    name: Test (matrix)
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.12"]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-      - name: Install deps (with capture)
-        run: |
-          set -o pipefail
-          python -V > env.txt 2>&1
-          pip --version >> env.txt 2>&1
-          python -m pip install --upgrade pip 2>&1 | tee pip_upgrade.txt
-          pip install .[dev] 2>&1 | tee pip_install.txt
-          pip list > pip_list.txt
-      - name: Lint (non-blocking)
-        run: |
-          if command -v ruff; then ruff check synapse_lang || true; fi
-          if command -v flake8; then flake8 synapse_lang || true; fi
-      - name: Type check (non-blocking)
-        run: |
-          if command -v mypy; then mypy synapse_lang || true; fi
-      - name: Run release test suite
-        run: |
-          set -o pipefail
-          pytest \
-            tests/test_enhanced_parser.py \
-            tests/test_parser_comprehensive.py \
-            tests/test_quantum_circuits.py \
-            tests/test_integration_quantum.py \
-            tests/test_comprehensive.py \
-            tests/test_minimal_parser.py \
-            tests/test_type_inference.py \
-            tests/test_examples_run.py \
-            tests/integration/ \
-            -v --tb=long 2>&1 | tee pytest_output.txt
-      - name: Upload diagnostics (always)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-diagnostics-py${{ matrix.python-version }}
-          path: |
-            env.txt
-            pip_upgrade.txt
-            pip_install.txt
-            pip_list.txt
-            pytest_output.txt
-          if-no-files-found: warn
+    uses: ./.github/workflows/ci.yml
   build:
     name: Build distributions
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    # NOTE: test gate temporarily bypassed for 2.4.0 publish — GitHub Actions
-    # storage outage made the test job undiagnosable (logs+artifacts+steps all empty).
-    # The 2.4.0 wheel was independently verified locally on 3.11 + 3.12, clean-venv
-    # install, examples + curated test suite green, twine check passed.
-    # Re-add `needs: test` once Actions storage recovers and the test failure can be fixed.
+    needs: test
     steps:
       - uses: actions/checkout@v4
       - name: Extract tag version
@@ -110,14 +52,16 @@ jobs:
               sys.exit("Version mismatch")
           PY
       - name: Build
-        run: python -m build
+        run: python -m build --outdir release-dist
       - name: Twine check
-        run: twine check dist/*
+        run: twine check release-dist/*
+      - name: Verify installed wheel without optional dependencies
+        run: python scripts/verify_installed.py
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: dist
-          path: dist/*
+          path: release-dist/*
 
   publish:
     name: Publish to PyPI

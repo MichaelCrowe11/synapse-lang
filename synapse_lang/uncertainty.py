@@ -160,23 +160,13 @@ class UncertainValue:
 
     def __mul__(self, other) -> "UncertainValue":
         if isinstance(other, UncertainValue):
-            # For multiplication: σ_z/z = √((σ_x/x)² + (σ_y/y)²)
-            if self.nominal == 0 or other.nominal == 0:
-                return UncertainValue(0, 0)
-
-            rel_unc1 = self.relative_uncertainty
-            rel_unc2 = other.relative_uncertainty
-
-            if (self.correlation_id and other.correlation_id and
-                self.correlation_id == other.correlation_id):
-                # Correlated case
-                new_rel_unc = rel_unc1 + rel_unc2
+            dx = other.nominal * self.uncertainty
+            dy = self.nominal * other.uncertainty
+            if self.correlation_id and self.correlation_id == other.correlation_id:
+                uncertainty = abs(dx + dy)
             else:
-                new_rel_unc = math.sqrt(rel_unc1**2 + rel_unc2**2)
-
-            new_nominal = self.nominal * other.nominal
-            new_uncertainty = abs(new_nominal * new_rel_unc)
-            return UncertainValue(new_nominal, new_uncertainty)
+                uncertainty = math.hypot(dx, dy)
+            return UncertainValue(self.nominal * other.nominal, uncertainty)
         else:
             return UncertainValue(self.nominal * other, abs(self.uncertainty * other))
 
@@ -188,18 +178,13 @@ class UncertainValue:
             if other.nominal == 0:
                 raise ZeroDivisionError("Division by uncertain zero")
 
-            rel_unc1 = self.relative_uncertainty
-            rel_unc2 = other.relative_uncertainty
-
-            if (self.correlation_id and other.correlation_id and
-                self.correlation_id == other.correlation_id):
-                new_rel_unc = abs(rel_unc1 - rel_unc2)
+            dx = self.uncertainty / other.nominal
+            dy = -self.nominal * other.uncertainty / other.nominal**2
+            if self.correlation_id and self.correlation_id == other.correlation_id:
+                uncertainty = abs(dx + dy)
             else:
-                new_rel_unc = math.sqrt(rel_unc1**2 + rel_unc2**2)
-
-            new_nominal = self.nominal / other.nominal
-            new_uncertainty = abs(new_nominal * new_rel_unc)
-            return UncertainValue(new_nominal, new_uncertainty)
+                uncertainty = math.hypot(dx, dy)
+            return UncertainValue(self.nominal / other.nominal, uncertainty)
         else:
             if other == 0:
                 raise ZeroDivisionError("Division by zero")
@@ -214,27 +199,21 @@ class UncertainValue:
             if self.nominal <= 0:
                 raise ValueError("Cannot raise non-positive uncertain number to uncertain power")
 
-            # z = x^y, ln(z) = y*ln(x)
-            # σ_z/z = √((y*σ_x/x)² + (ln(x)*σ_y)²)
-            ln_x = math.log(self.nominal)
-            rel_unc_x = self.relative_uncertainty
-
-            term1 = (exponent.nominal * rel_unc_x) ** 2
-            term2 = (ln_x * exponent.uncertainty) ** 2
-            new_rel_unc = math.sqrt(term1 + term2)
-
-            new_nominal = self.nominal ** exponent.nominal
-            new_uncertainty = abs(new_nominal * new_rel_unc)
-            return UncertainValue(new_nominal, new_uncertainty)
-        else:
-            # Simple power rule: z = x^n, σ_z = |n*x^(n-1)*σ_x|
-            if self.nominal == 0 and exponent != 0:
-                return UncertainValue(0, 0)
-
-            new_nominal = self.nominal ** exponent
-            derivative = exponent * (self.nominal ** (exponent - 1))
-            new_uncertainty = abs(derivative * self.uncertainty)
-            return UncertainValue(new_nominal, new_uncertainty)
+            value = self.nominal ** exponent.nominal
+            dx = value * exponent.nominal * self.uncertainty / self.nominal
+            dy = value * math.log(self.nominal) * exponent.uncertainty
+            if self.correlation_id and self.correlation_id == exponent.correlation_id:
+                uncertainty = abs(dx + dy)
+            else:
+                uncertainty = math.hypot(dx, dy)
+            return UncertainValue(value, uncertainty)
+        if exponent == 0:
+            return UncertainValue(1, 0)
+        value = self.nominal ** exponent
+        derivative = exponent * self.nominal ** (exponent - 1)
+        if isinstance(value, complex) or isinstance(derivative, complex):
+            raise ValueError("Uncertain powers must be real-valued")
+        return UncertainValue(value, abs(derivative * self.uncertainty))
 
     def sin(self) -> "UncertainValue":
         """Sine function with uncertainty propagation."""
@@ -328,7 +307,7 @@ class CorrelationMatrix:
         return self.correlations.get(key, 0.0)
 
     def propagate_correlated(self, expression: Callable, variables: list[str],
-                           samples: int = 10000) -> UncertainValue:
+                           samples: int = 10000, *, rng=None, parallel=False, n_cores=4) -> UncertainValue:
         """Propagate uncertainties through expression considering correlations."""
         # Generate correlated samples using Cholesky decomposition
         n_vars = len(variables)
@@ -342,7 +321,7 @@ class CorrelationMatrix:
         # Generate correlated samples
         try:
             L = np.linalg.cholesky(corr_matrix)
-            uncorr_samples = np.random.standard_normal((samples, n_vars))
+            uncorr_samples = (rng if rng is not None else np.random).standard_normal((samples, n_vars))
             corr_samples = uncorr_samples @ L.T
 
             # Transform to actual distributions
@@ -368,7 +347,12 @@ class CorrelationMatrix:
 
             # Evaluate expression for all samples
             var_samples = np.array(var_samples).T
-            results = np.array([expression(*sample) for sample in var_samples])
+            if parallel:
+                from .parallel import ParallelBlock, ParallelConfig
+                tasks = (functools.partial(expression, *sample) for sample in var_samples)
+                results = np.array(ParallelBlock(ParallelConfig(max_workers=n_cores)).execute(tasks))
+            else:
+                results = np.array([expression(*sample) for sample in var_samples])
 
             # Calculate statistics
             mean_result = np.mean(results)
@@ -644,8 +628,9 @@ def monte_carlo(
     seed=None,
     **kwargs,
 ):
-    if seed is not None:
-        np.random.seed(seed)
+    if samples < 2 or n_cores < 1:
+        raise ValueError("samples must be at least 2 and n_cores must be positive")
+    rng = np.random.default_rng(seed)
     inputs = dict(inputs or {})
     inputs.update(kwargs)
     if not inputs:
@@ -655,7 +640,7 @@ def monte_carlo(
     for name, val in inputs.items():
         if not isinstance(val, UncertainValue):
             val = UncertainValue(float(val), 0.0)
-        matrix.add_variable(name, val)
+        matrix.add_variable(name, UncertainValue(val.nominal, val.uncertainty, val.distribution))
 
     def expression(*args):
         bound = {var_names[i]: args[i] for i in range(len(var_names))}
@@ -664,7 +649,9 @@ def monte_carlo(
         except TypeError:
             return float(function(*args))
 
-    return matrix.propagate_correlated(expression, var_names, samples)
+    return matrix.propagate_correlated(
+        expression, var_names, samples, rng=rng, parallel=parallel, n_cores=n_cores
+    )
 
 # Decorator for uncertainty propagation
 def uncertain_function(method: PropagationMethod = PropagationMethod.LINEAR):

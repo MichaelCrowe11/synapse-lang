@@ -29,7 +29,7 @@ class CompilationConfig:
     """JIT compilation configuration."""
     backend: str = "cpu"  # 'cpu', 'cuda', 'roc'
     parallel: bool = True
-    fastmath: bool = True
+    fastmath: bool = False
     cache: bool = True
     nogil: bool = True
     inline: str = "always"
@@ -55,8 +55,23 @@ class ASTTranspiler:
 
     def transpile_ProgramNode(self, node: ProgramNode) -> python_ast.Module:
         """Transpile program node."""
-        body = [self.transpile(stmt) for stmt in node.statements]
-        return python_ast.Module(body=body, type_ignores=[])
+        statements = getattr(node, "body", None) or getattr(node, "statements", [])
+        body = []
+        for statement in statements:
+            emitted = self.transpile(statement)
+            body.append(python_ast.Expr(value=emitted) if isinstance(emitted, python_ast.expr) else emitted)
+        if body and isinstance(body[-1], python_ast.Expr):
+            body[-1] = python_ast.Return(value=body[-1].value)
+        elif body and isinstance(body[-1], python_ast.Assign):
+            body.append(python_ast.Return(value=python_ast.Name(id=body[-1].targets[0].id, ctx=python_ast.Load())))
+        else:
+            body.append(python_ast.Return(value=python_ast.Constant(value=None)))
+        function = python_ast.FunctionDef(
+            name="main",
+            args=python_ast.arguments(posonlyargs=[], args=[], kwonlyargs=[], kw_defaults=[], defaults=[]),
+            body=body, decorator_list=[],
+        )
+        return python_ast.Module(body=[function], type_ignores=[])
 
     def transpile_NumberNode(self, node: NumberNode) -> python_ast.Constant:
         """Transpile number literal."""
@@ -170,18 +185,9 @@ class ASTTranspiler:
 
     def transpile_AssignmentNode(self, node: AssignmentNode) -> python_ast.Assign:
         """Transpile assignment."""
-        target = python_ast.Name(id=node.target, ctx=python_ast.Store())
-        value = self.transpile(node.value)
-
-        # Add to symbol table
-        self.symbol_table[node.target] = {
-            "type": "variable",
-            "uncertain": node.is_uncertain,
-            "constrained": node.is_constrained,
-            "evolving": node.is_evolving
-        }
-
-        return python_ast.Assign(targets=[target], value=value)
+        name = node.target if isinstance(node.target, str) else node.target.name
+        target = python_ast.Name(id=name, ctx=python_ast.Store())
+        return python_ast.Assign(targets=[target], value=self.transpile(node.value))
 
     def transpile_FunctionCallNode(self, node: FunctionCallNode) -> python_ast.Call:
         """Transpile function call."""
@@ -342,8 +348,7 @@ class ASTTranspiler:
 
     def transpile_generic(self, node: ASTNode) -> python_ast.AST:
         """Generic transpilation for unhandled nodes."""
-        # Return a pass statement for now
-        return python_ast.Pass()
+        raise NotImplementedError(f"JIT does not support {type(node).__name__}")
 
 
 class JITCompiler:
@@ -363,6 +368,9 @@ class JITCompiler:
         # Check cache
         if cache_key in self.compiled_cache:
             return self.compiled_cache[cache_key]
+
+        if not NUMBA_AVAILABLE:
+            raise ImportError("Install synapse-lang[jit] for compilation")
 
         # Transpile to Python AST
         py_ast = self.transpiler.transpile(ast_node)
@@ -425,10 +433,9 @@ class JITCompiler:
         """Apply JIT compilation based on configuration."""
         # Determine compilation options
         jit_options = {
-            "nopython": True,
             "parallel": self.config.parallel,
             "fastmath": self.config.fastmath,
-            "cache": self.config.cache,
+            "cache": self.config.cache and func.__code__.co_filename != "<synapse_jit>",
             "nogil": self.config.nogil,
         }
 
@@ -649,21 +656,31 @@ def benchmark_compilation(code: str, iterations: int = 1000) -> dict[str, float]
     """Benchmark JIT compilation vs interpretation."""
     import time
 
-    # Compile code
-    compiled = compile_synapse_code(code)
+    if iterations < 1:
+        raise ValueError("iterations must be positive")
+    from .synapse_interpreter import SynapseInterpreter
 
-    # Benchmark compiled version
+    start = time.perf_counter()
+    compiled = compile_synapse_code(code)
+    compiled_result = compiled()  # Includes lazy Numba compilation in setup, not execution.
+    compilation_time = time.perf_counter() - start
+    interpreter = SynapseInterpreter()
+    interpreted_result = interpreter.execute(code)
+    if not np.allclose(compiled_result, interpreted_result, equal_nan=True):
+        raise ValueError("Compiled and interpreted results differ")
+
     start = time.perf_counter()
     for _ in range(iterations):
         compiled()
     compiled_time = time.perf_counter() - start
-
-    # Would need interpreter for comparison
-    interpreted_time = compiled_time * 10  # Placeholder
-
+    start = time.perf_counter()
+    for _ in range(iterations):
+        interpreter.execute(code)
+    interpreted_time = time.perf_counter() - start
     return {
+        "compilation_time": compilation_time,
         "compiled_time": compiled_time,
         "interpreted_time": interpreted_time,
         "speedup": interpreted_time / compiled_time,
-        "iterations": iterations
+        "iterations": iterations,
     }

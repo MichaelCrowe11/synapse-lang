@@ -40,9 +40,7 @@ setup(
     url="https://github.com/michaelcrowe11/synapse-lang",
     packages=find_packages(include=[
         "synapse_lang",
-        "synapse_lang.*",
-        "qubit_flow_lang",
-        "quantum_net_lang"
+        "synapse_lang.*"
     ]),
     py_modules=[
         "synapse_interpreter",
@@ -66,14 +64,12 @@ setup(
         "Topic :: Software Development :: Interpreters",
         "License :: Other/Proprietary License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.8",
+    python_requires=">=3.10",
     install_requires=requirements,
     extras_require={
         "dev": [
@@ -118,8 +114,6 @@ setup(
             "synapse=synapse_lang.cli:main",
             "synapse-repl=synapse_lang.repl:main",
             "synapse-quantum=synapse_lang.quantum.runner:main",
-            "qflow=qubit_flow_lang:placeholder",
-            "qnet=quantum_net_lang:placeholder",
         ],
     },
     include_package_data=True,

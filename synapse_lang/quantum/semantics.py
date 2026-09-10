@@ -111,6 +111,10 @@ def validate_backend_config(cfg: BackendConfig) -> None:
         raise QuantumSemanticError(f"E1301 shots must be positive int, got {cfg.shots!r}")
     if not isinstance(cfg.noise, NoiseConfig):
         raise QuantumSemanticError("E1200 invalid noise config object")
+    for name in ("p1q", "p2q", "readout"):
+        probability = getattr(cfg.noise, name)
+        if probability is not None and not 0 <= probability <= 1:
+            raise QuantumSemanticError(f"E1202 {name} probability must be in [0, 1]")
 
 def _ensure_int(i, label: str):
     if not isinstance(i, int):

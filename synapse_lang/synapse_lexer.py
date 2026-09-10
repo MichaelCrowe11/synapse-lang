@@ -371,6 +371,13 @@ class Lexer:
             line, col = self.line, self.column
             ch = self.current_char()
 
+            if self.source.startswith("+/-", self.position):
+                self.advance()
+                self.advance()
+                self.advance()
+                self.tokens.append(Token(TokenType.PLUS_MINUS, "+/-", line, col))
+                continue
+
             # multi-char operators
             two = (ch or "") + (self.peek_char() or "")
             if two in {"==", "!=", "&&", "||", "=>", "->", "<-", "<=", ">=", "+-", "**"}:

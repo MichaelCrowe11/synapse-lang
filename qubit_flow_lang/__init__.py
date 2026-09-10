@@ -1,7 +1,7 @@
-"""Placeholder package for future packaged Qubit Flow language.
-Currently retains legacy root modules (qubit_flow_*.py)."""
+"""Checkout compatibility path for the canonical companion package.
 
-def placeholder():
-    return "qubit_flow_lang placeholder"
+This shim is excluded from the Synapse wheel.
+"""
+from pathlib import Path
 
-__all__ = ["placeholder"]
+__path__ = [str(Path(__file__).resolve().parents[1] / "qubit-flow-package" / "qubit_flow_lang")]

@@ -327,54 +327,10 @@ class ExecutionSandbox:
 
     def execute(self, code: str, context: dict[str, Any] | None = None,
                 timeout: int | None = None) -> Any:
-        """Execute code in sandboxed environment."""
-        # Validate code
-        self.validator.validate(code)
-
-        # Update namespace with context
-        if context:
-            self.namespace.update(context)
-
-        # Use provided timeout or policy default
-        if timeout:
-            self.policy.max_cpu_seconds = timeout
-
-        # Execute with resource monitoring
-        result = None
-        exception = None
-
-        def run_code():
-            nonlocal result, exception
-            try:
-                with self._resource_limits():
-                    self.monitor.start()
-
-                    # Compile and execute code
-                    compiled = compile(code, "<sandboxed>", "exec")
-                    exec(compiled, self.namespace.namespace)
-
-                    # Get result if available
-                    if "__result__" in self.namespace.namespace:
-                        result = self.namespace.namespace["__result__"]
-
-            except Exception as e:
-                exception = e
-            finally:
-                self.monitor.stop()
-
-        # Run in separate thread with timeout
-        thread = threading.Thread(target=run_code)
-        thread.start()
-        thread.join(timeout=self.policy.max_cpu_seconds)
-
-        if thread.is_alive():
-            # Force stop if still running
-            raise ExecutionTimeout(f"Execution exceeded timeout of {self.policy.max_cpu_seconds} seconds")
-
-        if exception:
-            raise exception
-
-        return result
+        """Refuse the legacy in-process sandbox, which cannot enforce isolation."""
+        raise NotImplementedError(
+            "In-process isolation is unsupported. Use the external container runner."
+        )
 
     def execute_function(self, func: Callable, *args, **kwargs) -> Any:
         """Execute a function in sandboxed environment."""
@@ -404,45 +360,8 @@ class ProcessSandbox:
 
     def execute(self, code: str, context: dict[str, Any] | None = None,
                 timeout: int | None = None) -> Any:
-        """Execute code in separate process."""
-        timeout = timeout or self.policy.max_cpu_seconds
-
-        def run_in_process(queue, code, context):
-            try:
-                sandbox = ExecutionSandbox(self.policy)
-                result = sandbox.execute(code, context)
-                queue.put(("success", result))
-            except Exception as e:
-                queue.put(("error", str(e), traceback.format_exc()))
-
-        # Create queue for communication
-        queue = multiprocessing.Queue()
-
-        # Create and start process
-        process = multiprocessing.Process(
-            target=run_in_process,
-            args=(queue, code, context)
-        )
-        process.start()
-
-        # Wait for completion with timeout
-        process.join(timeout=timeout)
-
-        if process.is_alive():
-            # Terminate if still running
-            process.terminate()
-            process.join()
-            raise ExecutionTimeout(f"Process execution exceeded {timeout} seconds")
-
-        # Get result from queue
-        if not queue.empty():
-            result = queue.get()
-            if result[0] == "success":
-                return result[1]
-            else:
-                raise RuntimeError(f"Process execution failed: {result[1]}\n{result[2]}")
-
-        return None
+        """Refuse the legacy process wrapper; it is not a security boundary."""
+        raise NotImplementedError("Use the external container runner for isolation")
 
 
 # Decorator for sandboxed execution

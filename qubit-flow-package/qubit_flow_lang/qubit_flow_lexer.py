@@ -267,6 +267,16 @@ class QubitFlowLexer:
             if char == "|":
                 tokens.append(Token(TokenType.KET, char, start_line, start_col))
                 self.advance()
+                start = self.position
+                while self.current_char() is not None and self.current_char() not in (">", "⟩", "\n"):
+                    self.advance()
+                if self.current_char() not in (">", "⟩"):
+                    raise SyntaxError("Unclosed ket state")
+                state = self.source[start:self.position].strip()
+                if state not in ("0", "1", "+", "-"):
+                    raise SyntaxError(f"Unsupported ket state: {state}")
+                tokens.append(Token(TokenType.STRING, state, start_line, start_col + 1))
+                self.advance()
                 continue
 
             if char == "⟨":
@@ -310,8 +320,7 @@ class QubitFlowLexer:
                 self.advance()
                 continue
 
-            # Unknown character - skip it
-            self.advance()
+            raise SyntaxError(f"Unexpected character {char!r} at {start_line}:{start_col}")
 
         tokens.append(Token(TokenType.EOF, None, self.line, self.column))
         return tokens

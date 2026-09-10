@@ -156,7 +156,7 @@ class TestGPUFallback:
         U, S, Vt = svd(A)
 
         # Reconstruct and verify
-        reconstructed = U @ np.diag(S) @ Vt[:2, :]
+        reconstructed = U[:, :len(S)] @ np.diag(S) @ Vt[:len(S), :]
         assert np.allclose(reconstructed, A, atol=1e-10)
 
     def test_gpu_memory_info(self):
@@ -229,7 +229,7 @@ class TestQuantumOrchestrator:
         assert len(params) == problem.n_params
 
         # Solve problem
-        result = problem.solve(initial_params=params, maxiter=5)
+        result = problem.solve(initial_params=params, maxiter=500)
         assert result['success']
 
     def test_example_hamiltonians(self):

@@ -96,7 +96,7 @@ def pcg_solve(A, b, M=None, tol: float = 1e-8, maxiter: Optional[int] = None):
 
     # Default preconditioner: Jacobi (diagonal)
     if M is None:
-        diag = np.diag(A)
+        diag = np.diag(A).copy()
         diag[diag == 0] = 1.0  # Avoid division by zero
         M_inv = lambda x: x / diag
     elif callable(M):

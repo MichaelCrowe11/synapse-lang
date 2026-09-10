@@ -8,12 +8,18 @@ from __future__ import annotations
 import asyncio
 import concurrent.futures
 import itertools
+import os
+from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import partial
 from typing import Any
 
 import numpy as np
+
+
+def _run_batch(tasks, args, kwargs):
+    return [task(*args, **kwargs) for task in tasks]
 
 
 @dataclass
@@ -23,6 +29,13 @@ class ParallelConfig:
     chunk_size: int = 1
     backend: str = "threading"  # "threading", "multiprocessing", or "asyncio"
     timeout: float | None = None
+    max_pending: int | None = None
+
+    def __post_init__(self):
+        if self.max_workers is not None and self.max_workers < 1:
+            raise ValueError("max_workers must be positive")
+        if self.chunk_size < 1 or (self.max_pending is not None and self.max_pending < 1):
+            raise ValueError("chunk_size and max_pending must be positive")
 
 
 class ParallelBlock:
@@ -43,17 +56,40 @@ class ParallelBlock:
         else:
             raise ValueError(f"Unknown backend: {self.config.backend}")
 
-    def _execute_threaded(self, tasks: list[Callable], *args, **kwargs) -> list[Any]:
-        """Execute using ThreadPoolExecutor."""
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self.config.max_workers) as executor:
-            futures = [executor.submit(task, *args, **kwargs) for task in tasks]
-            return [f.result(timeout=self.config.timeout) for f in futures]
+    def _execute_threaded(self, tasks, *args, **kwargs) -> list[Any]:
+        workers = self.config.max_workers or min(32, (os.cpu_count() or 1) + 4)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+            return self._bounded_execute(executor, workers, tasks, args, kwargs)
 
-    def _execute_multiprocess(self, tasks: list[Callable], *args, **kwargs) -> list[Any]:
-        """Execute using ProcessPoolExecutor."""
-        with concurrent.futures.ProcessPoolExecutor(max_workers=self.config.max_workers) as executor:
-            futures = [executor.submit(task, *args, **kwargs) for task in tasks]
-            return [f.result(timeout=self.config.timeout) for f in futures]
+    def _execute_multiprocess(self, tasks, *args, **kwargs) -> list[Any]:
+        workers = self.config.max_workers or (os.cpu_count() or 1)
+        with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
+            return self._bounded_execute(executor, workers, tasks, args, kwargs)
+
+    def _bounded_execute(self, executor, workers, tasks, args, kwargs):
+        iterator = iter(tasks)
+        pending = deque()
+        results = []
+        limit = self.config.max_pending or workers * 2
+
+        def submit_batch():
+            batch = tuple(itertools.islice(iterator, self.config.chunk_size))
+            if batch:
+                pending.append(executor.submit(_run_batch, batch, args, kwargs))
+            return bool(batch)
+
+        for _ in range(limit):
+            if not submit_batch():
+                break
+        try:
+            while pending:
+                results.extend(pending.popleft().result(timeout=self.config.timeout))
+                submit_batch()
+        except BaseException:
+            for future in pending:
+                future.cancel()
+            raise
+        return results
 
     async def _execute_async(self, tasks: list[Callable], *args, **kwargs) -> list[Any]:
         """Execute using asyncio."""
@@ -87,20 +123,12 @@ class ParameterSweep:
         # Generate all parameter combinations
         param_names = list(param_ranges.keys())
         param_values = list(param_ranges.values())
-        combinations = list(itertools.product(*param_values))
-
-        # Create tasks for each combination
-        tasks = []
-        for combo in combinations:
-            kwargs = dict(zip(param_names, combo, strict=False))
-            tasks.append(partial(self.function, **kwargs))
-
-        # Execute in parallel
-        block = ParallelBlock(self.parallel_config)
-        results = block.execute(tasks)
-
-        # Return results mapped to parameter combinations
-        return dict(zip(combinations, results, strict=False))
+        tasks = (
+            partial(self.function, **dict(zip(param_names, combo, strict=True)))
+            for combo in itertools.product(*param_values)
+        )
+        results = ParallelBlock(self.parallel_config).execute(tasks)
+        return dict(zip(itertools.product(*param_values), results, strict=True))
 
     def sweep_grid(self, param_grid: dict[str, list]) -> np.ndarray:
         """
@@ -112,17 +140,8 @@ class ParameterSweep:
         Returns:
             N-dimensional array of results
         """
-        results_dict = self.sweep(**param_grid)
-
-        # Reshape results into grid
-        shapes = [len(v) for v in param_grid.values()]
-        results_array = np.zeros(shapes)
-
-        for combo, result in results_dict.items():
-            indices = combo
-            results_array[indices] = result
-
-        return results_array
+        results = self.sweep(**param_grid)
+        return np.asarray(list(results.values())).reshape([len(v) for v in param_grid.values()])
 
 
 class ThoughtStream:
@@ -222,7 +241,7 @@ def parallel_block(tasks: list[Callable] | dict[str, Callable] | Callable = None
     # Handle function + inputs pattern (common use case)
     if function is not None and inputs is not None:
         from functools import partial
-        task_list = [partial(function, inp) for inp in inputs]
+        task_list = (partial(function, inp) for inp in inputs)
         return block.execute(task_list)
 
     # Handle tasks argument
@@ -269,7 +288,13 @@ def parameter_sweep(function: Callable,
     if param_ranges is None:
         raise ValueError("Must provide parameter ranges")
 
-    config = ParallelConfig() if parallel else ParallelConfig(max_workers=1)
+    if not parallel:
+        names = list(param_ranges)
+        return {
+            combo: function(**dict(zip(names, combo, strict=True)))
+            for combo in itertools.product(*param_ranges.values())
+        }
+    config = ParallelConfig()
     sweeper = ParameterSweep(function, config)
     return sweeper.sweep(**param_ranges)
 

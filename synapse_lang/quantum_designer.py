@@ -114,9 +114,15 @@ class QuantumCircuit:
         """Add gate to circuit"""
         # Validate qubit indices
         for qubit in gate.qubits:
-            if qubit >= self.num_qubits:
+            if not isinstance(qubit, int) or not 0 <= qubit < self.num_qubits:
                 raise ValueError(f"Qubit index {qubit} out of range")
 
+        arity = 3 if gate.gate_type in {GateType.CCNOT, GateType.CSWAP} else (
+            2 if gate.gate_type in {GateType.CNOT, GateType.CZ, GateType.SWAP,
+                                   GateType.CRX, GateType.CRY, GateType.CRZ} else 1
+        )
+        if len(gate.qubits) != arity or len(set(gate.qubits)) != arity:
+            raise ValueError(f"{gate.gate_type.name} requires {arity} distinct qubits")
         self.gates.append(gate)
 
     def h(self, qubit: int):
@@ -301,47 +307,28 @@ class QuantumSimulator:
 
     def apply_gate(self, gate: QuantumGate):
         """Apply quantum gate to state"""
-        if gate.gate_type == GateType.H:
-            self._apply_single_qubit_gate(gate.qubits[0], gate.get_matrix())
-        elif gate.gate_type == GateType.X:
+        if gate.gate_type in {GateType.I, GateType.X, GateType.Y, GateType.Z,
+                              GateType.H, GateType.S, GateType.T,
+                              GateType.RX, GateType.RY, GateType.RZ}:
             self._apply_single_qubit_gate(gate.qubits[0], gate.get_matrix())
         elif gate.gate_type == GateType.CNOT:
             self._apply_cnot(gate.qubits[0], gate.qubits[1])
+        else:
+            raise NotImplementedError(f"Designer simulation does not support {gate.gate_type.name}")
 
-    def _apply_single_qubit_gate(self, qubit: int, matrix: List[List[complex]]):
-        """Apply single qubit gate"""
-        new_state = [0.0] * len(self.state)
-
+    def _apply_single_qubit_gate(self, qubit, matrix):
+        new_state = [0j] * len(self.state)
+        mask = 1 << qubit
         for i in range(len(self.state)):
-            # Extract qubit state
-            bit_val = (i >> qubit) & 1
-
-            # Apply gate matrix
-            for j in range(2):
-                if bit_val == 0:
-                    new_i = i
-                    coeff = matrix[j][0]
-                else:
-                    new_i = i ^ (1 << qubit)
-                    coeff = matrix[j][1]
-
-                new_state[new_i] += coeff * self.state[i]
-
+            if not i & mask:
+                j = i | mask
+                new_state[i] = matrix[0][0] * self.state[i] + matrix[0][1] * self.state[j]
+                new_state[j] = matrix[1][0] * self.state[i] + matrix[1][1] * self.state[j]
         self.state = new_state
 
-    def _apply_cnot(self, control: int, target: int):
-        """Apply CNOT gate"""
-        new_state = self.state.copy()
-
-        for i in range(len(self.state)):
-            control_bit = (i >> control) & 1
-            if control_bit == 1:
-                # Flip target bit
-                new_i = i ^ (1 << target)
-                new_state[new_i] = self.state[i]
-                new_state[i] = 0
-
-        self.state = new_state
+    def _apply_cnot(self, control, target):
+        self.state = [self.state[i ^ (1 << target)] if i & (1 << control)
+                      else self.state[i] for i in range(len(self.state))]
 
     def measure(self, qubit: int) -> int:
         """Measure specific qubit"""

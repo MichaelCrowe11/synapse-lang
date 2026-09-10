@@ -18,21 +18,28 @@ def main(argv=None) -> int:
     parser.add_argument("file", nargs="?", help="Synapse source file (.syn) to run")
     parser.add_argument("-c", "--code", help="Run a snippet of Synapse source instead of a file")
     parser.add_argument("--repl", action="store_true", help="Start the interactive REPL")
-    parser.add_argument("--no-sandbox", action="store_true", help="Disable the security sandbox")
+    parser.add_argument("--no-sandbox", action="store_true", help="Compatibility flag: execution is trusted and in-process")
+    parser.add_argument("--sandbox", action="store_true", help="Require isolation (currently unavailable; fails closed)")
+    parser.add_argument("--parallel", action="store_true", help="Run independent branches in isolated thread-local interpreter states")
     parser.add_argument("--version", action="version", version=f"Synapse {__version__}")
     args = parser.parse_args(argv)
+    if args.sandbox and args.no_sandbox:
+        parser.error("--sandbox and --no-sandbox are mutually exclusive")
 
     # No file and no snippet -> interactive REPL.
     if args.repl or (not args.file and not args.code):
         from synapse_lang.repl import REPL
 
-        return REPL(sandbox=not args.no_sandbox).run()
+        if args.sandbox:
+            print("synapse: runtime isolation is unavailable", file=sys.stderr)
+            return 1
+        return REPL().run()
 
     try:
         if args.code:
-            result = execute(args.code, sandbox=not args.no_sandbox)
+            result = execute(args.code, sandbox=args.sandbox, parallel=args.parallel)
         else:
-            result = run_file(args.file, sandbox=not args.no_sandbox)
+            result = run_file(args.file, sandbox=args.sandbox, parallel=args.parallel)
         if result is not None:
             print(result)
         return 0

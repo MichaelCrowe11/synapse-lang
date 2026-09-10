@@ -7,7 +7,7 @@ name = "synapse_lang"  # PEP 625 compliant naming
 version = "2.4.0"
 description = "An interpreted language for uncertainty-aware scientific computing, with built-in quantum circuit simulation and parallel blocks"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
     {name = "Michael Benjamin Crowe"},
@@ -39,8 +39,6 @@ classifiers = [
     "Topic :: Software Development :: Interpreters",
     "License :: Other/Proprietary License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -133,12 +131,10 @@ Changelog = "https://github.com/michaelcrowe11/synapse-lang/blob/main/CHANGELOG.
 synapse = "synapse_lang.cli:main"
 synapse-repl = "synapse_lang.repl:main"
 synapse-bench = "synapse_lang.benchmark:main"
-qflow = "qubit_flow_lang:placeholder"
-qnet = "quantum_net_lang:placeholder"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["synapse_lang*", "qubit_flow_lang", "quantum_net_lang"]
+include = ["synapse_lang*"]
 exclude = ["tests*", "docs*", "examples*", "benchmarks*"]
 
 [tool.setuptools.package-data]
@@ -146,7 +142,7 @@ synapse_lang = ["*.syn", "examples/*.syn", "data/*.json"]
 
 [tool.black]
 line-length = 100
-target-version = ["py38", "py39", "py310", "py311", "py312"]
+target-version = ["py310", "py311", "py312"]
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -165,7 +161,7 @@ extend-exclude = '''
 
 [tool.ruff]
 line-length = 100
-target-version = "py38"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = [
@@ -184,7 +180,7 @@ ignore = ["E501", "B008", "B904", "E203", "E266"]
 "tests/*" = ["B011"]
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
@@ -200,6 +196,7 @@ minversion = "6.0"
 addopts = "-ra -q --strict-markers"
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = ["slow: long-running backend tests"]
 
 [tool.coverage.run]
 source = ["synapse_lang"]

@@ -17,12 +17,12 @@ class Parser:
     def parse(self):
         statements = []
         while self.current_token() is not None:
-            if self.match(Tok.NETWORK):
+            if self.peek().type == Tok.NETWORK:
                 statements.append(self.parse_network())
-            elif self.match(Tok.PROTOCOL):
+            elif self.peek().type == Tok.PROTOCOL:
                 statements.append(self.parse_protocol())
             else:
-                raise self.error("Expected 'network' or 'protocol'")
+                self.error("Expected 'network' or 'protocol'")
         return ProgramNode(statements)
 
     def parse_network(self):
@@ -46,7 +46,7 @@ class Parser:
         while self.peek() is not None and self.peek().type != Tok.RBRACE:
             current_tok_type = self.peek().type
             if current_tok_type == Tok.NODE:
-                 statements.append(self.parse_node_def())
+                statements.append(self.parse_node_def())
             elif current_tok_type in [Tok.FIBER, Tok.CLASSICAL]:
                 statements.append(self.parse_link_def())
             else:
@@ -62,16 +62,18 @@ class Parser:
 
     def parse_link_def(self):
         link_type_tok = self.expect_one_of(Tok.FIBER, Tok.CLASSICAL)
-        nodes = [self.expect(Tok.ID).value, self.expect(Tok.ID).value]
         params = self.parse_params()
+        nodes = [self.expect(Tok.ID).value, self.expect(Tok.ID).value]
+        if not params:
+            params = self.parse_params()
         self.expect(Tok.SEMI)
         return LinkDefNode(link_type_tok.type, nodes, params)
 
     def parse_params(self):
         params = []
-        if self.peek().type == Tok.LPAREN:
+        if self.peek() is not None and self.peek().type == Tok.LPAREN:
             self.expect(Tok.LPAREN)
-            while self.peek().type != Tok.RPAREN:
+            while self.peek() is None or self.peek().type != Tok.RPAREN:
                 if self.current_token() is None:
                     self.error("Unclosed parameter list")
 
@@ -80,7 +82,7 @@ class Parser:
                 param_value_tok = self.expect_one_of(Tok.ID, Tok.NUM)
                 params.append(ParamNode(param_name, param_value_tok.value))
 
-                if self.peek().type != Tok.RPAREN:
+                if self.peek() is None or self.peek().type != Tok.RPAREN:
                     self.expect(Tok.COMMA)
             self.expect(Tok.RPAREN)
         return params
@@ -116,4 +118,4 @@ class Parser:
         self.error(f"Expected one of {token_types} but got {token.type if token else 'None'}")
 
     def error(self, message):
-        raise Exception(f"Parse Error: {message} at position {self.pos}")
+        raise SyntaxError(f"Parse Error: {message} at position {self.pos}")
