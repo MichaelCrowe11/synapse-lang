@@ -1,0 +1,115 @@
+{
+  "status": "blocked_for_publication",
+  "agents": {
+    "count": 3,
+    "mode": "read_only",
+    "reports": "benchmarks/trinity-review/*.log",
+    "independently_checked": true
+  },
+  "simulation_tests": {
+    "synapse_without_isolation": {
+      "passed": 505,
+      "skipped": 56,
+      "xfail": 7
+    },
+    "synapse_with_isolation": {
+      "passed": 510,
+      "skipped": 51,
+      "xfail": 7
+    },
+    "quantum_net": {
+      "passed": 19
+    }
+  },
+  "companion_installation": {
+    "qubit_flow_runtime_import": {
+      "passed": true,
+      "returncode": 0,
+      "diagnostic": "installed wheel imports from site-packages with no checkout on sys.path"
+    },
+    "qubit_flow_cli": {
+      "passed": true,
+      "returncode": 0,
+      "diagnostic": "synapse-qflow: Bell [0.5,0,0,0.5], GHZ exact, invalid program exit 1"
+    },
+    "quantum_net_parser": {
+      "passed": true,
+      "returncode": 0,
+      "diagnostic": ""
+    },
+    "quantum_net_cli": {
+      "passed": true,
+      "returncode": 0,
+      "diagnostic": "synapse-qnet parse-only; malformed input SyntaxError exit 1"
+    },
+    "source": "benchmarks/trinity-implementation/installed.json (console agent) and benchmarks/trinity-implementation/independent-verification.json (second runtime)"
+  },
+  "hardware_validated": false,
+  "real_dataset_validated": false,
+  "remote_ci_executed": false,
+  "publication_performed": false,
+  "product_integration_performed": false,
+  "announcement_performed": false,
+  "blockers": [
+    "Remote OS/Python matrix not yet run on GitHub (push required); license files reconciled but uncommitted (gate 5)",
+    "Real backend or dataset and validation scope unspecified (gate 6)",
+    "Registry/product/staging targets unspecified; the browser Lab's hosting target is not yet named"
+  ],
+  "review": "docs/trinity-validation.md",
+  "updated_at": "2026-09-10T22:18:36Z",
+  "milestone_2026_09_10": {
+    "gates_done": [
+      1,
+      2,
+      3,
+      "4 Quantum Net grammar split from roadmap examples; protocol placeholders refuse explicitly; legacy BB84 sifting repaired; E91/teleportation/swapping/purification raise NotImplementedError; lexical errors are SyntaxError"
+    ],
+    "gates_open": [
+      "6 hardware backend or real dataset with declared scope"
+    ],
+    "gates_partial": [
+      "5 installed-wheel CI gate exists and CI now runs the Quantum Net source tests; the remote OS/Python matrix has not run on GitHub (needs a push); version 2.4.1 chosen; license reconciled to proprietary in uncommitted files"
+    ],
+    "synapse_tests_passed_local_gate": 556,
+    "quantum_net_tests": 19,
+    "fault_injection": {
+      "detected": "40/40",
+      "false_alarms": "0/40",
+      "note": "ten fixed cases per category"
+    },
+    "blueprint": "docs/trinity-blueprint-2026-09-10.md",
+    "next_steps": "docs/trinity-next-steps-2026-09-10.md",
+    "chart": "docs/media/trinity-gates-2026-09-10.png",
+    "open_decisions": [
+      "version above 2.4.0",
+      "license terms",
+      "dataset owner and approval",
+      "private candidate go/no-go"
+    ],
+    "trinity_tests_checkout": "69 passed in 1.20s",
+    "legacy_test_qubit_flow": "12 passed, 1 warning in 0.98s",
+    "quantum_net_tests_checkout": "30 passed (19 before)",
+    "full_checkout_suite_after_gate4": "618 passed, 56 skipped, 7 xfailed (tests/ plus legacy test_qubit_flow.py)"
+  },
+  "independent_verification": {
+    "passed": 27,
+    "total": 27,
+    "status": "passed",
+    "finished": "2026-09-10T13:38:18.568042+00:00",
+    "wheels": {
+      "synapse": "cb42555f6537883f",
+      "qflow": "1b8074e1472ac459",
+      "qnet": "28ac7ca2a82cf5b8"
+    },
+    "record": "benchmarks/trinity-implementation/independent-verification.json",
+    "method": "copy of the tree, python -m build, twine check, fresh venvs with python -I, behaviour compared to dense references"
+  },
+  "resolved_2026_09_10": [
+    "Companion wheel import/CLI failures",
+    "Legacy bridge collection",
+    "No shared joint-state Qubit Flow execution",
+    "Advertised companion CLIs and REPLs implemented",
+    "Installed-wheel checks 4 of 4 (agent) and 27 of 27 (independent second runtime)"
+  ],
+  "git_head_at_update": "50aec021"
+}
