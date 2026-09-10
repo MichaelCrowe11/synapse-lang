@@ -1,0 +1,8 @@
+network two_hop {
+    node alice;
+    node relay;
+    node bob;
+    fiber(length=25) alice relay;
+    fiber(length=25) relay bob;
+    classical(delay=5) alice bob;
+}

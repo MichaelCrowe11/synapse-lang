@@ -1,3 +1,6 @@
+# Roadmap sketch, not shipped in any wheel and imported by nothing in the
+# repository. Its protocol handlers are simplified models; none is validated and
+# none makes a security claim (docs/trinity-validation.md, gate 4, 2026-09-10).
 """
 Advanced Quantum Networking for Quantum-Net
 Implements quantum internet protocols, distributed quantum computing, and entanglement routing
@@ -57,7 +60,7 @@ class QuantumChannelProperties:
     decoherence_time: float  # seconds
     loss_rate: float  # dB/km
     noise_model: Optional[Dict[str, Any]] = None
-    security_level: str = "unconditional"
+    security_level: str = "unvalidated"  # no protocol in this sketch is validated; never "unconditional" by default
 
 
 @dataclass

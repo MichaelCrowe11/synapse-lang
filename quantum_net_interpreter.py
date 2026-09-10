@@ -1,3 +1,9 @@
+# Legacy, repository-only module: it ships in no wheel (the packaged language is
+# quantum-net/qnet_lang). Executable here: network, node, link and channel
+# definitions, and the BB84 simulation primitives (BB84Protocol) used by
+# tests/test_trinity_validation.py. Roadmap paths raise NotImplementedError and
+# make no security claim: E91, teleportation, entanglement swapping and
+# purification (docs/trinity-validation.md, gate 4, 2026-09-10).
 # Quantum-Net: Distributed Quantum Computing & Networking Language - Interpreter
 # Essential for building next-generation quantum internet and distributed quantum systems
 
@@ -343,110 +349,45 @@ class QuantumNetInterpreter(ASTVisitor):
         bob_bases = self.bb84.generate_random_bases(len(transmitted_qubits))
         bob_results = self.bb84.measure_qubits(transmitted_qubits, bob_bases)
 
-        # Key sifting
-        sifted_key = self.bb84.sift_key(alice_bits, alice_bases, bob_bases)
+        # Key sifting: both parties keep the positions where the bases matched.
+        # The old code compared Alice's SIFTED bits with Bob's UNSIFTED results,
+        # so the error estimate was meaningless (fixed 2026-09-10).
+        sifted_alice = self.bb84.sift_key(alice_bits, alice_bases, bob_bases)
+        sifted_bob = self.bb84.sift_key(bob_results, alice_bases, bob_bases)
 
-        # Error estimation
-        error_rate = self.bb84.estimate_error_rate(
-            sifted_key[:100],
-            bob_results[:100],
-            50
-        )
-
-        # Privacy amplification (simplified)
-        final_key = sifted_key[:node.key_length]
-
-        return {
+        # Error estimation on disclosed sample bits, which are then discarded;
+        # refuse when there are too few sifted bits to estimate anything.
+        sample_size = 50
+        result = {
             "protocol": "BB84",
             "alice": node.alice,
             "bob": node.bob,
             "raw_key_length": len(alice_bits),
-            "sifted_key_length": len(sifted_key),
-            "final_key_length": len(final_key),
-            "error_rate": error_rate,
-            "key": final_key if error_rate < node.security_parameter else None
+            "sifted_key_length": len(sifted_alice),
+            "security_claim": ("none: simulation without an authenticated classical channel, "
+                               "error correction, privacy amplification or a finite-key analysis"),
         }
+        if len(sifted_alice) < sample_size + node.key_length:
+            result.update({"final_key_length": 0, "error_rate": None, "key": None,
+                           "reason": f"insufficient sifted bits ({len(sifted_alice)}) for a "
+                                     f"{sample_size}-bit error sample plus a {node.key_length}-bit key"})
+            return result
+        errors = sum(a != b for a, b in zip(sifted_alice[:sample_size], sifted_bob[:sample_size], strict=True))
+        error_rate = errors / sample_size
+        final_key = sifted_alice[sample_size:sample_size + node.key_length]
+        result.update({"final_key_length": len(final_key), "error_rate": error_rate,
+                       "key": final_key if error_rate < node.security_parameter else None})
+        return result
 
     def _execute_e91(self, node: QKDProtocolNode) -> dict[str, Any]:
-        """Execute E91 protocol"""
-        # Create entangled pairs
-        pairs = self.e91.create_entangled_pairs(node.key_length * 4)
-
-        # Distribute pairs to Alice and Bob
-        alice_qubits = [pair[0] for pair in pairs]
-        bob_qubits = [pair[1] for pair in pairs]
-
-        # Random measurement bases
-        alice_bases = self.bb84.generate_random_bases(len(alice_qubits))
-        bob_bases = self.bb84.generate_random_bases(len(bob_qubits))
-
-        # Perform measurements
-        alice_results = self.bb84.measure_qubits(alice_qubits, alice_bases)
-        bob_results = self.bb84.measure_qubits(bob_qubits, bob_bases)
-
-        # Check Bell inequality for security
-        correlation = self.e91.measure_correlation(alice_results[:100], bob_results[:100])
-
-        # Extract key from matching bases
-        key = []
-        for i, (a_basis, b_basis) in enumerate(zip(alice_bases, bob_bases, strict=False)):
-            if a_basis == b_basis:
-                key.append(alice_results[i])
-
-        return {
-            "protocol": "E91",
-            "alice": node.alice,
-            "bob": node.bob,
-            "pairs_created": len(pairs),
-            "key_length": len(key[:node.key_length]),
-            "bell_correlation": correlation,
-            "key": key[:node.key_length]
-        }
+        """E91 is a roadmap protocol here: the old model measured random bases
+        with no CHSH test and returned a 'key' anyway."""
+        raise NotImplementedError("E91: roadmap protocol: no validated implementation, no security or fidelity claim (docs/trinity-validation.md, gate 4)")
 
     def visit_teleport_protocol(self, node: TeleportProtocolNode) -> dict[str, Any]:
-        """Execute quantum teleportation"""
-        # Get source qubit
-        source_node = self.nodes.get(node.source_node)
-        if not source_node or node.qubit_ref not in source_node.qubits:
-            raise ValueError(f"Qubit {node.qubit_ref} not found at {node.source_node}")
-
-        qubit_state = source_node.qubits[node.qubit_ref].state
-
-        # Create or use entangled pair
-        if node.entangled_pair:
-            pair_id = f"{node.entangled_pair[0]}-{node.entangled_pair[1]}"
-            if pair_id not in self.entangled_pairs:
-                # Create new entangled pair
-                self._create_entangled_pair(node.entangled_pair[0], node.entangled_pair[1])
-
-        # Perform teleportation protocol
-        # 1. Bell measurement on source qubit and one half of entangled pair
-        bell_result = np.random.randint(0, 4)  # Simplified: random Bell state
-
-        # 2. Classical communication of measurement result
-        classical_bits = [bell_result // 2, bell_result % 2]
-
-        # 3. Apply corrections at target
-        target_node = self.nodes.get(node.target_node)
-        if target_node:
-            # Create new qubit at target with teleported state
-            new_qubit = NetworkQubit(
-                qubit_id=f"{node.target_node}_teleported",
-                node_id=node.target_node,
-                state=qubit_state.copy(),
-                fidelity=0.95  # Account for imperfect teleportation
-            )
-            target_node.qubits[new_qubit.qubit_id] = new_qubit
-
-        return {
-            "protocol": "teleportation",
-            "source": node.source_node,
-            "target": node.target_node,
-            "qubit": node.qubit_ref,
-            "bell_measurement": bell_result,
-            "classical_bits": classical_bits,
-            "success": True
-        }
+        """Teleportation is a roadmap protocol here: the old model drew a random
+        Bell outcome and copied the state with a fixed 0.95 fidelity."""
+        raise NotImplementedError("teleportation: roadmap protocol: no validated implementation, no security or fidelity claim (docs/trinity-validation.md, gate 4)")
 
     def visit_entangle_protocol(self, node: EntangleProtocolNode) -> dict[str, Any]:
         """Execute entanglement distribution"""
@@ -563,18 +504,13 @@ class QuantumNetInterpreter(ASTVisitor):
         }
 
     def visit_swap_operation(self, node: SwapOperation) -> dict[str, Any]:
-        """Perform entanglement swapping"""
-        # Implementation of entanglement swapping
-        return {
-            "operation": "swap",
-            "qubit1": node.qubit1,
-            "qubit2": node.qubit2,
-            "measured": node.measure
-        }
+        """Entanglement swapping is a roadmap protocol here: the old handler echoed
+        its arguments as if something had happened."""
+        raise NotImplementedError("entanglement swapping: roadmap protocol: no validated implementation, no security or fidelity claim (docs/trinity-validation.md, gate 4)")
 
     def visit_purify_operation(self, node: PurifyOperation) -> dict[str, Any]:
-        """Perform entanglement purification"""
-        return self._purify_entanglement(node.pairs, 0.9, node.protocol, node.rounds)
+        """Purification is a roadmap protocol here (see _purify_entanglement)."""
+        raise NotImplementedError("entanglement purification: roadmap protocol: no validated implementation, no security or fidelity claim (docs/trinity-validation.md, gate 4)")
 
     # Helper methods
 
@@ -668,31 +604,8 @@ class QuantumNetInterpreter(ASTVisitor):
 
     def _purify_entanglement(self, pairs: list, target_fidelity: float,
                             protocol: str = "DEJMPS", rounds: int = 1) -> dict[str, Any]:
-        """Purify entangled pairs"""
-        results = {
-            "protocol": protocol,
-            "rounds": rounds,
-            "initial_pairs": len(pairs),
-            "final_pairs": 0,
-            "final_fidelity": 0.0
-        }
-
-        # Simplified purification simulation
-        current_fidelity = 0.85  # Starting fidelity
-        pairs_remaining = len(pairs)
-
-        for _round in range(rounds):
-            # Each round uses 2 pairs to create 1 higher-fidelity pair
-            pairs_remaining = pairs_remaining // 2
-            current_fidelity = min(0.99, current_fidelity + 0.05)
-
-            if current_fidelity >= target_fidelity:
-                break
-
-        results["final_pairs"] = pairs_remaining
-        results["final_fidelity"] = current_fidelity
-
-        return results
+        """The old model added 0.05 fidelity per round with no pair-level simulation."""
+        raise NotImplementedError(f"entanglement purification ({protocol}): roadmap protocol: no validated implementation, no security or fidelity claim (docs/trinity-validation.md, gate 4)")
 
     def _simulate_channel_noise(self, qubits: list[np.ndarray],
                                link: NetworkLink | None) -> list[np.ndarray]:

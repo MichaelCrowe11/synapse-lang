@@ -1,6 +1,6 @@
 import re
 
-from qnet_lang.tokens import Tok
+from qnet_lang.tokens import Tok, Token
 
 
 class Lexer:
@@ -52,6 +52,7 @@ class Lexer:
         self.token_regex = "|".join("(?P<{}>{})".format(*pair) for pair in self.token_specs)
 
     def lex(self):
+        self.tokens = []
         for mo in re.finditer(self.token_regex, self.text):
             kind = mo.lastgroup
             value = mo.group()
@@ -59,11 +60,11 @@ class Lexer:
                 continue
             elif kind == "ID":
                 kind = self.keywords.get(value.lower(), Tok.ID)
-                self.tokens.append((kind, value))
+                self.tokens.append(Token(kind, value))
             elif kind == "NUM":
-                self.tokens.append((Tok.NUM, float(value) if "." in value else int(value)))
+                self.tokens.append(Token(Tok.NUM, float(value) if "." in value else int(value)))
             elif kind != "MISMATCH":
-                self.tokens.append((Tok[kind], value))
+                self.tokens.append(Token(Tok[kind], value))
             else:
                 raise RuntimeError(f"Unexpected character: {value}")
         return self.tokens

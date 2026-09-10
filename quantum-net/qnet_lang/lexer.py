@@ -66,7 +66,7 @@ class Lexer:
             elif kind != "MISMATCH":
                 self.tokens.append(Token(Tok[kind], value))
             else:
-                raise RuntimeError(f"Unexpected character: {value}")
+                raise SyntaxError(f"Unexpected character: {value}")  # lexical errors are syntax errors, like the parser's
         return self.tokens
 
 def tokenize(text):
