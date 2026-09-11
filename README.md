@@ -12,10 +12,14 @@ general-purpose languages: values that carry uncertainty and propagate it
 through arithmetic, simple parallel branches, and quantum circuits that run on
 a built-in simulator.
 
-This is an early-stage language. The sections below describe what runs today.
-Larger aspirational programs (imports, control flow, functions, tensors,
+## Status
+
+early stage. The programs under "What works today" run and are covered by
+tests. Larger aspirational programs (imports, control flow, functions, tensors,
 reasoning chains, a full quantum DSL) are kept under `examples/roadmap/` as
-design targets and do not execute yet.
+design targets and do not execute yet. The current PyPI release, 2.4.1, drops
+the uncertainty on a bare `x = 3 ± 0.2` literal; the fix is on `master` and
+the First run section below shows both.
 
 ## Install
 
