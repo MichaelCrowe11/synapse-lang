@@ -137,6 +137,15 @@ export class SynapseTestProvider {
         return undefined;
     }
     
+    private resolveTests(request: vscode.TestRunRequest): vscode.TestItem[] {
+        if (request.include) {
+            return [...request.include];
+        }
+        const all: vscode.TestItem[] = [];
+        this.testController.items.forEach((item) => all.push(item));
+        return all;
+    }
+
     private deleteTest(uri: vscode.Uri) {
         this.testController.items.delete(uri.toString());
     }
@@ -146,7 +155,7 @@ export class SynapseTestProvider {
         token: vscode.CancellationToken
     ) {
         const run = this.testController.createTestRun(request);
-        const tests = request.include ?? this.testController.items;
+        const tests = this.resolveTests(request);
         
         for (const test of tests) {
             if (token.isCancellationRequested) {
@@ -273,7 +282,7 @@ export class SynapseTestProvider {
         token: vscode.CancellationToken
     ) {
         // Launch debugger for tests
-        const tests = request.include ?? this.testController.items;
+        const tests = this.resolveTests(request);
         
         for (const test of tests) {
             const testData = this.testData.get(test.id);
@@ -295,7 +304,7 @@ export class SynapseTestProvider {
         token: vscode.CancellationToken
     ) {
         const run = this.testController.createTestRun(request);
-        const tests = request.include ?? this.testController.items;
+        const tests = this.resolveTests(request);
         
         // Initialize coverage data
         const coverage: vscode.FileCoverage[] = [];
