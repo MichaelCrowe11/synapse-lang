@@ -212,12 +212,31 @@ Runnable examples live in [`examples/`](examples/): `hello.syn`,
 test suite. Aspirational examples are under
 [`examples/roadmap/`](examples/roadmap/).
 
+## Limits
+
+- Uncertainty propagation is first order: linear in the input standard
+  deviations, with every declared value treated as normal unless a distribution
+  is given. Strongly nonlinear formulas, wide relative uncertainties and
+  asymmetric distributions need the Monte Carlo helpers. The telemetry
+  validation harness (`scripts/validate_uncertainty_telemetry.py`) checks the
+  engine against an independent analytic reference and Monte Carlo, but it has
+  only run on synthetic data so far.
+- Quantum circuits run on a dense state-vector simulator with no noise model
+  and no hardware backend. Nothing here is a claim about quantum advantage.
+- Source is executed in-process and trusted; see Runtime safety above.
+- The current PyPI release, 2.4.1, drops the uncertainty on a bare
+  `x = 3 ± 0.2` literal; see First run for the repository install that fixes it.
+- Not the same thing as Talon's `.synapse` score files. That is a separate music
+  notation language in the Talon repository; the two share only the name.
+
 ## License
 
 Proprietary software. All rights reserved. Use, copying, modification, or
 distribution requires a separate written license from the copyright holder; see
 [LICENSE](LICENSE). Earlier copies distributed under MIT retain their granted
 rights, and third-party components retain their own licenses.
+
+Contact: michael@crowelogic.com
 
 ## Citation
 
