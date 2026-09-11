@@ -26,6 +26,29 @@ pip install synapse-lang
 Requires Python 3.10+. Core dependencies: numpy, scipy, sympy, matplotlib,
 networkx, pandas, colorama.
 
+## First run
+
+```bash
+synapse --version
+```
+
+```
+Synapse 2.4.2
+```
+
+```bash
+printf 'x = 3 ± 0.2\nprint(x * 2)\n' > first.syn
+synapse first.syn
+```
+
+```
+6.0 ± 0.4
+```
+
+Both outputs were captured on 2026-09-10 from a fresh virtual environment with
+the package installed from PyPI. Before 2.4.2 the first program printed `6.0`
+and silently dropped the uncertainty unless the line began with `uncertain`.
+
 ## Runtime safety
 
 Execution is trusted and in-process, not an operating-system security sandbox.
