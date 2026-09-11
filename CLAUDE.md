@@ -27,14 +27,10 @@ python run_synapse.py <file.syn>             # Execute Synapse file
 ```
 
 ### Publishing & Deployment
-```bash
-# PyPI publishing (requires credentials)
-python publish.py                            # Interactive publishing
-python publish_all.py                        # Publish all packages
-
-# Google Cloud deployment
-./deploy-to-gcp.sh                          # Deploy to GCP App Engine
-```
+Releases are cut by pushing a `v*` tag, which runs `.github/workflows/publish.yml` (full CI matrix,
+build, PyPI upload). Companion distributions are built with `python -m build` in
+`qubit-flow-package/` and `quantum-net/`. Generated planning, publishing and deployment notes from
+earlier passes live on the branch `archive/root-docs-2026-09`, not in the tree.
 
 ## Architecture Overview
 
