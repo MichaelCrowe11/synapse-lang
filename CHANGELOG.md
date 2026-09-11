@@ -1,13 +1,10 @@
 # Changelog
-## 2.4.2 (unreleased)
+## 2.4.2
 
 - Uncertain literals without the `uncertain` keyword now keep their uncertainty. `x = 3 ± 0.2`
   used to evaluate to the bare float 3.0 (the `± 0.2` was silently discarded), and `x = 3 +/- 0.2`
   evaluated to nothing. All three spellings (`±`, `+/-`, `+-`) now produce an uncertain value,
   inside expressions too.
-- The uncertainty engine's first-order propagation uses a step relative to each variable and
-  raises instead of reporting a zero derivative when an expression cannot be differentiated.
-
 
 All notable changes to the Synapse Programming Language will be documented in this file.
 
