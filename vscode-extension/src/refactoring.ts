@@ -233,10 +233,10 @@ quantum circuit converted_circuit {
             // Find and replace all occurrences
             const text = document.getText();
             const regex = new RegExp(`\\b${variableName}\\b`, 'g');
-            let match;
+            let occurrence: RegExpExecArray | null;
             
-            while ((match = regex.exec(text)) !== null) {
-                const pos = document.positionAt(match.index);
+            while ((occurrence = regex.exec(text)) !== null) {
+                const pos = document.positionAt(occurrence.index);
                 if (pos.line > range.start.line) {
                     const replaceRange = new vscode.Range(
                         pos,

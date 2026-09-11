@@ -420,11 +420,3 @@ export function registerQuantumCommands(context: vscode.ExtensionContext) {
         }
     });
 }
-
-export {
-    QuantumCircuitProvider,
-    QuantumStateVisualizer,
-    QuantumAlgorithmRunner,
-    UncertaintyAnalyzer,
-    ParallelExecutionManager
-};
