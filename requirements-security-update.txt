@@ -22,13 +22,13 @@ tensorflow>=2.15.0  # Fixes critical vulnerabilities
 uncertainties>=3.1.7
 
 # Web framework (updated for security)
-flask>=3.0.0
+flask>=3.1.3
 werkzeug>=3.0.1
 jinja2>=3.1.3
 
 # Utilities
 pyyaml>=6.0.1
-requests>=2.31.0
+requests>=2.34.2
 cryptography>=41.0.7
 pillow>=10.2.0  # Fixes security issues
 
