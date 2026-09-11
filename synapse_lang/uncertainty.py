@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import functools
+import importlib.util
 import math
 import warnings
 from collections.abc import Callable
@@ -12,11 +13,7 @@ from enum import Enum
 import numpy as np
 from scipy import stats
 
-try:
-    from uncertainties import ufloat, unumpy
-    UNCERTAINTIES_AVAILABLE = True
-except ImportError:
-    UNCERTAINTIES_AVAILABLE = False
+UNCERTAINTIES_AVAILABLE = importlib.util.find_spec("uncertainties") is not None
 
 
 class PropagationMethod(Enum):
@@ -40,24 +37,112 @@ class UncertaintyConfig:
     cache_results: bool = True
 
 
+class _Latent:
+    """One independent source of uncertainty, standard normal by construction."""
+
+    __slots__ = ("label",)
+
+    def __init__(self, label: str | None = None):
+        self.label = label
+
+    def __repr__(self) -> str:
+        return f"_Latent({self.label!r})" if self.label else f"_Latent(0x{id(self):x})"
+
+
+def _source_key(correlation_id: str | None):
+    # Values that share a correlation_id share one source and are perfectly correlated.
+    return ("corr", correlation_id) if correlation_id is not None else _Latent()
+
+
+_SCALARS = (int, float, np.integer, np.floating)
+
+
 class UncertainValue:
-    """Represents a value with uncertainty."""
+    """A value with a standard uncertainty that remembers where the uncertainty came from.
+
+    Every UncertainValue is, to first order, ``nominal + sum_k c_k Z_k`` over independent
+    standard-normal sources ``Z_k``. The coefficients ``c_k`` (output units per standard
+    deviation of the source) live in ``_linear``. Arithmetic combines coefficient maps
+    with the chain rule, so a variable that appears twice in one formula is the same
+    variable: ``x - x`` is exactly ``0 ± 0``, ``x / x`` is ``1 ± 0`` and ``t * b / (t + c)``
+    carries the exact first-order derivative instead of treating the two ``t`` as
+    independent. The reported uncertainty is ``sqrt(sum c_k^2)``; the covariance of two
+    results is the sum over shared sources of ``c_k d_k``.
+
+    ``correlation_id`` keeps the earlier contract: two values created with the same id
+    share one source and are perfectly (+1) correlated.
+    """
+
+    __slots__ = ("nominal", "distribution", "_linear", "_correlation_id", "_samples_cache")
 
     def __init__(self, nominal: float, uncertainty: float = 0.0,
-                 distribution: str = "normal", correlation_id: str | None = None):
+                 distribution: str = "normal", correlation_id: str | None = None,
+                 *, _linear: dict | None = None):
         self.nominal = float(nominal)
-        self.uncertainty = float(abs(uncertainty))
         self.distribution = distribution.lower()
-        self.correlation_id = correlation_id
+        self._correlation_id = correlation_id
         self._samples_cache = None
+        if _linear is not None:
+            self._linear = {k: float(c) for k, c in _linear.items() if c != 0.0}
+        else:
+            sigma = abs(float(uncertainty))
+            if math.isnan(sigma):
+                raise ValueError("uncertainty must be a number, not nan")
+            self._linear = {_source_key(correlation_id): sigma} if sigma > 0.0 else {}
+
+    # ── identity and size ────────────────────────────────────────────────────
+
+    @property
+    def uncertainty(self) -> float:
+        """Standard uncertainty: the root sum of squares of the source coefficients."""
+        if not self._linear:
+            return 0.0
+        if len(self._linear) == 1:
+            return abs(next(iter(self._linear.values())))
+        return math.sqrt(math.fsum(c * c for c in self._linear.values()))
+
+    @uncertainty.setter
+    def uncertainty(self, value: float) -> None:
+        sigma = abs(float(value))
+        current = self.uncertainty
+        if sigma == 0.0:
+            self._linear = {}
+        elif current > 0.0:
+            factor = sigma / current
+            self._linear = {k: c * factor for k, c in self._linear.items()}
+        else:
+            self._linear = {_source_key(self._correlation_id): sigma}
+        self._samples_cache = None
+
+    @property
+    def std_dev(self) -> float:
+        return self.uncertainty
 
     @property
     def value(self) -> float:
         """Alias for nominal (API compatibility)."""
         return self.nominal
 
+    @property
+    def correlation_id(self) -> str | None:
+        return self._correlation_id
+
+    @correlation_id.setter
+    def correlation_id(self, name: str | None) -> None:
+        # Re-key a plain source so that later values built with the same id share it.
+        if len(self._linear) == 1:
+            (key, coef), = self._linear.items()
+            if isinstance(key, _Latent) or (isinstance(key, tuple) and key[0] == "corr"):
+                self._linear = {_source_key(name): coef}
+        self._correlation_id = name
+
+    @property
+    def sources(self) -> int:
+        """Number of independent sources this value depends on."""
+        return len(self._linear)
+
     @classmethod
-    def from_string(cls, text: str) -> "UncertainValue":
+    def from_string(cls, text: str) -> UncertainValue:
         """Parse 'value ± uncertainty' notation."""
         import re
 
@@ -77,193 +162,238 @@ class UncertainValue:
         return abs(self.uncertainty / self.nominal)
 
     @property
-    def confidence_interval(self, confidence: float = 0.95) -> tuple[float, float]:
-        """Confidence interval bounds."""
-        if self.distribution == "normal":
-            z_score = stats.norm.ppf((1 + confidence) / 2)
-            margin = z_score * self.uncertainty
-            return (self.nominal - margin, self.nominal + margin)
-        elif self.distribution == "uniform":
+    def confidence_interval(self) -> tuple[float, float]:
+        """95 percent interval bounds under the declared marginal distribution."""
+        if self.distribution == "uniform":
             half_width = self.uncertainty * math.sqrt(3)
             return (self.nominal - half_width, self.nominal + half_width)
-        else:
-            # Fallback to normal approximation
-            margin = 1.96 * self.uncertainty  # 95% CI
-            return (self.nominal - margin, self.nominal + margin)
+        z_score = stats.norm.ppf(0.975)
+        margin = z_score * self.uncertainty
+        return (self.nominal - margin, self.nominal + margin)
 
     def sample(self, n_samples: int = 1000) -> np.ndarray:
-        """Generate random samples from the distribution."""
+        """Random samples from the marginal distribution of this value."""
         if self._samples_cache is not None and len(self._samples_cache) >= n_samples:
             return self._samples_cache[:n_samples]
 
-        if self.distribution == "normal":
-            samples = np.random.normal(self.nominal, self.uncertainty, n_samples)
-        elif self.distribution == "uniform":
-            half_width = self.uncertainty * math.sqrt(3)
-            samples = np.random.uniform(
-                self.nominal - half_width,
-                self.nominal + half_width,
-                n_samples
-            )
+        sigma = self.uncertainty
+        if self.distribution == "uniform":
+            half_width = sigma * math.sqrt(3)
+            samples = np.random.uniform(self.nominal - half_width, self.nominal + half_width, n_samples)
         elif self.distribution == "lognormal":
-            # For lognormal, uncertainty is the geometric standard deviation
             mu = np.log(self.nominal)
-            sigma = np.log(1 + self.uncertainty / self.nominal)
-            samples = np.random.lognormal(mu, sigma, n_samples)
+            s = np.log(1 + sigma / self.nominal)
+            samples = np.random.lognormal(mu, s, n_samples)
         elif self.distribution == "triangular":
-            # Symmetric triangular around nominal
-            half_width = self.uncertainty * math.sqrt(6)
-            samples = np.random.triangular(
-                self.nominal - half_width,
-                self.nominal,
-                self.nominal + half_width,
-                n_samples
-            )
+            half_width = sigma * math.sqrt(6)
+            samples = np.random.triangular(self.nominal - half_width, self.nominal, self.nominal + half_width, n_samples)
         else:
-            # Default to normal
-            samples = np.random.normal(self.nominal, self.uncertainty, n_samples)
+            samples = np.random.normal(self.nominal, sigma, n_samples)
 
         self._samples_cache = samples
         return samples
 
-    def __add__(self, other) -> "UncertainValue":
-        if isinstance(other, UncertainValue):
-            # Check for correlation
-            if (self.correlation_id and other.correlation_id and
-                self.correlation_id == other.correlation_id):
-                # Perfect positive correlation
-                new_uncertainty = self.uncertainty + other.uncertainty
-            else:
-                # Uncorrelated - add in quadrature
-                new_uncertainty = math.sqrt(self.uncertainty**2 + other.uncertainty**2)
-            return UncertainValue(self.nominal + other.nominal, new_uncertainty)
-        else:
-            return UncertainValue(self.nominal + other, self.uncertainty)
+    # ── covariance between results ───────────────────────────────────────────
 
-    def __radd__(self, other) -> "UncertainValue":
+    def covariance_with(self, other: UncertainValue) -> float:
+        """First-order covariance with another value through their shared sources."""
+        if not isinstance(other, UncertainValue):
+            return 0.0
+        a, b = self._linear, other._linear
+        if len(b) < len(a):
+            a, b = b, a
+        return math.fsum(c * b[k] for k, c in a.items() if k in b)
+
+    def correlation_with(self, other: UncertainValue) -> float:
+        """Pearson correlation coefficient with another value; 0 when either is exact."""
+        if not isinstance(other, UncertainValue):
+            return 0.0
+        denominator = self.uncertainty * other.uncertainty
+        if denominator == 0.0:
+            return 0.0
+        return max(-1.0, min(1.0, self.covariance_with(other) / denominator))
+
+    def derivative_wrt(self, source: UncertainValue) -> float:
+        """d(self)/d(source) for a source created directly with a nonzero uncertainty."""
+        if not isinstance(source, UncertainValue) or len(source._linear) != 1:
+            raise ValueError("derivative_wrt needs a directly declared uncertain value")
+        (key, coef), = source._linear.items()
+        return self._linear.get(key, 0.0) / coef
+
+    # ── arithmetic ───────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _combine(nominal: float, terms) -> UncertainValue:
+        """Build a result from (operand, partial derivative) pairs with the chain rule."""
+        linear: dict = {}
+        for operand, partial in terms:
+            if partial == 0.0 or not operand._linear:
+                continue
+            for key, coef in operand._linear.items():
+                linear[key] = linear.get(key, 0.0) + partial * coef
+        return UncertainValue(nominal, _linear=linear)
+
+    def __add__(self, other) -> UncertainValue:
+        if isinstance(other, UncertainValue):
+            return self._combine(self.nominal + other.nominal, ((self, 1.0), (other, 1.0)))
+        if isinstance(other, _SCALARS):
+            return self._combine(self.nominal + float(other), ((self, 1.0),))
+        return NotImplemented
+
+    def __radd__(self, other) -> UncertainValue:
         return self.__add__(other)
 
-    def __sub__(self, other) -> "UncertainValue":
+    def __sub__(self, other) -> UncertainValue:
         if isinstance(other, UncertainValue):
-            if (self.correlation_id and other.correlation_id and
-                self.correlation_id == other.correlation_id):
-                # Perfect correlation - uncertainties cancel for subtraction
-                new_uncertainty = abs(self.uncertainty - other.uncertainty)
-            else:
-                new_uncertainty = math.sqrt(self.uncertainty**2 + other.uncertainty**2)
-            return UncertainValue(self.nominal - other.nominal, new_uncertainty)
-        else:
-            return UncertainValue(self.nominal - other, self.uncertainty)
+            return self._combine(self.nominal - other.nominal, ((self, 1.0), (other, -1.0)))
+        if isinstance(other, _SCALARS):
+            return self._combine(self.nominal - float(other), ((self, 1.0),))
+        return NotImplemented
 
-    def __rsub__(self, other) -> "UncertainValue":
-        return UncertainValue(other, 0) - self
+    def __rsub__(self, other) -> UncertainValue:
+        if isinstance(other, _SCALARS):
+            return self._combine(float(other) - self.nominal, ((self, -1.0),))
+        return NotImplemented
 
-    def __mul__(self, other) -> "UncertainValue":
+    def __mul__(self, other) -> UncertainValue:
         if isinstance(other, UncertainValue):
-            dx = other.nominal * self.uncertainty
-            dy = self.nominal * other.uncertainty
-            if self.correlation_id and self.correlation_id == other.correlation_id:
-                uncertainty = abs(dx + dy)
-            else:
-                uncertainty = math.hypot(dx, dy)
-            return UncertainValue(self.nominal * other.nominal, uncertainty)
-        else:
-            return UncertainValue(self.nominal * other, abs(self.uncertainty * other))
+            return self._combine(self.nominal * other.nominal, ((self, other.nominal), (other, self.nominal)))
+        if isinstance(other, _SCALARS):
+            k = float(other)
+            return self._combine(self.nominal * k, ((self, k),))
+        return NotImplemented
 
-    def __rmul__(self, other) -> "UncertainValue":
+    def __rmul__(self, other) -> UncertainValue:
         return self.__mul__(other)
 
-    def __truediv__(self, other) -> "UncertainValue":
+    def __truediv__(self, other) -> UncertainValue:
         if isinstance(other, UncertainValue):
             if other.nominal == 0:
                 raise ZeroDivisionError("Division by uncertain zero")
-
-            dx = self.uncertainty / other.nominal
-            dy = -self.nominal * other.uncertainty / other.nominal**2
-            if self.correlation_id and self.correlation_id == other.correlation_id:
-                uncertainty = abs(dx + dy)
-            else:
-                uncertainty = math.hypot(dx, dy)
-            return UncertainValue(self.nominal / other.nominal, uncertainty)
-        else:
+            return self._combine(self.nominal / other.nominal,
+                                 ((self, 1.0 / other.nominal), (other, -self.nominal / other.nominal ** 2)))
+        if isinstance(other, _SCALARS):
             if other == 0:
                 raise ZeroDivisionError("Division by zero")
-            return UncertainValue(self.nominal / other, self.uncertainty / abs(other))
+            k = float(other)
+            return self._combine(self.nominal / k, ((self, 1.0 / k),))
+        return NotImplemented
 
-    def __rtruediv__(self, other) -> "UncertainValue":
-        return UncertainValue(other, 0) / self
+    def __rtruediv__(self, other) -> UncertainValue:
+        if isinstance(other, _SCALARS):
+            if self.nominal == 0:
+                raise ZeroDivisionError("Division by uncertain zero")
+            k = float(other)
+            return self._combine(k / self.nominal, ((self, -k / self.nominal ** 2),))
+        return NotImplemented
 
-    def __pow__(self, exponent) -> "UncertainValue":
+    def __pow__(self, exponent) -> UncertainValue:
         if isinstance(exponent, UncertainValue):
-            # Use logarithmic differentiation for a^b
+            # a ** b with both uncertain: d/da = b a^(b-1), d/db = a^b ln a
             if self.nominal <= 0:
                 raise ValueError("Cannot raise non-positive uncertain number to uncertain power")
-
             value = self.nominal ** exponent.nominal
-            dx = value * exponent.nominal * self.uncertainty / self.nominal
-            dy = value * math.log(self.nominal) * exponent.uncertainty
-            if self.correlation_id and self.correlation_id == exponent.correlation_id:
-                uncertainty = abs(dx + dy)
-            else:
-                uncertainty = math.hypot(dx, dy)
-            return UncertainValue(value, uncertainty)
+            return self._combine(value, ((self, value * exponent.nominal / self.nominal),
+                                         (exponent, value * math.log(self.nominal))))
+        if not isinstance(exponent, _SCALARS):
+            return NotImplemented
         if exponent == 0:
             return UncertainValue(1, 0)
         value = self.nominal ** exponent
         derivative = exponent * self.nominal ** (exponent - 1)
         if isinstance(value, complex) or isinstance(derivative, complex):
             raise ValueError("Uncertain powers must be real-valued")
-        return UncertainValue(value, abs(derivative * self.uncertainty))
+        return self._combine(value, ((self, float(derivative)),))
 
-    def sin(self) -> "UncertainValue":
-        """Sine function with uncertainty propagation."""
-        new_nominal = math.sin(self.nominal)
-        derivative = math.cos(self.nominal)
-        new_uncertainty = abs(derivative * self.uncertainty)
-        return UncertainValue(new_nominal, new_uncertainty)
+    def __rpow__(self, base) -> UncertainValue:
+        if not isinstance(base, _SCALARS):
+            return NotImplemented
+        if base <= 0:
+            raise ValueError("Cannot raise a non-positive base to an uncertain power")
+        value = float(base) ** self.nominal
+        return self._combine(value, ((self, value * math.log(float(base))),))
 
-    def cos(self) -> "UncertainValue":
-        """Cosine function with uncertainty propagation."""
-        new_nominal = math.cos(self.nominal)
-        derivative = -math.sin(self.nominal)
-        new_uncertainty = abs(derivative * self.uncertainty)
-        return UncertainValue(new_nominal, new_uncertainty)
+    def __neg__(self) -> UncertainValue:
+        return self._combine(-self.nominal, ((self, -1.0),))
 
-    def exp(self) -> "UncertainValue":
-        """Exponential function with uncertainty propagation."""
-        new_nominal = math.exp(self.nominal)
-        new_uncertainty = new_nominal * self.uncertainty
-        return UncertainValue(new_nominal, new_uncertainty)
+    def __pos__(self) -> UncertainValue:
+        return self._combine(self.nominal, ((self, 1.0),))
 
-    def log(self) -> "UncertainValue":
-        """Natural logarithm with uncertainty propagation."""
+    def __abs__(self) -> UncertainValue:
+        sign = -1.0 if self.nominal < 0 else 1.0
+        return self._combine(abs(self.nominal), ((self, sign),))
+
+    def __float__(self) -> float:
+        return self.nominal
+
+    def __int__(self) -> int:
+        return int(self.nominal)
+
+    def __round__(self, ndigits=None):
+        return round(self.nominal, ndigits)
+
+    @staticmethod
+    def _nominal_of(other) -> float:
+        return other.nominal if isinstance(other, UncertainValue) else float(other)
+
+    def __lt__(self, other) -> bool:
+        return self.nominal < self._nominal_of(other)
+
+    def __le__(self, other) -> bool:
+        return self.nominal <= self._nominal_of(other)
+
+    def __gt__(self, other) -> bool:
+        return self.nominal > self._nominal_of(other)
+
+    def __ge__(self, other) -> bool:
+        return self.nominal >= self._nominal_of(other)
+
+    # ── elementary functions ─────────────────────────────────────────────────
+
+    def sin(self) -> UncertainValue:
+        return self._combine(math.sin(self.nominal), ((self, math.cos(self.nominal)),))
+
+    def cos(self) -> UncertainValue:
+        return self._combine(math.cos(self.nominal), ((self, -math.sin(self.nominal)),))
+
+    def tan(self) -> UncertainValue:
+        value = math.tan(self.nominal)
+        return self._combine(value, ((self, 1.0 + value * value),))
+
+    def exp(self) -> UncertainValue:
+        value = math.exp(self.nominal)
+        return self._combine(value, ((self, value),))
+
+    def log(self) -> UncertainValue:
         if self.nominal <= 0:
             raise ValueError("Cannot take logarithm of non-positive uncertain number")
-        new_nominal = math.log(self.nominal)
-        new_uncertainty = self.uncertainty / self.nominal
-        return UncertainValue(new_nominal, new_uncertainty)
+        return self._combine(math.log(self.nominal), ((self, 1.0 / self.nominal),))
 
-    def sqrt(self) -> "UncertainValue":
-        """Square root with uncertainty propagation."""
+    def log10(self) -> UncertainValue:
+        if self.nominal <= 0:
+            raise ValueError("Cannot take logarithm of non-positive uncertain number")
+        return self._combine(math.log10(self.nominal), ((self, 1.0 / (self.nominal * math.log(10.0))),))
+
+    def sqrt(self) -> UncertainValue:
         if self.nominal < 0:
             raise ValueError("Cannot take square root of negative uncertain number")
         if self.nominal == 0:
             return UncertainValue(0, 0)
+        value = math.sqrt(self.nominal)
+        return self._combine(value, ((self, 0.5 / value),))
 
-        new_nominal = math.sqrt(self.nominal)
-        derivative = 0.5 / new_nominal
-        new_uncertainty = derivative * self.uncertainty
-        return UncertainValue(new_nominal, new_uncertainty)
+    # ── comparison and display ───────────────────────────────────────────────
 
     def significantly_different_from(
-        self, other: "UncertainValue", sigma: float = 2.0
+        self, other: UncertainValue, sigma: float = 2.0
     ) -> bool:
         if not isinstance(other, UncertainValue):
             other = UncertainValue(other, 0.0)
-        combined = math.sqrt(self.uncertainty**2 + other.uncertainty**2)
-        if combined == 0:
-            return self.nominal != other.nominal
-        return abs(self.nominal - other.nominal) > sigma * combined
+        # The difference accounts for shared sources, so x against x is never significant.
+        difference = self - other
+        if difference.uncertainty == 0:
+            return difference.nominal != 0
+        return abs(difference.nominal) > sigma * difference.uncertainty
 
     def format(self, decimals: int = 3) -> str:
         return f"{self.nominal:.{decimals}f} ± {self.uncertainty:.{decimals}f}"
@@ -276,6 +406,33 @@ class UncertainValue:
 
     def __str__(self) -> str:
         return self.__repr__()
+
+
+def covariance(a: UncertainValue, b: UncertainValue) -> float:
+    """First-order covariance of two results through the sources they share."""
+    if not isinstance(a, UncertainValue) or not isinstance(b, UncertainValue):
+        return 0.0
+    return a.covariance_with(b)
+
+
+def correlation(a: UncertainValue, b: UncertainValue) -> float:
+    """Pearson correlation of two results; 0 when either is exact."""
+    if not isinstance(a, UncertainValue) or not isinstance(b, UncertainValue):
+        return 0.0
+    return a.correlation_with(b)
+
+
+def covariance_matrix(values) -> np.ndarray:
+    """First-order covariance matrix of a sequence of results."""
+    values = list(values)
+    matrix = np.zeros((len(values), len(values)))
+    for i, a in enumerate(values):
+        for j, b in enumerate(values):
+            if j < i:
+                matrix[i, j] = matrix[j, i]
+            else:
+                matrix[i, j] = covariance(a, b)
+    return matrix
 
 
 class CorrelationMatrix:
@@ -493,7 +650,18 @@ class UncertaintyEngine:
                            uncertainty1 * uncertainty2 * correlation)
 
         uncertainty = math.sqrt(abs(variance))
-        return UncertainValue(f_nominal, uncertainty)
+        has_explicit_correlations = any(
+            self.correlation_matrix.get_correlation(a, b) != 0.0
+            for i, a in enumerate(var_names) for b in var_names[i + 1:]
+        )
+        if has_explicit_correlations:
+            # Correlations declared on the matrix are not expressible as shared sources.
+            return UncertainValue(f_nominal, uncertainty)
+        # Otherwise the result keeps its dependence on the inputs, so it composes with them.
+        return UncertainValue._combine(
+            float(f_nominal),
+            ((self.correlation_matrix.variables[name], float(d)) for name, d in zip(var_names, derivatives, strict=True)),
+        )
 
     def _monte_carlo_propagation(self, expression: Callable, var_names: list[str]) -> UncertainValue:
         """Monte Carlo uncertainty propagation."""
@@ -528,7 +696,7 @@ class UncertaintyEngine:
             try:
                 result = expression(*point)
                 results.append(result)
-            except:
+            except Exception:
                 pass  # Skip points where function is undefined
 
         if not results:
@@ -783,7 +951,6 @@ class MultivariateUncertain:
                 label: UncertainValue(m, u)
                 for label, m, u in zip(self.labels, means, uncertainties or [], strict=False)
             }
-            n = len(self.labels)
             if correlations is not None:
                 corr = np.asarray(correlations, dtype=float)
                 std = np.asarray(uncertainties, dtype=float)

@@ -16,10 +16,11 @@ For every selected row three results are compared:
   monte      Monte Carlo on the assumed input distributions
 
 The operator-chain form of the library (building the expression from UncertainValue
-arithmetic) is also evaluated and reported, but only as information: a variable that
-appears twice in an expression is treated as independent by that form, so it overestimates
-wherever such a variable carries weight (about nine percent on the Tetens exponent alone,
-far less on the full vapour-pressure deficit, which humidity dominates).
+arithmetic) is evaluated as a third gated column. UncertainValue tracks the sources each
+result depends on, so a variable that appears twice in an expression is the same variable
+and the chain must reproduce the analytic first-order sigma to rounding. Before 2026-09-10
+the chain treated repeated variables as independent and overestimated by about nine percent
+on the Tetens exponent alone; that defect is what this column now guards against.
 
 Acceptance criteria are fixed in this module before any dataset is opened. Datasets never
 enter the repository: the command-line entry point takes a SQLite or CSV path plus a
@@ -52,6 +53,9 @@ THRESHOLDS = {
     # library versus independent analytic first-order reference, in output units
     "library_vs_analytic_abs": 1e-10,
     "library_vs_analytic_rel": 1e-8,
+    # operator-chain form (UncertainValue arithmetic) versus the analytic reference
+    "chain_vs_analytic_abs": 1e-12,
+    "chain_vs_analytic_rel": 1e-9,
     # each first-order result versus Monte Carlo
     "mc_mean_fraction_of_sd": 0.10,
     "mc_mean_standard_errors": 4.0,
@@ -163,7 +167,11 @@ def library_first_order(name: str, values: dict[str, float]) -> tuple[float, flo
 
 
 def operator_chain_first_order(name: str, values: dict[str, float]) -> tuple[float, float]:
-    """The library's arithmetic form. Informational only: repeated variables are treated as independent."""
+    """The library's arithmetic form: the formula written with UncertainValue operators.
+
+    Gated: with source tracking the repeated variable t is one variable, so this must
+    match the analytic first-order sigma to rounding.
+    """
     if name == "co2_excess":
         c = UncertainValue(values["co2_ppm"], standard_uncertainty("co2_ppm", values["co2_ppm"]))
         r = (c - AMBIENT_CO2_PPM) / AMBIENT_CO2_PPM
@@ -224,6 +232,10 @@ def _within(err: float, ref: float) -> bool:
     return abs(err) <= THRESHOLDS["library_vs_analytic_abs"] + THRESHOLDS["library_vs_analytic_rel"] * abs(ref)
 
 
+def _chain_within(err: float, ref: float) -> bool:
+    return abs(err) <= THRESHOLDS["chain_vs_analytic_abs"] + THRESHOLDS["chain_vs_analytic_rel"] * abs(ref)
+
+
 def compare_row(values: dict[str, float], draws: int, seed: int) -> dict:
     row: dict = {"inputs": dict(values), "quantities": {}}
     for q_index, name in enumerate(QUANTITIES):
@@ -236,6 +248,8 @@ def compare_row(values: dict[str, float], draws: int, seed: int) -> dict:
         checks = {
             "library_nominal_matches_analytic": _within(l_nom - a_nom, a_nom),
             "library_sigma_matches_analytic": _within(l_sig - a_sig, a_sig),
+            "chain_nominal_matches_analytic": _chain_within(c_nom - a_nom, a_nom),
+            "chain_sigma_matches_analytic": _chain_within(c_sig - a_sig, a_sig),
             "analytic_mean_within_mc": abs(a_nom - mc.mean) <= mean_tol,
             "analytic_sigma_within_mc": abs(a_sig - mc.sd) <= sd_tol,
             "library_mean_within_mc": abs(l_nom - mc.mean) <= mean_tol,
@@ -244,10 +258,11 @@ def compare_row(values: dict[str, float], draws: int, seed: int) -> dict:
         row["quantities"][name] = {
             "analytic": {"nominal": a_nom, "sigma": a_sig},
             "library": {"nominal": l_nom, "sigma": l_sig},
-            "operator_chain": {"nominal": c_nom, "sigma": c_sig, "informational": True},
+            "operator_chain": {"nominal": c_nom, "sigma": c_sig},
             "monte_carlo": asdict(mc),
             "tolerances": {"mean": mean_tol, "sd": sd_tol},
             "errors": {"library_minus_analytic_nominal": l_nom - a_nom, "library_minus_analytic_sigma": l_sig - a_sig,
+                       "chain_minus_analytic_sigma": c_sig - a_sig,
                        "analytic_minus_mc_mean": a_nom - mc.mean, "analytic_sigma_minus_mc_sd": a_sig - mc.sd},
             "checks": checks,
         }
@@ -301,7 +316,7 @@ def run(rows: list[dict], *, draws: int, seed: int, provenance: str, fixture_sta
     summary: dict = {}
     for name in QUANTITIES:
         checks = {k: 0 for k in results[0]["quantities"][name]["checks"]} if results else {}
-        maxima = {"library_minus_analytic_nominal": 0.0, "library_minus_analytic_sigma": 0.0, "analytic_minus_mc_mean": 0.0, "analytic_sigma_minus_mc_sd": 0.0}
+        maxima = {"library_minus_analytic_nominal": 0.0, "library_minus_analytic_sigma": 0.0, "chain_minus_analytic_sigma": 0.0, "analytic_minus_mc_mean": 0.0, "analytic_sigma_minus_mc_sd": 0.0}
         invalid = 0
         for r in results:
             q = r["quantities"][name]
@@ -312,13 +327,15 @@ def run(rows: list[dict], *, draws: int, seed: int, provenance: str, fixture_sta
             invalid += q["monte_carlo"]["invalid_draws"]
         summary[name] = {"violations": checks, "max_abs_errors": maxima, "invalid_monte_carlo_draws": invalid}
     library_ok = all(v["violations"]["library_nominal_matches_analytic"] == 0 and v["violations"]["library_sigma_matches_analytic"] == 0 for v in summary.values())
+    chain_ok = all(v["violations"]["chain_nominal_matches_analytic"] == 0 and v["violations"]["chain_sigma_matches_analytic"] == 0 for v in summary.values())
     first_order_ok = all(all(v["violations"][k] == 0 for k in ("analytic_mean_within_mc", "analytic_sigma_within_mc", "library_mean_within_mc", "library_sigma_within_mc")) for v in summary.values())
     label = ("synthetic-fixture software-correctness validation; real-data gate unmet"
              if fixture_status.lower().startswith("synth") else "candidate real-data validation; see provenance")
     return {
         "label": label, "fixture_status": fixture_status, "provenance": provenance, "assumptions": ASSUMPTIONS,
         "thresholds": THRESHOLDS, "rows_available": len(rows), "rows_evaluated": len(selected), "monte_carlo_draws_per_row": draws, "seed": seed,
-        "verdicts": {"library_matches_analytic_reference": library_ok, "first_order_adequate_against_monte_carlo": first_order_ok},
+        "verdicts": {"library_matches_analytic_reference": library_ok, "operator_chain_matches_analytic_reference": chain_ok,
+                     "first_order_adequate_against_monte_carlo": first_order_ok},
         "summary": summary, "rows": results,
     }
 
@@ -327,23 +344,25 @@ def to_markdown(report: dict) -> str:
     lines = [f"# Uncertainty propagation validation: {report['label']}", "",
              f"Provenance: {report['provenance']}", "", f"Assumptions: {report['assumptions']}", "",
              f"Rows evaluated: {report['rows_evaluated']} of {report['rows_available']} available; {report['monte_carlo_draws_per_row']} Monte Carlo draws per row; seed {report['seed']}.", "",
-             "| quantity | library vs analytic (nominal, sigma violations) | first-order vs Monte Carlo (mean, sd violations; analytic / library) | max abs error library-analytic sigma | max abs error analytic sigma - MC sd | invalid draws |",
-             "|---|---|---|---|---|---|"]
+             "| quantity | library vs analytic (nominal, sigma violations) | chain vs analytic (nominal, sigma violations) | first-order vs Monte Carlo (mean, sd violations; analytic / library) | max abs error library-analytic sigma | max abs error chain-analytic sigma | max abs error analytic sigma - MC sd | invalid draws |",
+             "|---|---|---|---|---|---|---|---|"]
     for name, s in report["summary"].items():
         v = s["violations"]
         m = s["max_abs_errors"]
         cells = [
             name,
             f"{v['library_nominal_matches_analytic']}, {v['library_sigma_matches_analytic']}",
+            f"{v['chain_nominal_matches_analytic']}, {v['chain_sigma_matches_analytic']}",
             f"{v['analytic_mean_within_mc']}, {v['analytic_sigma_within_mc']} / "
             f"{v['library_mean_within_mc']}, {v['library_sigma_within_mc']}",
             f"{m['library_minus_analytic_sigma']:.3e}",
+            f"{m['chain_minus_analytic_sigma']:.3e}",
             f"{m['analytic_sigma_minus_mc_sd']:.3e}",
             str(s["invalid_monte_carlo_draws"]),
         ]
         lines.append("| " + " | ".join(cells) + " |")
     v = report["verdicts"]
-    lines += ["", f"Library matches the independent analytic reference: {v['library_matches_analytic_reference']}.",
-              f"First-order propagation adequate against Monte Carlo at these inputs: {v['first_order_adequate_against_monte_carlo']}.", "",
-              "The operator-chain form is reported per row for information only; it treats a repeated variable as independent and overestimates wherever that variable carries weight.", ""]
+    lines += ["", f"Library engine matches the independent analytic reference: {v['library_matches_analytic_reference']}.",
+              f"Operator-chain form (UncertainValue arithmetic, repeated variables tracked) matches the analytic reference: {v['operator_chain_matches_analytic_reference']}.",
+              f"First-order propagation adequate against Monte Carlo at these inputs: {v['first_order_adequate_against_monte_carlo']}.", ""]
     return "\n".join(lines)

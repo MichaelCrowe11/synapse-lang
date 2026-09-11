@@ -33,7 +33,7 @@ synapse --version
 ```
 
 ```
-Synapse 2.4.2
+Synapse 2.4.1
 ```
 
 ```bash
@@ -42,12 +42,27 @@ synapse first.syn
 ```
 
 ```
-6.0 ± 0.4
+6.0
 ```
 
 Both outputs were captured on 2026-09-10 from a fresh virtual environment with
-the package installed from PyPI. Before 2.4.2 the first program printed `6.0`
-and silently dropped the uncertainty unless the line began with `uncertain`.
+the package installed from PyPI. Release 2.4.1 drops the uncertainty on a bare
+`x = 3 ± 0.2` literal; the fix is on the `master` branch and ships in the next
+release. Until then, install from the repository:
+
+```bash
+pip install git+https://github.com/MichaelCrowe11/synapse-lang.git
+synapse --version
+synapse first.syn
+```
+
+```
+Synapse 2.4.2
+6.0 ± 0.4
+```
+
+Captured on 2026-09-10 from a fresh virtual environment installed from the
+repository at the commit this README ships with.
 
 ## Runtime safety
 
@@ -94,7 +109,9 @@ pi = 3.141592653589793
 
 Built-ins include `print`, `str`, `int`, `float`, `bool`, `len`, `range`,
 `abs`, `round`, `min`, `max`, `sum`, `sqrt`, `exp`, `log`, `log10`, `sin`,
-`cos`, `tan`, `floor`, `ceil`, `mean`, `std`, and the constants `pi` and `e`.
+`cos`, `tan`, `floor`, `ceil`, `mean`, `std`, `nominal`, `sigma`, `covariance`,
+`correlation`, and the constants `pi` and `e`. The math builtins keep the
+uncertainty when given an uncertain value.
 
 ### Uncertainty propagation
 
@@ -111,6 +128,40 @@ print("energy =", energy)
 ```
 energy = 12690.0 ± 448.808422380864
 ```
+
+Uncertain values remember their sources. A variable used twice in one formula
+is one variable, so `t - t` is exactly zero and a formula such as
+`t * b / (t + c)` carries the exact first-order derivative instead of counting
+the two `t` as independent. `covariance` and `correlation` read how two
+results move together through the sources they share.
+
+```synapse
+t = 21.0 ± 0.46
+b = 17.27
+c = 237.3
+exponent = t * b / (t + c)
+print("exponent =", exponent)
+print("t - t =", t - t)
+print("sqrt(t) =", sqrt(t))
+a = 2 ± 0.1
+s = a + t
+d = a - t
+print("covariance(s, d) =", covariance(s, d))
+print("correlation(s, a) =", correlation(s, a))
+```
+
+```
+exponent = 1.4040650406504065 ± 0.028255246152926107
+t - t = 0.0 ± 0.0
+sqrt(t) = 4.58257569495584 ± 0.05019011475427825
+covariance(s, d) = -0.2016
+correlation(s, a) = 0.2124296443310437
+```
+
+The exponent's uncertainty is `b * c / (t + c)^2 * 0.46`, the exact first-order
+value. Treating the two `t` as independent would report about nine percent more.
+The telemetry validation harness (`scripts/validate_uncertainty_telemetry.py`)
+gates this form against an independent analytic reference at one part in 1e9.
 
 ### Parallel branches
 

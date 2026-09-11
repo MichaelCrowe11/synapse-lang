@@ -1,4 +1,22 @@
 # Changelog
+## Unreleased
+
+- Uncertain values now remember their sources. Arithmetic combines first-order
+  sensitivities per source, so a variable used twice in one formula is one variable:
+  `x - x` is `0 ± 0`, `x / x` is `1 ± 0`, and `t * b / (t + c)` carries the exact
+  first-order derivative instead of treating the two `t` as independent (which
+  overstated the Tetens exponent's uncertainty by about nine percent).
+- New: `covariance(a, b)`, `correlation(a, b)` and `covariance_matrix(values)` in
+  `synapse_lang.uncertainty`, plus `UncertainValue.derivative_wrt(source)`.
+- Language builtins `sqrt`, `exp`, `log`, `log10`, `sin`, `cos`, `tan` and `abs` now
+  propagate uncertainty when given an uncertain value; before they returned the bare
+  nominal float. New builtins `nominal(x)`, `sigma(x)`, `covariance(a, b)`,
+  `correlation(a, b)`.
+- `UncertaintyEngine.propagate` results keep their dependence on the inputs when no
+  matrix correlations are declared, so they compose with further arithmetic.
+- Telemetry validation harness: the operator-chain column is now gated against the
+  analytic reference (tolerance 1e-9 relative) instead of reported for information.
+
 ## 2.4.2
 
 - Uncertain literals without the `uncertain` keyword now keep their uncertainty. `x = 3 ± 0.2`

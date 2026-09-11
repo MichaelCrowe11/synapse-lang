@@ -50,28 +50,28 @@ def test_first_order_is_adequate_against_monte_carlo_on_fixture():
     report = tv.run(FIXTURE, draws=40_000, seed=7, provenance="built-in fixture", fixture_status="synthetic", sample=6)
     assert report["rows_evaluated"] == 6
     assert report["verdicts"]["library_matches_analytic_reference"], report["summary"]
+    assert report["verdicts"]["operator_chain_matches_analytic_reference"], report["summary"]
     assert report["verdicts"]["first_order_adequate_against_monte_carlo"], report["summary"]
     assert report["label"].startswith("synthetic-fixture")
     assert "real-data gate unmet" in report["label"]
 
 
-def test_operator_chain_overestimates_when_a_variable_repeats():
-    # The Tetens exponent B*t/(t+C) uses t twice. The arithmetic form treats the two
-    # occurrences as independent, so its sigma exceeds the exact first-order sigma
-    # (about nine percent here). In the full VPD the humidity term dominates, so the
-    # effect on the final number is small; that is why it is reported, not gated.
+def test_operator_chain_matches_analytic_because_sources_are_tracked():
+    # The Tetens exponent B*t/(t+C) uses t twice. Before source tracking the arithmetic
+    # form treated the two occurrences as independent and overstated sigma by about nine
+    # percent here. UncertainValue now carries its sources, so the chain is exact.
     from synapse_lang.uncertainty import UncertainValue
     t = UncertainValue(21.0, tv.standard_uncertainty("temperature_c", 21.0))
     chain = t * tv.TETENS_B / (t + tv.TETENS_C)
     exact = tv.TETENS_B * tv.TETENS_C / (21.0 + tv.TETENS_C) ** 2 * t.uncertainty
-    assert chain.uncertainty > exact * 1.05
-    values = {"temperature_c": 21.0, "humidity_pct": 86.0, "co2_ppm": 956.0}
-    _, a_sig = tv.analytic_first_order("vpd_kpa", values)
-    _, c_sig = tv.operator_chain_first_order("vpd_kpa", values)
-    assert c_sig > a_sig, "the arithmetic form should not understate"
-    _, a_sig = tv.analytic_first_order("co2_excess", values)
-    _, c_sig = tv.operator_chain_first_order("co2_excess", values)
-    assert c_sig == pytest.approx(a_sig, rel=1e-12), "no repeated variable, so the chain must agree"
+    assert chain.uncertainty == pytest.approx(exact, rel=1e-12)
+    for name in tv.QUANTITIES:
+        for row in FIXTURE:
+            values = {k: row[k] for k in ("temperature_c", "humidity_pct", "co2_ppm")}
+            a_nom, a_sig = tv.analytic_first_order(name, values)
+            c_nom, c_sig = tv.operator_chain_first_order(name, values)
+            assert c_nom == pytest.approx(a_nom, rel=1e-12, abs=1e-12), (name, row)
+            assert c_sig == pytest.approx(a_sig, rel=1e-9, abs=1e-12), (name, row, c_sig, a_sig)
 
 
 def test_monte_carlo_never_clips_and_reports_invalid_draws():

@@ -3,7 +3,9 @@
 These are registered into the interpreter's variable scope at startup, so
 ``print``, the math functions, and the basic statistics helpers resolve as
 ordinary function calls. Uncertain values render through their own ``__str__``,
-so ``print`` shows ``value ± uncertainty`` without special handling here.
+so ``print`` shows ``value ± uncertainty`` without special handling here. The math
+builtins propagate uncertainty when handed an UncertainValue; ``nominal``, ``sigma``,
+``covariance`` and ``correlation`` read the pieces back out.
 """
 from __future__ import annotations
 
@@ -16,6 +18,47 @@ def _to_float(x: Any) -> float:
     """Coerce a value (including an UncertainValue) to its nominal float."""
     value = getattr(x, "value", x)
     return float(value)
+
+
+def _is_uncertain(x: Any) -> bool:
+    from .uncertainty import UncertainValue
+
+    return isinstance(x, UncertainValue)
+
+
+def _propagating(name: str, plain):
+    """A math builtin that keeps the uncertainty when given an UncertainValue."""
+
+    def call(x: Any):
+        if _is_uncertain(x):
+            return getattr(x, name)()
+        return plain(float(x))
+
+    return call
+
+
+def _log(x: Any, base: float = math.e):
+    if _is_uncertain(x):
+        result = x.log()
+        return result if base == math.e else result / math.log(_to_float(base))
+    return math.log(float(x), base)
+
+
+def _sigma(x: Any) -> float:
+    """Standard uncertainty of a value; 0 for a plain number."""
+    return float(x.uncertainty) if _is_uncertain(x) else 0.0
+
+
+def _covariance(a: Any, b: Any) -> float:
+    from .uncertainty import covariance
+
+    return covariance(a, b)
+
+
+def _correlation(a: Any, b: Any) -> float:
+    from .uncertainty import correlation
+
+    return correlation(a, b)
 
 
 def _synapse_print(*args: Any) -> None:
@@ -48,16 +91,21 @@ def default_builtins() -> dict[str, Any]:
         "min": min,
         "max": max,
         "sum": sum,
-        # math (operate on the nominal value)
-        "sqrt": lambda x: math.sqrt(_to_float(x)),
-        "exp": lambda x: math.exp(_to_float(x)),
-        "log": lambda x, base=math.e: math.log(_to_float(x), base),
-        "log10": lambda x: math.log10(_to_float(x)),
-        "sin": lambda x: math.sin(_to_float(x)),
-        "cos": lambda x: math.cos(_to_float(x)),
-        "tan": lambda x: math.tan(_to_float(x)),
+        # math: an UncertainValue keeps its uncertainty through these
+        "sqrt": _propagating("sqrt", math.sqrt),
+        "exp": _propagating("exp", math.exp),
+        "log": _log,
+        "log10": _propagating("log10", math.log10),
+        "sin": _propagating("sin", math.sin),
+        "cos": _propagating("cos", math.cos),
+        "tan": _propagating("tan", math.tan),
         "floor": lambda x: math.floor(_to_float(x)),
         "ceil": lambda x: math.ceil(_to_float(x)),
+        # uncertainty: read a value apart, or ask how two results move together
+        "nominal": _to_float,
+        "sigma": _sigma,
+        "covariance": _covariance,
+        "correlation": _correlation,
         # statistics
         "mean": _mean,
         "std": _std,
