@@ -182,3 +182,28 @@ The blueprint and proposal are kept with the private working notes, outside this
 Michael committed the milestone as `50aec021` at 08:11 and chose version 2.4.1; the license files were reconciled to proprietary and are still uncommitted. Gate 4 is now done in this tree: the three roadmap Quantum Net programs moved to `quantum-net/examples/roadmap/` with a README, a second runnable example (`two-hop.qnet`) sits beside `validated-flat.qnet`, `synapse-qnet` is documented with the commands that exist, the four empty `qnet_runtime.protocols` modules now refuse explicitly (`run()` raises NotImplementedError and each declares `STATUS = "roadmap"`), the lexer raises SyntaxError instead of RuntimeError on bad characters, `SPEC.md` states the executable scope, and the repository-only legacy interpreter refuses E91, teleportation, swapping and purification while its BB84 orchestration now sifts both parties with the same mask, discards the disclosed sample bits, refuses when too few bits remain, and states that it makes no security claim. New tests: `quantum-net/tests/test_examples_and_roadmap.py`, `test_protocol_stubs.py`. CI runs the Quantum Net source tests. Quantum Net suite 30 passed; whole checkout 618 passed, 56 skipped, 7 expected failures; legacy lint debt unchanged.
 
 Open: gate 6 (real dataset or hardware, scope and budget) and the remote half of gate 5 (a push to run the matrix on GitHub). The browser Lab under `website/lab/` is verified locally and not deployed; its hosting target has not been named.
+
+## Status update, 2026-09-10 17:00 MST (gate 6 harness, engine fix, CI matrix)
+
+`synapse_lang/telemetry_validation.py` and `scripts/validate_uncertainty_telemetry.py` implement the bounded
+validation the review asked for: vapour-pressure deficit (Tetens), dew point (Magnus) and CO2 excess over an assumed
+420 ppm ambient, each compared three ways per row (library engine, an independent NumPy reference with hand-derived
+partial derivatives, and Monte Carlo on the assumed input distributions). Acceptance thresholds and the input model
+(rectangular bounds from the sensor's stated accuracy, bound over root three, uniform draws) are fixed in the module
+before any dataset is opened; datasets stay outside the repository; `tests/test_telemetry_validation.py` covers the
+math on a built-in fixture.
+
+First run on a synthetic telemetry fixture (128 rows, 100,000 draws per row): first-order propagation agreed with
+Monte Carlo on every row, but the library's standard uncertainty missed the 1e-8 relative threshold on every row by
+about one part in a million. Cause: `UncertaintyEngine._linear_propagation` differentiated with a fixed absolute step
+of 1e-8, leaving roundoff in every propagated uncertainty, and silently reported a zero derivative when the expression
+raised. Fixed: the step is now 1e-5 times max(1, |x|) and an undifferentiable variable raises instead of understating
+the uncertainty. Rerun: every check passes; library versus analytic within 3.4e-11.
+
+The real-data gate is still unmet: the fixture was synthetic and is labelled so in its report; the real sensor
+database was unreachable during this pass. When it is reachable, run the same command on a chronological 80/20 split
+and open the holdout once.
+
+CI matrix on the pushed branch: all Linux and macOS jobs and the isolation job passed; three Windows jobs failed on
+one timing test that divided by a serial time the Windows clock reports as zero. Fixed with perf_counter and a guard.
+Whole checkout now 627 passed, 56 skipped, 7 expected failures.

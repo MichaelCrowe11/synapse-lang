@@ -53,7 +53,7 @@
   "blockers": [
     "Remote OS/Python matrix not yet run on GitHub (push required); license files reconciled but uncommitted (gate 5)",
     "Real backend or dataset and validation scope unspecified (gate 6)",
-    "Registry/product/staging targets unspecified; the browser Lab's hosting target is not yet named"
+    "Real sensor database unreachable for the real-data gate; rerun the harness on a chronological 80/20 split when it is (gate 6)"
   ],
   "review": "docs/trinity-validation.md",
   "updated_at": "2026-09-10T22:18:36Z",
@@ -89,7 +89,23 @@
     "trinity_tests_checkout": "69 passed in 1.20s",
     "legacy_test_qubit_flow": "12 passed, 1 warning in 0.98s",
     "quantum_net_tests_checkout": "30 passed (19 before)",
-    "full_checkout_suite_after_gate4": "618 passed, 56 skipped, 7 xfailed (tests/ plus legacy test_qubit_flow.py)"
+    "full_checkout_suite_after_gate4": "618 passed, 56 skipped, 7 xfailed (tests/ plus legacy test_qubit_flow.py)",
+    "gate6_harness": {
+      "module": "synapse_lang/telemetry_validation.py",
+      "cli": "scripts/validate_uncertainty_telemetry.py",
+      "tests": "tests/test_telemetry_validation.py",
+      "synthetic_fixture_run": {
+        "rows": 128,
+        "draws": 100000,
+        "library_matches_analytic": true,
+        "first_order_adequate_vs_monte_carlo": true,
+        "max_abs_library_minus_analytic_sigma": 3.4e-11
+      },
+      "real_data_gate": "unmet: real sensor database unreachable; synthetic fixture labelled as such",
+      "library_defect_found_and_fixed": "fixed 1e-8 absolute finite-difference step and silent zero derivative in UncertaintyEngine._linear_propagation"
+    },
+    "ci_matrix_first_run": "11 of 14 jobs passed; 3 Windows jobs failed on a zero-division timing test, fixed",
+    "full_checkout_suite_after_gate6": "627 passed, 56 skipped, 7 xfailed"
   },
   "independent_verification": {
     "passed": 27,
