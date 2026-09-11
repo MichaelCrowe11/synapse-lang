@@ -1,6 +1,6 @@
 # GitHub Pages Configuration
 title: Synapse Language
-description: Revolutionary Programming for Scientific Computing
+description: An interpreted language for uncertainty-aware scientific computing, with built-in quantum circuit simulation and parallel blocks
 theme: null
 plugins: []
 
