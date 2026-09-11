@@ -17,7 +17,7 @@ Error Codes Implemented:
     E1301 invalid shots count in backend config
     E1302 invalid total circuit qubit count
 
-NOTE: Keep this list in sync with `QUANTUM_SYNTAX.md` error code table.
+NOTE: Keep this list in sync with `docs/QUANTUM_SYNTAX.md` error code table.
 """
 
 from collections.abc import Iterable, Sequence

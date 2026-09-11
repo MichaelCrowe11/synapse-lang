@@ -81,7 +81,7 @@ This environment includes:
 
 - **Repository**: https://github.com/MichaelCrowe11/synapse-lang
 - **Documentation**: Run `make -C docs html` to build
-- **Language Spec**: See `LANGUAGE_SPEC.md`
+- **Language Spec**: See `docs/LANGUAGE_SPEC.md`
 - **Contributing**: See `CONTRIBUTING.md`
 
 ## Troubleshooting

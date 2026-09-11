@@ -81,7 +81,7 @@ all = [
 
 [project.urls]
 Homepage = "https://synapse-lang.com"
-Documentation = "https://github.com/MichaelCrowe11/synapse-lang/blob/master/QUBIT_FLOW_README.md"
+Documentation = "https://github.com/MichaelCrowe11/synapse-lang/blob/master/docs/QUBIT_FLOW_README.md"
 Repository = "https://github.com/MichaelCrowe11/synapse-lang"
 "Bug Tracker" = "https://github.com/MichaelCrowe11/synapse-lang/issues"
 

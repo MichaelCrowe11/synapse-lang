@@ -21,16 +21,25 @@ pip install -e .                             # Install in development mode
 python setup.py build                        # Build distribution
 python -m build                              # Build wheel and source distribution
 
-# Run the REPL
-python synapse_repl.py                       # Interactive Synapse shell
-python run_synapse.py <file.syn>             # Execute Synapse file
+# Run programs and the REPL (installed CLI from synapse_lang.cli)
+synapse <file.syn>                           # Execute a Synapse file
+synapse -c 'print(1 + 2)'                    # Run a snippet
+synapse --repl                               # Interactive Synapse shell
+synapse --version
 ```
 
 ### Publishing & Deployment
 Releases are cut by pushing a `v*` tag, which runs `.github/workflows/publish.yml` (full CI matrix,
 build, PyPI upload). Companion distributions are built with `python -m build` in
 `qubit-flow-package/` and `quantum-net/`. Generated planning, publishing and deployment notes from
-earlier passes live on the branch `archive/root-docs-2026-09`, not in the tree.
+earlier passes live on the branch `archive/root-docs-2026-09`, not in the tree. The root scripts,
+duplicate implementations and generated directories removed on 2026-09-10 are under
+`root-2026-09-10/` on that branch. The root modules that remain (`synapse_interpreter.py`,
+`synapse_parser.py`, `synapse_ast.py`, `synapse_repl.py`, `synapse_scientific.py`,
+`synapse_jit.py` and their imports) stay because `setup.py` lists them in `py_modules` and
+the wheel ships them; the compatibility shims (`qubit_flow_*.py`, `quantum_net_*.py`,
+`synapse_qubit_bridge.py`, `synapse_cache.py`, `synapse_tensor_gpu_v2.py`) are imported by
+tests, scripts and examples.
 
 ## Architecture Overview
 
@@ -43,18 +52,19 @@ The Synapse language is a domain-specific language for scientific computing with
    - Quantum keywords (quantum, circuit, measure)
    - Scientific operators and parallel constructs
 
-2. **Parser** (multiple implementations):
-   - `synapse_parser_minimal.py`: Lightweight parser for basic constructs
-   - `synapse_parser_enhanced.py`: Full-featured parser with all language features
-   - Both parsers handle INDENT/DEDENT tokens for Python-like block syntax
+2. **Parser** (multiple implementations under `synapse_lang/`):
+   - `parser_enhanced.py` (`EnhancedParser`): the parser `synapse_interpreter.py` imports
+   - `synapse_parser.py`, `synapse_parser_enhanced.py`, `synapse_parser_minimal.py`: earlier parsers still covered by tests
+   - All handle INDENT/DEDENT tokens for Python-like block syntax
 
-3. **AST** (`synapse_ast_enhanced.py`): Rich node types including:
+3. **AST** (`synapse_lang/synapse_ast.py`, used by the interpreter; `synapse_ast_enhanced.py` and
+   `ast_consolidated.py`, which `synapse_lang/__init__.py` re-exports, also exist): Rich node types including:
    - `QuantumCircuitNode`, `QuantumGateNode` for quantum operations
    - `ParallelNode`, `BranchNode` for parallel execution
    - `UncertainNode` for uncertainty quantification
    - `HypothesisNode`, `ReasonChainNode` for scientific reasoning
 
-4. **Interpreter** (`synapse_interpreter.py`): Executes AST with:
+4. **Interpreter** (`synapse_lang/synapse_interpreter.py`): Executes AST with:
    - Quantum circuit simulation via optional quantum backends
    - Parallel execution using ThreadPoolExecutor
    - Uncertainty propagation through calculations

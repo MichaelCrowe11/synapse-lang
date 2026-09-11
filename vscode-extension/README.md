@@ -113,7 +113,7 @@ This extension is part of the proprietary Synapse language ecosystem. See the [L
 ## More Information
 
 - [Synapse Language Documentation](https://github.com/MichaelCrowe11/synapse-lang)
-- [Language Specification](https://github.com/MichaelCrowe11/synapse-lang/blob/main/LANGUAGE_SPEC.md)
+- [Language Specification](https://github.com/MichaelCrowe11/synapse-lang/blob/master/docs/LANGUAGE_SPEC.md)
 - [Contributing Guide](https://github.com/MichaelCrowe11/synapse-lang/blob/main/CONTRIBUTING.md)
 
 ---
