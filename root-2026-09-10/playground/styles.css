@@ -1,0 +1,546 @@
+/* Quantum Trinity Playground Styles */
+
+:root {
+    /* Color scheme */
+    --primary-color: #00d4ff;
+    --synapse-color: #4a90e2;
+    --qubit-flow-color: #9b59b6;
+    --quantum-net-color: #27ae60;
+    --bg-dark: #1e1e1e;
+    --bg-darker: #151515;
+    --bg-panel: #252526;
+    --text-primary: #e0e0e0;
+    --text-secondary: #999;
+    --border-color: #3c3c3c;
+    --success-color: #27ae60;
+    --error-color: #e74c3c;
+    --warning-color: #f39c12;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* Header */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    background-color: var(--bg-darker);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.logo-icon {
+    font-size: 2rem;
+}
+
+.logo h1 {
+    font-size: 1.5rem;
+    font-weight: 300;
+    background: linear-gradient(135deg, var(--synapse-color), var(--qubit-flow-color), var(--quantum-net-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Language Selector */
+.language-selector {
+    display: flex;
+    gap: 0.5rem;
+    background-color: var(--bg-panel);
+    padding: 0.25rem;
+    border-radius: 8px;
+}
+
+.lang-btn {
+    padding: 0.5rem 1rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.lang-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.lang-btn.active {
+    color: var(--text-primary);
+    background-color: var(--bg-dark);
+}
+
+.lang-btn[data-lang="synapse"].active {
+    color: var(--synapse-color);
+}
+
+.lang-btn[data-lang="qubit-flow"].active {
+    color: var(--qubit-flow-color);
+}
+
+.lang-btn[data-lang="quantum-net"].active {
+    color: var(--quantum-net-color);
+}
+
+/* Action Buttons */
+.actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.btn {
+    padding: 0.5rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: var(--bg-dark);
+}
+
+.btn-primary:hover {
+    background-color: #00a8cc;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 212, 255, 0.3);
+}
+
+.btn-secondary {
+    background-color: var(--bg-panel);
+    color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+    background-color: #333;
+}
+
+/* Main Content */
+.main-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 250px;
+    background-color: var(--bg-panel);
+    border-right: 1px solid var(--border-color);
+    padding: 1rem;
+    overflow-y: auto;
+}
+
+.sidebar h3 {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.examples-list {
+    margin-bottom: 2rem;
+}
+
+.example-item {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background-color: var(--bg-dark);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.example-item:hover {
+    background-color: rgba(0, 212, 255, 0.1);
+    transform: translateX(5px);
+}
+
+.example-item .example-title {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.example-item .example-desc {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.reference-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ref-link {
+    padding: 0.5rem;
+    background-color: var(--bg-dark);
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.ref-link:hover {
+    background-color: rgba(0, 212, 255, 0.1);
+}
+
+/* Editor Container */
+.editor-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Editor Panel */
+.editor-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-panel);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.panel-header h3 {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.editor-tools {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.tool-btn {
+    padding: 0.25rem 0.5rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.tool-btn:hover {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+}
+
+.code-editor {
+    flex: 1;
+    min-height: 300px;
+}
+
+/* Output Panel */
+.output-panel {
+    height: 300px;
+    display: flex;
+    flex-direction: column;
+}
+
+.output-tabs {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.tab-btn {
+    padding: 0.25rem 0.75rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 4px 4px 0 0;
+    transition: all 0.3s ease;
+}
+
+.tab-btn:hover {
+    background-color: var(--bg-dark);
+}
+
+.tab-btn.active {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+}
+
+.output-content {
+    flex: 1;
+    background-color: var(--bg-dark);
+    overflow: hidden;
+    position: relative;
+}
+
+.output-tab {
+    display: none;
+    height: 100%;
+    padding: 1rem;
+    overflow-y: auto;
+}
+
+.output-tab.active {
+    display: block;
+}
+
+.console-text {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+}
+
+.console-text .output-line {
+    margin-bottom: 0.25rem;
+}
+
+.console-text .error {
+    color: var(--error-color);
+}
+
+.console-text .warning {
+    color: var(--warning-color);
+}
+
+.console-text .success {
+    color: var(--success-color);
+}
+
+.console-text .info {
+    color: var(--primary-color);
+}
+
+/* Execution Status */
+.execution-status {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    background-color: var(--bg-panel);
+    border-top: 1px solid var(--border-color);
+    font-size: 0.85rem;
+}
+
+#statusText {
+    color: var(--text-secondary);
+}
+
+#statusText.running {
+    color: var(--warning-color);
+}
+
+#statusText.success {
+    color: var(--success-color);
+}
+
+#statusText.error {
+    color: var(--error-color);
+}
+
+#executionTime {
+    color: var(--text-secondary);
+}
+
+/* Visualization */
+#plotCanvas {
+    width: 100%;
+    height: 100%;
+}
+
+/* Quantum State Viewer */
+.quantum-state-viewer {
+    padding: 1rem;
+}
+
+.state-vector {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.state-label {
+    font-family: monospace;
+    color: var(--primary-color);
+}
+
+.amplitude-bar {
+    background-color: var(--bg-panel);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.amplitude-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--synapse-color), var(--qubit-flow-color));
+    transition: width 0.3s ease;
+}
+
+.probability-value {
+    font-family: monospace;
+    color: var(--text-secondary);
+}
+
+/* Info Panel */
+.info-panel {
+    display: none;
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 400px;
+    height: 100vh;
+    background-color: var(--bg-panel);
+    box-shadow: -4px 0 8px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+}
+
+.info-panel.show {
+    display: block;
+}
+
+.info-content {
+    padding: 2rem;
+    overflow-y: auto;
+    height: 100%;
+}
+
+.close-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.close-btn:hover {
+    color: var(--text-primary);
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.loading-overlay.show {
+    display: flex;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid var(--bg-panel);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-overlay p {
+    margin-top: 1rem;
+    color: var(--text-primary);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .sidebar {
+        display: none;
+    }
+    
+    .editor-container {
+        flex-direction: column;
+    }
+    
+    .output-panel {
+        height: 40vh;
+    }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+/* Syntax Highlighting for Uncertainty */
+.uncertainty-symbol {
+    color: var(--synapse-color);
+    font-weight: bold;
+}
+
+.quantum-state {
+    color: var(--qubit-flow-color);
+}
+
+.network-node {
+    color: var(--quantum-net-color);
+}

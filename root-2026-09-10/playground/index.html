@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Trinity Playground - Interactive Coding Environment</title>
+    
+    <!-- Monaco Editor -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/editor/editor.main.min.css">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Custom styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">⚛️</span>
+                <h1>Quantum Trinity Playground</h1>
+            </div>
+            
+            <div class="language-selector">
+                <button class="lang-btn active" data-lang="synapse">
+                    <i class="fas fa-flask"></i> Synapse
+                </button>
+                <button class="lang-btn" data-lang="qubit-flow">
+                    <i class="fas fa-atom"></i> Qubit-Flow
+                </button>
+                <button class="lang-btn" data-lang="quantum-net">
+                    <i class="fas fa-network-wired"></i> Quantum-Net
+                </button>
+            </div>
+            
+            <div class="actions">
+                <button id="runBtn" class="btn btn-primary">
+                    <i class="fas fa-play"></i> Run
+                </button>
+                <button id="shareBtn" class="btn btn-secondary">
+                    <i class="fas fa-share"></i> Share
+                </button>
+                <button id="saveBtn" class="btn btn-secondary">
+                    <i class="fas fa-save"></i> Save
+                </button>
+            </div>
+        </header>
+        
+        <!-- Main content area -->
+        <div class="main-content">
+            <!-- Sidebar with examples -->
+            <aside class="sidebar">
+                <h3>Examples</h3>
+                <div class="examples-list" id="examplesList">
+                    <!-- Examples will be loaded here -->
+                </div>
+                
+                <h3>Quick Reference</h3>
+                <div class="reference-links">
+                    <a href="#" class="ref-link" data-ref="uncertainty">
+                        <i class="fas fa-chart-line"></i> Uncertainty
+                    </a>
+                    <a href="#" class="ref-link" data-ref="parallel">
+                        <i class="fas fa-tasks"></i> Parallel
+                    </a>
+                    <a href="#" class="ref-link" data-ref="quantum">
+                        <i class="fas fa-microchip"></i> Quantum
+                    </a>
+                </div>
+            </aside>
+            
+            <!-- Editor and output panels -->
+            <div class="editor-container">
+                <!-- Code editor -->
+                <div class="editor-panel">
+                    <div class="panel-header">
+                        <h3>Code Editor</h3>
+                        <div class="editor-tools">
+                            <button id="formatBtn" class="tool-btn" title="Format Code">
+                                <i class="fas fa-indent"></i>
+                            </button>
+                            <button id="clearBtn" class="tool-btn" title="Clear">
+                                <i class="fas fa-eraser"></i>
+                            </button>
+                            <button id="fullscreenBtn" class="tool-btn" title="Fullscreen">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="editor" class="code-editor"></div>
+                </div>
+                
+                <!-- Output panel -->
+                <div class="output-panel">
+                    <div class="panel-header">
+                        <h3>Output</h3>
+                        <div class="output-tabs">
+                            <button class="tab-btn active" data-tab="console">Console</button>
+                            <button class="tab-btn" data-tab="visualization">Visualization</button>
+                            <button class="tab-btn" data-tab="quantum">Quantum State</button>
+                        </div>
+                    </div>
+                    
+                    <div class="output-content">
+                        <!-- Console output -->
+                        <div id="consoleOutput" class="output-tab active">
+                            <pre class="console-text"></pre>
+                        </div>
+                        
+                        <!-- Visualization output -->
+                        <div id="visualizationOutput" class="output-tab">
+                            <canvas id="plotCanvas"></canvas>
+                        </div>
+                        
+                        <!-- Quantum state visualization -->
+                        <div id="quantumOutput" class="output-tab">
+                            <div class="quantum-state-viewer"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Execution status -->
+                    <div class="execution-status">
+                        <span id="statusText">Ready</span>
+                        <span id="executionTime"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Info panels (hidden by default) -->
+        <div id="infoPanel" class="info-panel">
+            <div class="info-content">
+                <button class="close-btn">&times;</button>
+                <div id="infoPanelContent"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Executing code...</p>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <script src="js/playground.js"></script>
+    <script src="js/language-definitions.js"></script>
+    <script src="js/examples.js"></script>
+    <script src="js/execution-engine.js"></script>
+    <script src="js/visualizations.js"></script>
+    <script src="js/ai-assistant.js"></script>
+</body>
+</html>
