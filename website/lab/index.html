@@ -15,10 +15,10 @@
 <section class="card" aria-labelledby="experiment-heading">
 <h2 id="experiment-heading">Choose an experiment</h2>
 <label for="case">Workflow</label>
-<select id="case"><option value="concentration">Research concentration</option><option value="spend">AI spend forecast</option><option value="bell">Bell-state simulation</option></select>
+<select id="case"><option value="concentration">Research concentration</option><option value="spend">Inference spend forecast</option><option value="bell">Bell-state simulation</option></select>
 <p id="description"></p>
 <form id="experiment"><div id="fields"></div><div class="actions"><button id="run" type="submit">Load engine &amp; run</button><button id="stop" type="button" hidden>Stop</button></div></form>
-<p class="note">First run downloads the Python runtime, NumPy, and SciPy from a pinned public CDN and can take a minute. Inputs stay in this browser; no AI tokens are used. Internet is required to initialize.</p>
+<p class="note">First run downloads the Python runtime, NumPy, and SciPy from a pinned public CDN and can take a minute. Inputs stay in this browser; no model calls are made. Internet is required to initialize.</p>
 <p id="status" role="status" aria-live="polite">Ready. Edit the example inputs, then run.</p>
 </section>
 <section class="card result-card" aria-labelledby="result-heading">

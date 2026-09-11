@@ -200,7 +200,7 @@ $("experiment").addEventListener("submit", (event) => {
     worker.onmessage = ({data}) => {
       if (data.status) { $("status").textContent = data.status; return; }
       if (data.error) { $("status").className = "error"; stop(`Calculation failed: ${data.error}`); return; }
-      ready = true; show(data.report); busy(false); $("status").textContent = "Completed locally. No AI tokens used.";
+      ready = true; show(data.report); busy(false); $("status").textContent = "Completed locally. No model calls made.";
     };
     worker.onerror = () => { $("status").className = "error"; stop("Engine could not load. Check the network connection and browser support, then retry."); };
   }

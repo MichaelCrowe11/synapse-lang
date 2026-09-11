@@ -19,7 +19,7 @@ CASES = {
         },
     },
     "spend": {
-        "title": "AI spend forecast",
+        "title": "Inference spend forecast",
         "fields": {
             "requests": (10000.0, 0.0, 1e9),
             "requests_uncertainty": (1000.0, 0.0, 1e8),

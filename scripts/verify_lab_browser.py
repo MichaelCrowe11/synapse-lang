@@ -24,7 +24,7 @@ def main():
         expect(page.locator("#status")).to_have_text(
             re.compile("Completed|failed|could not|timed out"), timeout=180000
         )
-        expect(page.locator("#status")).to_have_text("Completed locally. No AI tokens used.")
+        expect(page.locator("#status")).to_have_text("Completed locally. No model calls made.")
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
