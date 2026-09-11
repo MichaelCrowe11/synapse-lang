@@ -493,21 +493,23 @@ class TestParallelPerformance(unittest.TestCase):
 
         inputs = list(range(100))
 
-        # Serial execution
-        start = time.time()
+        # Serial execution. perf_counter, not time.time: on Windows time.time has
+        # about 15 ms resolution and 100 trivial calls measured as exactly zero,
+        # which made the ratio below divide by zero (CI, 2026-09-10).
+        start = time.perf_counter()
         serial_results = [tiny_task(x) for x in inputs]
-        serial_time = time.time() - start
+        serial_time = time.perf_counter() - start
 
         # Parallel execution
-        start = time.time()
+        start = time.perf_counter()
         parallel_results = parallel_block(
             function=tiny_task,
             inputs=inputs
         )
-        parallel_time = time.time() - start
+        parallel_time = time.perf_counter() - start
 
         # For tiny tasks, parallel might be slower due to overhead
-        overhead_ratio = parallel_time / serial_time
+        overhead_ratio = parallel_time / max(serial_time, 1e-9)
 
         print(f"Overhead ratio: {overhead_ratio:.2f}x")
 
