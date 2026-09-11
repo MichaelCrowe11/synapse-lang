@@ -207,3 +207,13 @@ and open the holdout once.
 CI matrix on the pushed branch: all Linux and macOS jobs and the isolation job passed; three Windows jobs failed on
 one timing test that divided by a serial time the Windows clock reports as zero. Fixed with perf_counter and a guard.
 Whole checkout now 627 passed, 56 skipped, 7 expected failures.
+
+## Status update, 2026-09-10 17:45 MST (remote matrix green, private candidate)
+
+The remote CI matrix ran on GitHub for the pushed branch: 14 of 14 jobs passed (Ubuntu, macOS and Windows on
+Python 3.10 to 3.13, plus the Docker isolation job), including the Quantum Net source tests. A draft pre-release,
+`v2.4.1-rc1`, holds the three wheels and source distributions built from a clean checkout of the same commit with a
+checksum file; it is a draft, visible to collaborators only, and nothing has been published to any index. The browser
+Lab under `website/lab/` was deployed to a staging origin and passed its 20 browser checks there.
+
+Gate 5 is therefore closed except for the operator's publication decision. Gate 6 remains open on real data.

@@ -1,5 +1,5 @@
 {
-  "status": "blocked_for_publication",
+  "status": "private_candidate_ready_publication_blocked_on_operator",
   "agents": {
     "count": 3,
     "mode": "read_only",
@@ -51,9 +51,8 @@
   "product_integration_performed": false,
   "announcement_performed": false,
   "blockers": [
-    "Remote OS/Python matrix not yet run on GitHub (push required); license files reconciled but uncommitted (gate 5)",
-    "Real backend or dataset and validation scope unspecified (gate 6)",
-    "Real sensor database unreachable for the real-data gate; rerun the harness on a chronological 80/20 split when it is (gate 6)"
+    "Real sensor database unreachable for the real-data gate; rerun the harness on a chronological 80/20 split when it is (gate 6)",
+    "Operator decisions: publish the candidate to an index or keep it private; merge to master; landing page prices"
   ],
   "review": "docs/trinity-validation.md",
   "updated_at": "2026-09-10T22:18:36Z",
@@ -62,14 +61,13 @@
       1,
       2,
       3,
-      "4 Quantum Net grammar split from roadmap examples; protocol placeholders refuse explicitly; legacy BB84 sifting repaired; E91/teleportation/swapping/purification raise NotImplementedError; lexical errors are SyntaxError"
+      "4 Quantum Net grammar split from roadmap examples; protocol placeholders refuse explicitly; legacy BB84 sifting repaired; E91/teleportation/swapping/purification raise NotImplementedError; lexical errors are SyntaxError",
+      "5 installed-wheel CI gate for companions; remote OS/Python matrix 14 of 14 green on GitHub; version 2.4.1; proprietary license; draft pre-release v2.4.1-rc1 as the private candidate"
     ],
     "gates_open": [
       "6 hardware backend or real dataset with declared scope"
     ],
-    "gates_partial": [
-      "5 installed-wheel CI gate exists and CI now runs the Quantum Net source tests; the remote OS/Python matrix has not run on GitHub (needs a push); version 2.4.1 chosen; license reconciled to proprietary in uncommitted files"
-    ],
+    "gates_partial": [],
     "synapse_tests_passed_local_gate": 556,
     "quantum_net_tests": 19,
     "fault_injection": {
@@ -105,7 +103,14 @@
       "library_defect_found_and_fixed": "fixed 1e-8 absolute finite-difference step and silent zero derivative in UncertaintyEngine._linear_propagation"
     },
     "ci_matrix_first_run": "11 of 14 jobs passed; 3 Windows jobs failed on a zero-division timing test, fixed",
-    "full_checkout_suite_after_gate6": "627 passed, 56 skipped, 7 xfailed"
+    "full_checkout_suite_after_gate6": "627 passed, 56 skipped, 7 xfailed",
+    "ci_matrix_second_run": "14 of 14 jobs passed (run 34546014396)",
+    "private_candidate": {
+      "draft_prerelease": "v2.4.1-rc1",
+      "assets": 7,
+      "published_to_index": false
+    },
+    "browser_lab": "deployed to a staging origin; 20 browser checks passed there; landing page with pricing NOT deployed pending the operator's confirmation of prices"
   },
   "independent_verification": {
     "passed": 27,
