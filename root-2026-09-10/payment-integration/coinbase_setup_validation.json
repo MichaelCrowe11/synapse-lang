@@ -1,0 +1,59 @@
+{
+  "validation_timestamp": "2025-09-12T08:39:38.959335",
+  "summary": {
+    "total_tests": 5,
+    "passed": 2,
+    "failed": 3,
+    "warnings": 0,
+    "success_rate": 40.0
+  },
+  "detailed_results": [
+    {
+      "test": "Environment Variables",
+      "status": "PASS",
+      "message": "All required environment variables are set",
+      "details": {
+        "api_key_set": true,
+        "webhook_secret_set": true,
+        "oauth_client_set": true
+      },
+      "timestamp": "2025-09-12T08:39:38.359509"
+    },
+    {
+      "test": "API Connection",
+      "status": "FAIL",
+      "message": "Authentication failed - check API key",
+      "details": {
+        "status_code": 401
+      },
+      "timestamp": "2025-09-12T08:39:38.663466"
+    },
+    {
+      "test": "Charge Creation",
+      "status": "FAIL",
+      "message": "Failed to create test charge: 401",
+      "details": {
+        "response": "{\"error\":{\"type\":\"authentication_error\",\"message\":\"No such API key.\",\"code\":\"no_such_api_key\"}}"
+      },
+      "timestamp": "2025-09-12T08:39:38.892734"
+    },
+    {
+      "test": "Webhook Endpoint",
+      "status": "FAIL",
+      "message": "Cannot reach webhook endpoint: HTTPSConnectionPool(host='pay.synapse-lang.com', port=443): Max retries exceeded with url: /api/webhooks/coinbase (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x000001FFA6D0E850>: Failed to resolve 'pay.synapse-lang.com' ([Errno 11001] getaddrinfo failed)\"))",
+      "details": {
+        "webhook_url": "https://pay.synapse-lang.com/api/webhooks/coinbase"
+      },
+      "timestamp": "2025-09-12T08:39:38.959335"
+    },
+    {
+      "test": "OAuth Setup",
+      "status": "PASS",
+      "message": "OAuth credentials configured",
+      "details": {
+        "client_id": "5bc1d0f3..."
+      },
+      "timestamp": "2025-09-12T08:39:38.959335"
+    }
+  ]
+}

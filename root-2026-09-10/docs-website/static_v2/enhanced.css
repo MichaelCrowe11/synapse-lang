@@ -1,0 +1,394 @@
+/* Advanced Enhancement Styles */
+
+/* Animations */
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+
+@keyframes glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(91, 71, 224, 0.5); }
+    50% { box-shadow: 0 0 40px rgba(91, 71, 224, 0.8); }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-100px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* Reveal on scroll */
+.reveal-on-scroll {
+    opacity: 0;
+    transform: translateY(50px);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.reveal-on-scroll.revealed {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Enhanced buttons */
+.btn-enhanced {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.btn-enhanced::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn-enhanced:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* Code blocks enhancement */
+.code-copy-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #000;
+    color: #FFF;
+    border: none;
+    padding: 5px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s;
+}
+
+pre:hover .code-copy-btn {
+    opacity: 1;
+}
+
+.code-copy-btn.success {
+    background: #00FF00;
+    color: #000;
+}
+
+.line-number {
+    display: inline-block;
+    width: 30px;
+    color: #666;
+    margin-right: 10px;
+    user-select: none;
+}
+
+/* Command Palette */
+.command-palette {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 500px;
+    background: #FFF;
+    border: 2px solid #000;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    z-index: 10000;
+    animation: slideInDown 0.2s ease;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -60%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+.command-palette input {
+    width: 100%;
+    padding: 20px;
+    font-size: 18px;
+    border: none;
+    border-bottom: 2px solid #000;
+    outline: none;
+}
+
+.command-palette .commands {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.command-palette .command {
+    padding: 15px 20px;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.command-palette .command:hover {
+    background: #F0F0F0;
+}
+
+/* Quick Actions */
+.quick-actions {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    display: flex;
+    gap: 10px;
+    padding: 20px;
+    background: #FFF;
+    border: 2px solid #000;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    transition: transform 0.3s ease;
+    z-index: 9999;
+}
+
+.quick-actions.show {
+    transform: translateX(-50%) translateY(0);
+}
+
+.quick-action {
+    padding: 10px 20px;
+    background: #000;
+    color: #FFF;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.quick-action:hover {
+    background: #333;
+    transform: translateY(-2px);
+}
+
+/* 3D Card Effect */
+.card-3d {
+    transform-style: preserve-3d;
+    transition: transform 0.6s;
+}
+
+.card-3d:hover {
+    transform: rotateY(5deg) rotateX(-5deg);
+}
+
+/* Glassmorphism */
+.glass {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Neon Text */
+.neon {
+    text-shadow: 
+        0 0 10px currentColor,
+        0 0 20px currentColor,
+        0 0 40px currentColor;
+}
+
+/* Gradient Border */
+.gradient-border {
+    background: linear-gradient(#FFF, #FFF) padding-box,
+                linear-gradient(45deg, #5B47E0, #E91E63, #00BCD4) border-box;
+    border: 3px solid transparent;
+}
+
+/* Morphing Shape */
+.morph {
+    animation: morph 8s ease-in-out infinite;
+}
+
+@keyframes morph {
+    0%, 100% {
+        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    }
+    50% {
+        border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+    }
+}
+
+/* Typewriter Effect */
+.typewriter {
+    overflow: hidden;
+    white-space: nowrap;
+    border-right: 3px solid;
+    animation: 
+        typing 3.5s steps(40, end),
+        blink 0.75s step-end infinite;
+}
+
+@keyframes typing {
+    from { width: 0; }
+    to { width: 100%; }
+}
+
+@keyframes blink {
+    from, to { border-color: transparent; }
+    50% { border-color: black; }
+}
+
+/* Liquid Button */
+.liquid-btn {
+    position: relative;
+    padding: 20px 40px;
+    background: #5B47E0;
+    color: white;
+    border: none;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.liquid-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: radial-gradient(circle, rgba(255,255,255,0.5), transparent);
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    transition: width 0.5s, height 0.5s;
+}
+
+.liquid-btn:active::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* Holographic Effect */
+.holographic {
+    background: linear-gradient(
+        45deg,
+        #FF0000 0%,
+        #FF7F00 10%,
+        #FFFF00 20%,
+        #00FF00 30%,
+        #0000FF 40%,
+        #4B0082 50%,
+        #9400D3 60%,
+        #FF0000 70%,
+        #FF7F00 80%,
+        #FFFF00 90%,
+        #00FF00 100%
+    );
+    background-size: 200% 200%;
+    animation: holographic 3s linear infinite;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+@keyframes holographic {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+}
+
+/* Matrix Rain Effect */
+.matrix-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+}
+
+.matrix-bg::before {
+    content: '10101010 01010101 11001100 00110011';
+    position: absolute;
+    top: -100%;
+    left: 0;
+    width: 100%;
+    height: 200%;
+    color: #00FF00;
+    font-family: monospace;
+    font-size: 10px;
+    opacity: 0.05;
+    animation: matrix-rain 20s linear infinite;
+    white-space: pre;
+    line-height: 1.2;
+}
+
+@keyframes matrix-rain {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(50%); }
+}
+
+/* Dark mode enhancements */
+[data-theme="dark"] {
+    --glow-color: #00FFFF;
+}
+
+[data-theme="dark"] .neon {
+    color: var(--glow-color);
+}
+
+[data-theme="dark"] .glass {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Performance optimization */
+.gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    #particle-canvas {
+        display: none; /* Disable particles on mobile for performance */
+    }
+    
+    .command-palette {
+        width: 90%;
+    }
+    
+    .quick-actions {
+        flex-direction: column;
+        width: 90%;
+    }
+}

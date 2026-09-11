@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Synapse Language - Scientific Programming Revolutionized{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 40px 0;">
+    <h1 style="font-size: 3em; margin-bottom: 20px;">
+        <span style="font-size: 1.5em;">🧠</span> Synapse Language
+    </h1>
+    <p style="font-size: 1.4em; color: #666; margin-bottom: 30px;">
+        Revolutionary scientific programming with quantum computing, AI, and blockchain
+    </p>
+    <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+        <a href="/docs/quickstart" class="btn">Get Started</a>
+        <a href="/playground" class="btn" style="background: var(--secondary);">Try Online</a>
+        <a href="https://github.com/michaelcrowe11/synapse-lang" class="btn" style="background: var(--dark);">View on GitHub</a>
+    </div>
+</div>
+
+<div style="margin: 60px 0;">
+    <h2 style="text-align: center; margin-bottom: 40px;">✨ 8 Powerful Features</h2>
+    <div class="feature-grid">
+        {% for feature in features %}
+        <div class="feature-card">
+            <div class="feature-icon">{{ feature.icon }}</div>
+            <div class="feature-title">{{ feature.name }}</div>
+            <div class="feature-desc">{{ feature.description }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div style="margin: 60px 0;">
+    <h2>🚀 Quick Installation</h2>
+
+    <h3>Python (PyPI)</h3>
+    <pre><code>pip install synapse_lang</code></pre>
+
+    <h3>Node.js (npm)</h3>
+    <pre><code>npm install synapse-lang-core</code></pre>
+
+    <h3>Docker</h3>
+    <pre><code>docker pull michaelcrowe11/synapse-lang:{{ version }}</code></pre>
+</div>
+
+<div style="margin: 60px 0;">
+    <h2>📝 Example: Quantum Bell State</h2>
+    <pre><code>from synapse_lang.quantum_designer import QuantumCircuit, QuantumSimulator
+
+# Create a 2-qubit circuit
+circuit = QuantumCircuit(2)
+
+# Create Bell state (entanglement)
+circuit.add_gate("H", [0])      # Hadamard on qubit 0
+circuit.add_gate("CNOT", [0, 1])  # CNOT with 0 as control
+
+# Simulate the circuit
+simulator = QuantumSimulator()
+result = simulator.simulate(circuit)
+
+print("Quantum state:", result)
+# Output: {'00': 0.707+0j, '11': 0.707+0j}</code></pre>
+</div>
+
+<div style="margin: 60px 0;">
+    <h2>🔬 Scientific Type Inference</h2>
+    <pre><code>from synapse_lang.type_inference import TypeInference
+
+# Automatic type inference with uncertainty
+type_system = TypeInference()
+
+# Infer types for scientific computations
+matrix_type = type_system.infer_matrix_type([[1, 2], [3, 4]])
+print(f"Matrix type: {matrix_type}")  # Matrix[Int, 2, 2]
+
+# Handle uncertain measurements
+measurement = 3.14 ± 0.01  # Uncertain type
+uncertain_type = type_system.infer_uncertain_type(measurement)
+print(f"Measurement type: {uncertain_type}")  # Uncertain[Float, Float]</code></pre>
+</div>
+
+<div style="margin: 60px 0;">
+    <h2>👥 Real-time Collaboration</h2>
+    <pre><code>from synapse_lang.collaboration import CollaborationManager
+
+# Create collaboration session
+collab = CollaborationManager()
+session_id = collab.create_session("quantum_research")
+
+# Multiple users can join and edit
+collab.join_session(session_id, "alice")
+collab.join_session(session_id, "bob")
+
+# Apply concurrent edits with automatic conflict resolution
+collab.apply_operation(session_id, {
+    "type": "insert",
+    "position": 0,
+    "text": "Quantum circuit analysis",
+    "user_id": "alice"
+})</code></pre>
+</div>
+
+<div style="margin: 60px 0; text-align: center;">
+    <h2>🌟 Why Choose Synapse?</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 30px;">
+        <div>
+            <h3>🔬 Scientific First</h3>
+            <p>Built specifically for scientific computing with native support for uncertainty, matrices, and complex numbers</p>
+        </div>
+        <div>
+            <h3>⚡ Future Ready</h3>
+            <p>Quantum computing, blockchain verification, and AI assistance built into the core language</p>
+        </div>
+        <div>
+            <h3>🤝 Collaborative</h3>
+            <p>Real-time collaboration with operational transformation for seamless team research</p>
+        </div>
+    </div>
+</div>
+
+<div style="margin: 60px 0; padding: 40px; background: var(--light); border-radius: 12px; text-align: center;">
+    <h2>📊 Latest Release: v{{ version }}</h2>
+    <p style="margin: 20px 0;">PEP 625 compliant • Cross-platform • Production ready</p>
+    <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 30px;">
+        <a href="/docs/installation" class="btn">Installation Guide</a>
+        <a href="https://github.com/michaelcrowe11/synapse-lang/releases" class="btn" style="background: var(--dark);">Release Notes</a>
+    </div>
+</div>
+{% endblock %}

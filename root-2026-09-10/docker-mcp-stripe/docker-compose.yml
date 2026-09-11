@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  mcp-stripe-server:
+    build: .
+    container_name: synapse-mcp-stripe
+    ports:
+      - "3000:3000"  # MCP Server
+      - "8000:8000"  # Stripe Webhooks
+      - "8001:8001"  # Authentication API
+    environment:
+      - NODE_ENV=development
+      - MCP_SERVER_PORT=3000
+      - STRIPE_ENABLED=true
+    env_file:
+      - .env
+    volumes:
+      - ./mcp-server:/app/mcp-server
+      - ../auth_system:/app/auth_system
+    networks:
+      - synapse-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Optional: Redis for caching and session storage
+  redis:
+    image: redis:7-alpine
+    container_name: synapse-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - synapse-network
+    restart: unless-stopped
+
+  # Optional: PostgreSQL for persistent storage
+  postgres:
+    image: postgres:15-alpine
+    container_name: synapse-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: synapse
+      POSTGRES_USER: synapse_user
+      POSTGRES_PASSWORD: synapse_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - synapse-network
+    restart: unless-stopped
+
+networks:
+  synapse-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+  postgres_data:

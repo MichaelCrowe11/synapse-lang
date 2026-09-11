@@ -1,0 +1,1493 @@
+{% extends "base_enhanced.html" %}
+
+{% block title %}Interactive Playground - Synapse Language{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material-ocean.min.css">
+
+<style>
+    /* Root Variables */
+    :root {
+        --bg-primary: #ffffff;
+        --bg-secondary: #f8f9fa;
+        --bg-tertiary: #e9ecef;
+        --text-primary: #212529;
+        --text-secondary: #6c757d;
+        --text-tertiary: #adb5bd;
+        --border: #dee2e6;
+        --accent: #5B47E0;
+        --accent-hover: #4a38c7;
+        --success: #10B981;
+        --warning: #F59E0B;
+        --error: #EF4444;
+        --info: #3B82F6;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        --transition: all 0.2s ease;
+    }
+
+    [data-theme="dark"] {
+        --bg-primary: #0a0a0a;
+        --bg-secondary: #1a1a1a;
+        --bg-tertiary: #2a2a2a;
+        --text-primary: #ffffff;
+        --text-secondary: #a0a0a0;
+        --text-tertiary: #707070;
+        --border: #333333;
+    }
+
+    /* Main Playground Container */
+    .playground-wrapper {
+        height: calc(100vh - 80px);
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-primary);
+    }
+
+    /* Top Controls Bar */
+    .controls-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 20px;
+        background: var(--bg-secondary);
+        border-bottom: 2px solid var(--border);
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .controls-left,
+    .controls-center,
+    .controls-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .controls-center {
+        flex: 1;
+        justify-content: center;
+    }
+
+    /* Example/Template Selector */
+    .template-selector {
+        position: relative;
+    }
+
+    .template-button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: var(--bg-primary);
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-primary);
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .template-button:hover {
+        border-color: var(--accent);
+        box-shadow: var(--shadow-md);
+    }
+
+    .template-dropdown {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        min-width: 300px;
+        background: var(--bg-primary);
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        box-shadow: var(--shadow-lg);
+        z-index: 100;
+        display: none;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .template-dropdown.active {
+        display: block;
+    }
+
+    .template-category {
+        padding: 8px 16px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-tertiary);
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .template-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: var(--transition);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .template-item:last-child {
+        border-bottom: none;
+    }
+
+    .template-item:hover {
+        background: var(--bg-secondary);
+    }
+
+    .template-icon {
+        width: 32px;
+        height: 32px;
+        background: var(--accent);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+
+    .template-info h4 {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0 0 4px 0;
+    }
+
+    .template-info p {
+        font-size: 11px;
+        color: var(--text-secondary);
+        margin: 0;
+    }
+
+    /* Run Button with States */
+    .run-button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 24px;
+        background: var(--success);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .run-button:hover:not(:disabled) {
+        background: #0ea572;
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .run-button:active:not(:disabled) {
+        transform: translateY(0);
+    }
+
+    .run-button:disabled {
+        background: var(--text-tertiary);
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    .run-button.running {
+        background: var(--warning);
+    }
+
+    /* Control Buttons */
+    .control-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        background: var(--bg-primary);
+        border: 1.5px solid var(--border);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: var(--transition);
+        color: var(--text-secondary);
+    }
+
+    .control-btn:hover {
+        background: var(--bg-secondary);
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .control-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* Progress Bar */
+    .execution-progress {
+        height: 3px;
+        background: var(--bg-secondary);
+        overflow: hidden;
+        position: relative;
+    }
+
+    .execution-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent), var(--info));
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+
+    .execution-progress-bar.indeterminate {
+        width: 30%;
+        animation: indeterminate 1.5s ease-in-out infinite;
+    }
+
+    @keyframes indeterminate {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(400%); }
+    }
+
+    /* Split Pane Layout with Resizer */
+    .split-pane-container {
+        flex: 1;
+        display: flex;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .editor-pane {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-primary);
+        border-right: 2px solid var(--border);
+        min-width: 300px;
+    }
+
+    .output-pane {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-primary);
+        min-width: 300px;
+    }
+
+    .pane-resizer {
+        width: 8px;
+        background: var(--bg-secondary);
+        cursor: col-resize;
+        position: relative;
+        transition: background 0.2s;
+        z-index: 10;
+    }
+
+    .pane-resizer:hover,
+    .pane-resizer.dragging {
+        background: var(--accent);
+    }
+
+    .pane-resizer::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 2px;
+        height: 40px;
+        background: var(--border);
+        border-radius: 2px;
+    }
+
+    /* Pane Headers */
+    .pane-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .pane-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+    }
+
+    .pane-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    /* Code Editor */
+    .CodeMirror {
+        flex: 1;
+        height: 100% !important;
+        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    [data-theme="dark"] .CodeMirror {
+        background: var(--bg-primary);
+    }
+
+    /* Output Tabs */
+    .output-tabs {
+        display: flex;
+        background: var(--bg-secondary);
+        border-bottom: 2px solid var(--border);
+        overflow-x: auto;
+    }
+
+    .output-tab {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 12px 20px;
+        background: none;
+        border: none;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: var(--transition);
+        border-bottom: 2px solid transparent;
+        white-space: nowrap;
+        position: relative;
+    }
+
+    .output-tab:hover {
+        color: var(--text-primary);
+        background: var(--bg-primary);
+    }
+
+    .output-tab.active {
+        color: var(--accent);
+        background: var(--bg-primary);
+        border-bottom-color: var(--accent);
+    }
+
+    .output-tab svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* Output Content */
+    .output-content {
+        flex: 1;
+        overflow: auto;
+        position: relative;
+    }
+
+    .output-panel {
+        padding: 20px;
+        display: none;
+        height: 100%;
+        overflow: auto;
+    }
+
+    .output-panel.active {
+        display: block;
+    }
+
+    /* Console Output with Better Formatting */
+    .console-output {
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 16px;
+        border-radius: 8px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        min-height: 100%;
+        line-height: 1.6;
+    }
+
+    .console-line {
+        margin-bottom: 6px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .console-timestamp {
+        color: #808080;
+        font-size: 11px;
+        min-width: 65px;
+        flex-shrink: 0;
+    }
+
+    .console-log { color: #d4d4d4; }
+    .console-error {
+        color: #f48771;
+        background: rgba(244, 135, 113, 0.1);
+        padding: 4px 8px;
+        border-radius: 4px;
+        border-left: 3px solid #f48771;
+    }
+    .console-warning {
+        color: #ffd602;
+        background: rgba(255, 214, 2, 0.1);
+        padding: 4px 8px;
+        border-radius: 4px;
+        border-left: 3px solid #ffd602;
+    }
+    .console-info { color: #3794ff; }
+    .console-success {
+        color: #4ec9b0;
+        background: rgba(78, 201, 176, 0.1);
+        padding: 4px 8px;
+        border-radius: 4px;
+        border-left: 3px solid #4ec9b0;
+    }
+
+    /* Enhanced Metrics */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .metric-card {
+        background: var(--bg-secondary);
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        transition: var(--transition);
+    }
+
+    .metric-card:hover {
+        border-color: var(--accent);
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+
+    .metric-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-tertiary);
+        margin-bottom: 12px;
+    }
+
+    .metric-value {
+        font-size: 36px;
+        font-weight: 800;
+        color: var(--accent);
+        line-height: 1;
+    }
+
+    .metric-unit {
+        font-size: 16px;
+        color: var(--text-secondary);
+        margin-left: 4px;
+        font-weight: 500;
+    }
+
+    .metric-change {
+        font-size: 12px;
+        margin-top: 8px;
+        color: var(--success);
+    }
+
+    /* Interactive Visualization */
+    .visualization-container {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100%;
+    }
+
+    .circuit-canvas {
+        background: var(--bg-secondary);
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        padding: 32px;
+        box-shadow: var(--shadow-lg);
+        max-width: 100%;
+    }
+
+    /* Status Bar */
+    .status-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 20px;
+        background: var(--bg-tertiary);
+        border-top: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .status-left,
+    .status-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .status-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .status-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        animation: pulse 2s ease infinite;
+    }
+
+    .status-indicator.ready { background: var(--success); }
+    .status-indicator.running { background: var(--warning); animation: pulse 0.5s ease infinite; }
+    .status-indicator.error { background: var(--error); }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    /* Keyboard Shortcuts Modal */
+    .shortcuts-modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--bg-primary);
+        border: 2px solid var(--border);
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        padding: 32px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+    }
+
+    .shortcuts-modal.active {
+        display: block;
+    }
+
+    .shortcuts-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        display: none;
+    }
+
+    .shortcuts-modal-overlay.active {
+        display: block;
+    }
+
+    .shortcuts-modal h2 {
+        margin-bottom: 24px;
+        color: var(--text-primary);
+    }
+
+    .shortcut-group {
+        margin-bottom: 24px;
+    }
+
+    .shortcut-group h3 {
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-tertiary);
+        margin-bottom: 12px;
+    }
+
+    .shortcut-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        margin-bottom: 8px;
+        background: var(--bg-secondary);
+        border-radius: 8px;
+    }
+
+    .shortcut-keys {
+        display: flex;
+        gap: 4px;
+    }
+
+    .shortcut-keys kbd {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 12px;
+        font-weight: 600;
+        font-family: monospace;
+    }
+
+    /* Onboarding Tooltip */
+    .onboarding-tooltip {
+        position: absolute;
+        background: var(--accent);
+        color: white;
+        padding: 16px 20px;
+        border-radius: 12px;
+        box-shadow: var(--shadow-lg);
+        z-index: 100;
+        max-width: 300px;
+        display: none;
+    }
+
+    .onboarding-tooltip.active {
+        display: block;
+    }
+
+    .onboarding-tooltip::after {
+        content: '';
+        position: absolute;
+        width: 0;
+        height: 0;
+        border: 10px solid transparent;
+    }
+
+    .onboarding-tooltip.top::after {
+        bottom: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-top-color: var(--accent);
+    }
+
+    .onboarding-tooltip-title {
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .onboarding-tooltip-text {
+        font-size: 13px;
+        line-height: 1.5;
+        margin-bottom: 12px;
+    }
+
+    .onboarding-tooltip-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+    }
+
+    .onboarding-tooltip-btn {
+        padding: 6px 12px;
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        border-radius: 6px;
+        color: white;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .onboarding-tooltip-btn.primary {
+        background: white;
+        color: var(--accent);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+        .split-pane-container {
+            flex-direction: column;
+        }
+
+        .editor-pane {
+            border-right: none;
+            border-bottom: 2px solid var(--border);
+            min-height: 300px;
+        }
+
+        .pane-resizer {
+            width: 100%;
+            height: 8px;
+            cursor: row-resize;
+        }
+
+        .pane-resizer::after {
+            width: 40px;
+            height: 2px;
+        }
+
+        .controls-bar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .controls-left,
+        .controls-center,
+        .controls-right {
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .template-dropdown {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90vw;
+        }
+
+        .shortcuts-modal {
+            padding: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="playground-wrapper">
+    <!-- Controls Bar -->
+    <div class="controls-bar">
+        <div class="controls-left">
+            <!-- Template Selector -->
+            <div class="template-selector">
+                <button class="template-button" onclick="toggleTemplates()">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16">
+                        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Examples
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="12" height="12">
+                        <path d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+
+                <div class="template-dropdown" id="template-dropdown">
+                    <div class="template-category">Quantum Computing</div>
+                    <div class="template-item" onclick="loadTemplate('bell-state')">
+                        <div class="template-icon">⚛️</div>
+                        <div class="template-info">
+                            <h4>Bell State</h4>
+                            <p>Create maximum quantum entanglement</p>
+                        </div>
+                    </div>
+                    <div class="template-item" onclick="loadTemplate('teleportation')">
+                        <div class="template-icon">📡</div>
+                        <div class="template-info">
+                            <h4>Quantum Teleportation</h4>
+                            <p>Transfer quantum state across space</p>
+                        </div>
+                    </div>
+                    <div class="template-item" onclick="loadTemplate('grover')">
+                        <div class="template-icon">🔍</div>
+                        <div class="template-info">
+                            <h4>Grover's Algorithm</h4>
+                            <p>Quantum search with quadratic speedup</p>
+                        </div>
+                    </div>
+
+                    <div class="template-category">Scientific Computing</div>
+                    <div class="template-item" onclick="loadTemplate('uncertainty')">
+                        <div class="template-icon">📊</div>
+                        <div class="template-info">
+                            <h4>Uncertainty Propagation</h4>
+                            <p>Track measurement errors automatically</p>
+                        </div>
+                    </div>
+                    <div class="template-item" onclick="loadTemplate('parallel')">
+                        <div class="template-icon">⚡</div>
+                        <div class="template-info">
+                            <h4>Parallel Processing</h4>
+                            <p>Distributed MapReduce computation</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls-center">
+            <!-- Run Button -->
+            <button class="run-button" id="run-btn" onclick="runCode()">
+                <svg fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                    <path d="M5 3l9 5-9 5V3z"/>
+                </svg>
+                <span id="run-text">Run Code</span>
+            </button>
+
+            <!-- Stop Button -->
+            <button class="control-btn" onclick="stopExecution()" title="Stop (Esc)">
+                <svg fill="currentColor" viewBox="0 0 16 16">
+                    <rect x="5" y="5" width="6" height="6"/>
+                </svg>
+            </button>
+
+            <!-- Clear Button -->
+            <button class="control-btn" onclick="clearOutput()" title="Clear Output">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="controls-right">
+            <!-- Keyboard Shortcuts -->
+            <button class="control-btn" onclick="toggleShortcuts()" title="Keyboard Shortcuts (?)">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                    <path d="M6 8h.01M10 8h.01M14 8h.01M6 12h.01M10 12h.01M14 12h.01M6 16h.01M10 16h.01M14 16h.01"/>
+                </svg>
+            </button>
+
+            <!-- Share Button -->
+            <button class="control-btn" onclick="shareCode()" title="Share Code">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Execution Progress Bar -->
+    <div class="execution-progress" id="execution-progress">
+        <div class="execution-progress-bar" id="progress-bar"></div>
+    </div>
+
+    <!-- Split Pane Layout -->
+    <div class="split-pane-container">
+        <!-- Editor Pane -->
+        <div class="editor-pane" id="editor-pane">
+            <div class="pane-header">
+                <div class="pane-title">
+                    <svg fill="currentColor" viewBox="0 0 16 16" width="14" height="14">
+                        <path d="M14.7 3.3a1 1 0 010 1.4l-9 9a1 1 0 01-.7.3H2v-3a1 1 0 01.3-.7l9-9a1 1 0 011.4 0z"/>
+                    </svg>
+                    Editor
+                </div>
+                <div class="pane-actions">
+                    <select id="language-select" style="padding: 4px 8px; font-size: 12px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary);" onchange="changeLanguage()">
+                        <option value="python">Python</option>
+                        <option value="synapse" selected>Synapse</option>
+                        <option value="javascript">JavaScript</option>
+                    </select>
+                </div>
+            </div>
+            <textarea id="code-editor" style="display: none;"># Synapse Language - Quantum Computing Playground
+# Press Ctrl+Enter to run
+
+from synapse_lang import QuantumCircuit, UncertainValue
+import math
+
+# Create a Bell State (Maximum Entanglement)
+print("=== Quantum Bell State ===")
+circuit = QuantumCircuit(2)
+circuit.h(0)        # Hadamard gate on qubit 0
+circuit.cx(0, 1)    # CNOT gate (control=0, target=1)
+
+print(f"Circuit created with {circuit.num_qubits} qubits")
+print(f"Gates applied: {len(circuit.gates)}")
+
+# Uncertainty Propagation
+print("\n=== Uncertainty Analysis ===")
+measurement = UncertainValue(10.0, uncertainty=0.2)
+result = measurement * 2 + UncertainValue(5.0, uncertainty=0.1)
+print(f"Measurement with uncertainty: {result}")
+
+# Mathematical Operations
+print("\n=== Quantum Phase ===")
+angle = math.pi / 4
+print(f"Phase angle: {angle:.4f} radians")
+print(f"sin(θ) = {math.sin(angle):.4f}")
+print(f"cos(θ) = {math.cos(angle):.4f}")
+
+print("\n✅ Execution complete!")</textarea>
+        </div>
+
+        <!-- Resizer -->
+        <div class="pane-resizer" id="resizer"></div>
+
+        <!-- Output Pane -->
+        <div class="output-pane" id="output-pane">
+            <!-- Output Tabs -->
+            <div class="output-tabs">
+                <button class="output-tab active" onclick="switchTab('console')">
+                    <svg fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M2 3h12a1 1 0 011 1v8a1 1 0 01-1 1H2a1 1 0 01-1-1V4a1 1 0 011-1z"/>
+                    </svg>
+                    Console
+                </button>
+                <button class="output-tab" onclick="switchTab('visualization')">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 6v6l4 2"/>
+                    </svg>
+                    Visualization
+                </button>
+                <button class="output-tab" onclick="switchTab('metrics')">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    Metrics
+                </button>
+            </div>
+
+            <!-- Output Content -->
+            <div class="output-content">
+                <!-- Console Output -->
+                <div class="output-panel active" id="console-panel">
+                    <div class="console-output" id="console-output">
+                        <div class="console-line">
+                            <span class="console-timestamp">00:00:00</span>
+                            <span class="console-info">Ready to execute Synapse code. Press Ctrl+Enter to run.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visualization Panel -->
+                <div class="output-panel" id="visualization-panel">
+                    <div class="visualization-container">
+                        <div class="circuit-canvas" id="circuit-canvas">
+                            <svg width="500" height="250" viewBox="0 0 500 250">
+                                <!-- Circuit will be rendered here -->
+                                <text x="250" y="125" text-anchor="middle" fill="currentColor" font-size="14" opacity="0.5">
+                                    Run code to visualize quantum circuit
+                                </text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Metrics Panel -->
+                <div class="output-panel" id="metrics-panel">
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-label">Execution Time</div>
+                            <div class="metric-value" id="metric-time">0<span class="metric-unit">ms</span></div>
+                            <div class="metric-change" id="metric-time-change"></div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Memory Usage</div>
+                            <div class="metric-value" id="metric-memory">0<span class="metric-unit">MB</span></div>
+                            <div class="metric-change" id="metric-memory-change"></div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Qubits Used</div>
+                            <div class="metric-value" id="metric-qubits">0</div>
+                            <div class="metric-change" id="metric-qubits-change"></div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Gate Operations</div>
+                            <div class="metric-value" id="metric-gates">0</div>
+                            <div class="metric-change" id="metric-gates-change"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-left">
+            <div class="status-item">
+                <span class="status-indicator ready" id="status-indicator"></span>
+                <span id="status-text">Ready</span>
+            </div>
+            <div class="status-item">
+                Python 3.10 • Synapse v{{ metadata.version }}
+            </div>
+            <div class="status-item" id="cursor-position">
+                Ln 1, Col 1
+            </div>
+        </div>
+        <div class="status-right">
+            <div class="status-item">
+                <svg fill="currentColor" viewBox="0 0 16 16" width="14" height="14">
+                    <path d="M8 12a4 4 0 100-8 4 4 0 000 8z"/>
+                </svg>
+                Cloud Execution
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Keyboard Shortcuts Modal -->
+<div class="shortcuts-modal-overlay" id="shortcuts-overlay" onclick="toggleShortcuts()"></div>
+<div class="shortcuts-modal" id="shortcuts-modal">
+    <h2>⌨️ Keyboard Shortcuts</h2>
+
+    <div class="shortcut-group">
+        <h3>Code Execution</h3>
+        <div class="shortcut-item">
+            <span>Run Code</span>
+            <div class="shortcut-keys">
+                <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
+            </div>
+        </div>
+        <div class="shortcut-item">
+            <span>Stop Execution</span>
+            <div class="shortcut-keys">
+                <kbd>Esc</kbd>
+            </div>
+        </div>
+        <div class="shortcut-item">
+            <span>Clear Output</span>
+            <div class="shortcut-keys">
+                <kbd>Ctrl</kbd> + <kbd>L</kbd>
+            </div>
+        </div>
+    </div>
+
+    <div class="shortcut-group">
+        <h3>Editor</h3>
+        <div class="shortcut-item">
+            <span>Save Code</span>
+            <div class="shortcut-keys">
+                <kbd>Ctrl</kbd> + <kbd>S</kbd>
+            </div>
+        </div>
+        <div class="shortcut-item">
+            <span>Format Code</span>
+            <div class="shortcut-keys">
+                <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd>
+            </div>
+        </div>
+        <div class="shortcut-item">
+            <span>Find</span>
+            <div class="shortcut-keys">
+                <kbd>Ctrl</kbd> + <kbd>F</kbd>
+            </div>
+        </div>
+        <div class="shortcut-item">
+            <span>Replace</span>
+            <div class="shortcut-keys">
+                <kbd>Ctrl</kbd> + <kbd>H</kbd>
+            </div>
+        </div>
+    </div>
+
+    <div class="shortcut-group">
+        <h3>Navigation</h3>
+        <div class="shortcut-item">
+            <span>Show Examples</span>
+            <div class="shortcut-keys">
+                <kbd>Ctrl</kbd> + <kbd>E</kbd>
+            </div>
+        </div>
+        <div class="shortcut-item">
+            <span>Toggle Keyboard Shortcuts</span>
+            <div class="shortcut-keys">
+                <kbd>?</kbd>
+            </div>
+        </div>
+        <div class="shortcut-item">
+            <span>Command Palette</span>
+            <div class="shortcut-keys">
+                <kbd>Ctrl</kbd> + <kbd>K</kbd>
+            </div>
+        </div>
+    </div>
+
+    <button class="run-button" onclick="toggleShortcuts()" style="margin-top: 20px; width: 100%;">
+        Close
+    </button>
+</div>
+
+<!-- Onboarding Tooltips -->
+<div class="onboarding-tooltip top" id="onboarding-1" style="top: 100px; left: 50%; transform: translateX(-50%);">
+    <div class="onboarding-tooltip-title">👋 Welcome to Synapse Playground!</div>
+    <div class="onboarding-tooltip-text">
+        This is where you write and execute quantum computing code. Try running the example code or choose from our templates.
+    </div>
+    <div class="onboarding-tooltip-actions">
+        <button class="onboarding-tooltip-btn" onclick="skipOnboarding()">Skip</button>
+        <button class="onboarding-tooltip-btn primary" onclick="nextOnboarding()">Next</button>
+    </div>
+</div>
+
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
+
+<script>
+// Initialize WebSocket
+const socket = io();
+
+// Initialize CodeMirror
+const theme = document.documentElement.getAttribute('data-theme');
+const editor = CodeMirror.fromTextArea(document.getElementById('code-editor'), {
+    lineNumbers: true,
+    mode: 'python',
+    theme: theme === 'dark' ? 'material-ocean' : 'default',
+    indentUnit: 4,
+    lineWrapping: false,
+    autoCloseBrackets: true,
+    matchBrackets: true,
+    extraKeys: {
+        'Ctrl-Enter': runCode,
+        'Cmd-Enter': runCode,
+        'Ctrl-L': clearOutput,
+        'Ctrl-E': toggleTemplates,
+        '?': toggleShortcuts,
+        'Esc': stopExecution
+    }
+});
+
+// Update cursor position
+editor.on('cursorActivity', function() {
+    const cursor = editor.getCursor();
+    document.getElementById('cursor-position').textContent = `Ln ${cursor.line + 1}, Col ${cursor.ch + 1}`;
+});
+
+// Split Pane Resizer
+let isResizing = false;
+const resizer = document.getElementById('resizer');
+const editorPane = document.getElementById('editor-pane');
+const outputPane = document.getElementById('output-pane');
+
+resizer.addEventListener('mousedown', (e) => {
+    isResizing = true;
+    resizer.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+});
+
+document.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+
+    const container = document.querySelector('.split-pane-container');
+    const containerRect = container.getBoundingClientRect();
+    const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+
+    if (newWidth > 20 && newWidth < 80) {
+        editorPane.style.flex = `0 0 ${newWidth}%`;
+        outputPane.style.flex = `0 0 ${100 - newWidth}%`;
+    }
+});
+
+document.addEventListener('mouseup', () => {
+    if (isResizing) {
+        isResizing = false;
+        resizer.classList.remove('dragging');
+        document.body.style.cursor = 'default';
+        editor.refresh();
+    }
+});
+
+// Templates
+function toggleTemplates() {
+    const dropdown = document.getElementById('template-dropdown');
+    dropdown.classList.toggle('active');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('template-dropdown');
+    const button = document.querySelector('.template-button');
+    if (!dropdown.contains(e.target) && !button.contains(e.target)) {
+        dropdown.classList.remove('active');
+    }
+});
+
+const templates = {
+    'bell-state': `from synapse_lang import QuantumCircuit
+
+# Create a Bell state (maximum entanglement)
+circuit = QuantumCircuit(2)
+circuit.h(0)        # Hadamard on qubit 0
+circuit.cx(0, 1)    # CNOT gate
+
+print("Bell state created!")
+print(f"Qubits: {circuit.num_qubits}")
+print(f"Gates: {len(circuit.gates)}")`,
+
+    'teleportation': `from synapse_lang import QuantumCircuit
+
+# Quantum teleportation protocol
+circuit = QuantumCircuit(3)
+
+# Create entanglement between qubits 1 and 2
+circuit.h(1)
+circuit.cx(1, 2)
+
+# Prepare qubit 0 (the qubit to be teleported)
+circuit.h(0)
+
+# Bell measurement on qubits 0 and 1
+circuit.cx(0, 1)
+circuit.h(0)
+
+print("Quantum teleportation circuit created!")
+print(f"Total qubits: {circuit.num_qubits}")`,
+
+    'grover': `from synapse_lang import QuantumCircuit
+import math
+
+# Grover's search algorithm
+n_qubits = 3
+circuit = QuantumCircuit(n_qubits)
+
+# Initialize superposition
+for i in range(n_qubits):
+    circuit.h(i)
+
+# Oracle (marks the solution)
+circuit.cz(0, 1)
+
+# Diffusion operator
+for i in range(n_qubits):
+    circuit.h(i)
+
+print("Grover's algorithm initialized!")
+print(f"Searching {2**n_qubits} states")`,
+
+    'uncertainty': `from synapse_lang import UncertainValue
+
+# Uncertainty propagation example
+measurement1 = UncertainValue(10.0, uncertainty=0.5)
+measurement2 = UncertainValue(5.0, uncertainty=0.2)
+
+# Operations automatically propagate uncertainty
+result = measurement1 * 2 + measurement2
+print(f"Result: {result}")
+
+# Compare with deterministic calculation
+deterministic = 10.0 * 2 + 5.0
+print(f"Deterministic: {deterministic}")`,
+
+    'parallel': `from synapse_lang import ParallelCompute
+
+# Parallel computation example
+pc = ParallelCompute()
+
+# Process data in parallel
+data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+results = pc.map(lambda x: x**2, data)
+
+print("Parallel computation results:")
+print(results)`
+};
+
+function loadTemplate(name) {
+    if (templates[name]) {
+        editor.setValue(templates[name]);
+        toggleTemplates();
+        showNotification('Template loaded: ' + name, 'success');
+    }
+}
+
+// Run Code
+async function runCode() {
+    const code = editor.getValue();
+    const runBtn = document.getElementById('run-btn');
+    const runText = document.getElementById('run-text');
+    const indicator = document.getElementById('status-indicator');
+    const statusText = document.getElementById('status-text');
+    const progressBar = document.getElementById('progress-bar');
+
+    // Update UI
+    runBtn.disabled = true;
+    runBtn.classList.add('running');
+    runText.textContent = 'Running...';
+    indicator.className = 'status-indicator running';
+    statusText.textContent = 'Executing...';
+
+    // Show progress
+    progressBar.classList.add('indeterminate');
+
+    // Clear console
+    clearOutput();
+
+    const timestamp = new Date().toLocaleTimeString();
+    addConsoleOutput(timestamp, 'Executing code...', 'info');
+
+    try {
+        // Emit via WebSocket
+        if (socket && socket.connected) {
+            socket.emit('run_code', { code: code, language: 'python' });
+
+            socket.once('execution_result', (result) => {
+                progressBar.classList.remove('indeterminate');
+
+                if (result.status === 'success') {
+                    if (result.output) {
+                        result.output.split('\n').forEach(line => {
+                            if (line) addConsoleOutput(timestamp, line, 'log');
+                        });
+                    }
+                    addConsoleOutput(timestamp, `✅ Execution completed in ${result.execution_time}s`, 'success');
+
+                    // Update metrics
+                    updateMetrics(result);
+
+                    indicator.className = 'status-indicator ready';
+                    statusText.textContent = 'Ready';
+                } else {
+                    addConsoleOutput(timestamp, `❌ Error: ${result.error}`, 'error');
+                    indicator.className = 'status-indicator error';
+                    statusText.textContent = 'Error';
+                }
+
+                runBtn.disabled = false;
+                runBtn.classList.remove('running');
+                runText.textContent = 'Run Code';
+            });
+        } else {
+            throw new Error('WebSocket not connected');
+        }
+    } catch (error) {
+        addConsoleOutput(timestamp, `❌ ${error.message}`, 'error');
+        indicator.className = 'status-indicator error';
+        statusText.textContent = 'Error';
+        runBtn.disabled = false;
+        runBtn.classList.remove('running');
+        runText.textContent = 'Run Code';
+        progressBar.classList.remove('indeterminate');
+    }
+}
+
+function updateMetrics(result) {
+    document.getElementById('metric-time').innerHTML = `${Math.round(result.execution_time * 1000)}<span class="metric-unit">ms</span>`;
+    document.getElementById('metric-memory').innerHTML = `${result.memory_used || '2.4'}<span class="metric-unit">MB</span>`;
+    document.getElementById('metric-qubits').textContent = result.qubits || '0';
+    document.getElementById('metric-gates').textContent = result.gates || '0';
+}
+
+function stopExecution() {
+    const indicator = document.getElementById('status-indicator');
+    const statusText = document.getElementById('status-text');
+    indicator.className = 'status-indicator ready';
+    statusText.textContent = 'Stopped';
+    document.getElementById('progress-bar').classList.remove('indeterminate');
+}
+
+function clearOutput() {
+    const consoleOutput = document.getElementById('console-output');
+    consoleOutput.innerHTML = `
+        <div class="console-line">
+            <span class="console-timestamp">${new Date().toLocaleTimeString()}</span>
+            <span class="console-info">Console cleared</span>
+        </div>
+    `;
+}
+
+function addConsoleOutput(timestamp, message, type) {
+    const consoleOutput = document.getElementById('console-output');
+    const line = document.createElement('div');
+    line.className = 'console-line';
+    line.innerHTML = `
+        <span class="console-timestamp">${timestamp}</span>
+        <span class="console-${type}">${message}</span>
+    `;
+    consoleOutput.appendChild(line);
+    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+}
+
+// Switch Tabs
+function switchTab(tab) {
+    // Update tabs
+    document.querySelectorAll('.output-tab').forEach(t => t.classList.remove('active'));
+    event.target.closest('.output-tab').classList.add('active');
+
+    // Update panels
+    document.querySelectorAll('.output-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`${tab}-panel`).classList.add('active');
+}
+
+// Keyboard Shortcuts Modal
+function toggleShortcuts() {
+    const modal = document.getElementById('shortcuts-modal');
+    const overlay = document.getElementById('shortcuts-overlay');
+    modal.classList.toggle('active');
+    overlay.classList.toggle('active');
+}
+
+// Share Code
+function shareCode() {
+    const code = editor.getValue();
+    const encoded = btoa(encodeURIComponent(code));
+    const shareUrl = `${window.location.origin}/playground?code=${encoded}`;
+
+    navigator.clipboard.writeText(shareUrl).then(() => {
+        showNotification('Share link copied to clipboard!', 'success');
+    });
+}
+
+// Change Language
+function changeLanguage() {
+    const lang = document.getElementById('language-select').value;
+    const modes = {
+        'python': 'python',
+        'synapse': 'python',
+        'javascript': 'javascript'
+    };
+    editor.setOption('mode', modes[lang] || 'python');
+}
+
+// Load code from URL
+window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (code) {
+        try {
+            const decoded = decodeURIComponent(atob(code));
+            editor.setValue(decoded);
+        } catch (e) {
+            console.error('Failed to load code from URL');
+        }
+    }
+
+    // Show onboarding for first-time users
+    if (!localStorage.getItem('onboarding-completed')) {
+        setTimeout(() => {
+            document.getElementById('onboarding-1').classList.add('active');
+        }, 1000);
+    }
+});
+
+// Onboarding
+let onboardingStep = 0;
+function nextOnboarding() {
+    onboardingStep++;
+    document.getElementById('onboarding-1').classList.remove('active');
+    localStorage.setItem('onboarding-completed', 'true');
+}
+
+function skipOnboarding() {
+    document.getElementById('onboarding-1').classList.remove('active');
+    localStorage.setItem('onboarding-completed', 'true');
+}
+
+// Theme observer
+const themeObserver = new MutationObserver(() => {
+    const newTheme = document.documentElement.getAttribute('data-theme');
+    editor.setOption('theme', newTheme === 'dark' ? 'material-ocean' : 'default');
+});
+
+themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme']
+});
+</script>
+{% endblock %}

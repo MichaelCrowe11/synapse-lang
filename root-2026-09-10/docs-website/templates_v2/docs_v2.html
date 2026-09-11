@@ -1,0 +1,855 @@
+{% extends "base_v2.html" %}
+
+{% block title %}API Documentation - Synapse Language{% endblock %}
+
+{% block extra_css %}
+<style>
+    .docs-container {
+        display: grid;
+        grid-template-columns: 280px 1fr 250px;
+        gap: 0;
+        max-width: 1600px;
+        margin: 0 auto;
+        min-height: calc(100vh - 64px);
+    }
+
+    /* Left Sidebar - Navigation */
+    .docs-nav {
+        background: var(--bg-secondary);
+        border-right: 1px solid var(--border);
+        padding: 24px 0;
+        position: sticky;
+        top: 64px;
+        height: calc(100vh - 64px);
+        overflow-y: auto;
+    }
+
+    .nav-section {
+        margin-bottom: 24px;
+    }
+
+    .nav-section-title {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-tertiary);
+        padding: 0 24px;
+        margin-bottom: 8px;
+    }
+
+    .nav-item {
+        display: block;
+        padding: 8px 24px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 14px;
+        transition: var(--transition);
+        position: relative;
+    }
+
+    .nav-item:hover {
+        color: var(--text-primary);
+        background: var(--bg-tertiary);
+    }
+
+    .nav-item.active {
+        color: var(--text-primary);
+        background: var(--bg-tertiary);
+    }
+
+    .nav-item.active::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: var(--accent);
+    }
+
+    .nav-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        background: var(--accent);
+        color: white;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 600;
+        margin-left: 8px;
+    }
+
+    /* Main Content */
+    .docs-content {
+        padding: 48px;
+        max-width: 900px;
+    }
+
+    .docs-header {
+        margin-bottom: 48px;
+    }
+
+    .docs-title {
+        font-size: 48px;
+        font-weight: 700;
+        margin-bottom: 16px;
+        letter-spacing: -0.02em;
+    }
+
+    .docs-subtitle {
+        font-size: 20px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+
+    /* API Sections */
+    .api-section {
+        margin-bottom: 64px;
+    }
+
+    .api-section-title {
+        font-size: 32px;
+        font-weight: 600;
+        margin-bottom: 24px;
+        padding-top: 24px;
+    }
+
+    /* API Method Card */
+    .api-method {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        margin-bottom: 24px;
+        overflow: hidden;
+        transition: var(--transition);
+    }
+
+    .api-method:hover {
+        box-shadow: var(--shadow-md);
+    }
+
+    .api-method-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 20px;
+        background: var(--bg-tertiary);
+        cursor: pointer;
+    }
+
+    .api-method-badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-class { background: #e3f2fd; color: #1976d2; }
+    .badge-method { background: #f3e5f5; color: #7b1fa2; }
+    .badge-property { background: #e8f5e9; color: #388e3c; }
+    .badge-async { background: #fff3e0; color: #f57c00; }
+
+    .api-method-name {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--text-primary);
+        flex: 1;
+    }
+
+    .api-method-return {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        color: var(--text-tertiary);
+    }
+
+    .api-method-body {
+        padding: 20px;
+    }
+
+    .api-description {
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+
+    /* Parameters Table */
+    .params-table {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+
+    .params-table th {
+        text-align: left;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-tertiary);
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .params-table td {
+        padding: 12px 0;
+        font-size: 14px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .param-name {
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    .param-type {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        color: #7b1fa2;
+    }
+
+    .param-required {
+        display: inline-block;
+        padding: 2px 6px;
+        background: var(--error);
+        color: white;
+        border-radius: 3px;
+        font-size: 10px;
+        font-weight: 600;
+    }
+
+    .param-optional {
+        display: inline-block;
+        padding: 2px 6px;
+        background: var(--text-tertiary);
+        color: white;
+        border-radius: 3px;
+        font-size: 10px;
+        font-weight: 600;
+    }
+
+    /* Code Examples */
+    .code-example {
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+        margin: 20px 0;
+    }
+
+    .code-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        background: var(--bg-tertiary);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .code-language {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+    }
+
+    .code-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .code-button {
+        padding: 4px 8px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .code-button:hover {
+        background: var(--bg-primary);
+    }
+
+    .code-content {
+        padding: 16px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        line-height: 1.6;
+        overflow-x: auto;
+    }
+
+    /* Try It Section */
+    .try-it-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 24px;
+        margin: 24px 0;
+        color: white;
+    }
+
+    .try-it-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 16px;
+    }
+
+    .try-it-input {
+        width: 100%;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        color: white;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        margin-bottom: 16px;
+    }
+
+    .try-it-input::placeholder {
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    .try-it-button {
+        padding: 10px 20px;
+        background: white;
+        color: #667eea;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .try-it-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Right Sidebar - Table of Contents */
+    .docs-toc {
+        padding: 48px 24px;
+        position: sticky;
+        top: 64px;
+        height: calc(100vh - 64px);
+        overflow-y: auto;
+    }
+
+    .toc-title {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-tertiary);
+        margin-bottom: 16px;
+    }
+
+    .toc-list {
+        list-style: none;
+    }
+
+    .toc-item {
+        margin-bottom: 8px;
+    }
+
+    .toc-link {
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 13px;
+        display: block;
+        padding: 4px 0;
+        transition: var(--transition);
+        border-left: 2px solid transparent;
+        padding-left: 12px;
+    }
+
+    .toc-link:hover {
+        color: var(--text-primary);
+    }
+
+    .toc-link.active {
+        color: var(--accent);
+        border-left-color: var(--accent);
+    }
+
+    /* Search Results */
+    .search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-top: 8px;
+        max-height: 400px;
+        overflow-y: auto;
+        box-shadow: var(--shadow-lg);
+        display: none;
+    }
+
+    .search-results.active {
+        display: block;
+    }
+
+    .search-result {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .search-result:hover {
+        background: var(--bg-secondary);
+    }
+
+    .search-result-title {
+        font-weight: 500;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .search-result-path {
+        font-size: 12px;
+        color: var(--text-tertiary);
+    }
+
+    /* Responsive */
+    @media (max-width: 1280px) {
+        .docs-container {
+            grid-template-columns: 250px 1fr;
+        }
+
+        .docs-toc {
+            display: none;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .docs-container {
+            grid-template-columns: 1fr;
+        }
+
+        .docs-nav {
+            display: none;
+        }
+
+        .docs-content {
+            padding: 24px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="docs-container">
+    <!-- Left Sidebar -->
+    <nav class="docs-nav">
+        <div class="nav-section">
+            <div class="nav-section-title">Getting Started</div>
+            <a href="#quickstart" class="nav-item active">Quick Start</a>
+            <a href="#installation" class="nav-item">Installation</a>
+            <a href="#configuration" class="nav-item">Configuration</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Core Modules</div>
+            <a href="#quantum" class="nav-item">
+                Quantum Computing
+                <span class="nav-badge">8 APIs</span>
+            </a>
+            <a href="#type-inference" class="nav-item">Type Inference</a>
+            <a href="#collaboration" class="nav-item">Collaboration</a>
+            <a href="#distributed" class="nav-item">Distributed</a>
+            <a href="#ai" class="nav-item">AI Suggestions</a>
+            <a href="#blockchain" class="nav-item">Blockchain</a>
+            <a href="#visual" class="nav-item">Visual Programming</a>
+            <a href="#mobile" class="nav-item">Mobile Framework</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Advanced</div>
+            <a href="#plugins" class="nav-item">Plugins</a>
+            <a href="#extensions" class="nav-item">Extensions</a>
+            <a href="#performance" class="nav-item">Performance</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Resources</div>
+            <a href="#examples" class="nav-item">Examples</a>
+            <a href="#tutorials" class="nav-item">Tutorials</a>
+            <a href="#faq" class="nav-item">FAQ</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="docs-content">
+        <div class="docs-header">
+            <h1 class="docs-title">API Documentation</h1>
+            <p class="docs-subtitle">
+                Complete reference for Synapse Language v{{ metadata.version }} with interactive examples
+            </p>
+        </div>
+
+        <!-- Quantum Computing Section -->
+        <section class="api-section" id="quantum">
+            <h2 class="api-section-title">Quantum Computing</h2>
+
+            <!-- QuantumCircuit Class -->
+            <div class="api-method">
+                <div class="api-method-header" onclick="toggleMethod(this)">
+                    <span class="api-method-badge badge-class">CLASS</span>
+                    <span class="api-method-name">QuantumCircuit</span>
+                    <span class="api-method-return">→ Circuit</span>
+                </div>
+                <div class="api-method-body">
+                    <p class="api-description">
+                        Creates a quantum circuit with the specified number of qubits. This is the core class
+                        for building quantum algorithms in Synapse.
+                    </p>
+
+                    <table class="params-table">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <span class="param-name">num_qubits</span>
+                                    <span class="param-required">Required</span>
+                                </td>
+                                <td><span class="param-type">int</span></td>
+                                <td>Number of qubits in the circuit</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="code-language">Python</span>
+                            <div class="code-actions">
+                                <button class="code-button" onclick="copyCode(this)">Copy</button>
+                                <button class="code-button" onclick="runInPlayground(this)">Run</button>
+                            </div>
+                        </div>
+                        <div class="code-content">from synapse_lang.quantum_designer import QuantumCircuit
+
+# Create a 3-qubit circuit
+circuit = QuantumCircuit(3)
+
+# Add quantum gates
+circuit.add_gate("H", [0])      # Hadamard on qubit 0
+circuit.add_gate("CNOT", [0, 1])  # CNOT between 0 and 1
+circuit.add_gate("X", [2])      # Pauli-X on qubit 2
+
+print(f"Circuit has {circuit.num_qubits} qubits")
+print(f"Circuit has {len(circuit.gates)} gates")</div>
+                    </div>
+
+                    <div class="try-it-section">
+                        <div class="try-it-title">🚀 Try it now</div>
+                        <input type="text" class="try-it-input" placeholder="Enter number of qubits (e.g., 4)" id="try-qubits">
+                        <button class="try-it-button" onclick="tryAPI('quantum-circuit')">Create Circuit</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- add_gate Method -->
+            <div class="api-method">
+                <div class="api-method-header" onclick="toggleMethod(this)">
+                    <span class="api-method-badge badge-method">METHOD</span>
+                    <span class="api-method-name">add_gate</span>
+                    <span class="api-method-return">→ None</span>
+                </div>
+                <div class="api-method-body">
+                    <p class="api-description">
+                        Adds a quantum gate to the circuit at the specified qubit positions.
+                    </p>
+
+                    <table class="params-table">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <span class="param-name">gate_name</span>
+                                    <span class="param-required">Required</span>
+                                </td>
+                                <td><span class="param-type">str</span></td>
+                                <td>Name of the gate (H, X, Y, Z, CNOT, etc.)</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <span class="param-name">qubits</span>
+                                    <span class="param-required">Required</span>
+                                </td>
+                                <td><span class="param-type">List[int]</span></td>
+                                <td>Qubit indices for the gate</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <span class="param-name">params</span>
+                                    <span class="param-optional">Optional</span>
+                                </td>
+                                <td><span class="param-type">List[float]</span></td>
+                                <td>Parameters for parameterized gates</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="code-language">Python</span>
+                            <div class="code-actions">
+                                <button class="code-button" onclick="copyCode(this)">Copy</button>
+                                <button class="code-button" onclick="runInPlayground(this)">Run</button>
+                            </div>
+                        </div>
+                        <div class="code-content"># Single-qubit gates
+circuit.add_gate("H", [0])        # Hadamard
+circuit.add_gate("X", [1])        # Pauli-X
+circuit.add_gate("Y", [2])        # Pauli-Y
+circuit.add_gate("Z", [0])        # Pauli-Z
+
+# Two-qubit gates
+circuit.add_gate("CNOT", [0, 1])  # Control=0, Target=1
+circuit.add_gate("CZ", [1, 2])    # Controlled-Z
+
+# Parameterized gates
+circuit.add_gate("RX", [0], [np.pi/4])  # Rotation around X</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QuantumSimulator Class -->
+            <div class="api-method">
+                <div class="api-method-header" onclick="toggleMethod(this)">
+                    <span class="api-method-badge badge-class">CLASS</span>
+                    <span class="api-method-name">QuantumSimulator</span>
+                    <span class="api-method-return">→ Simulator</span>
+                </div>
+                <div class="api-method-body">
+                    <p class="api-description">
+                        Simulates quantum circuits and returns state vectors or measurement results.
+                    </p>
+
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="code-language">Python</span>
+                            <div class="code-actions">
+                                <button class="code-button" onclick="copyCode(this)">Copy</button>
+                                <button class="code-button" onclick="runInPlayground(this)">Run</button>
+                            </div>
+                        </div>
+                        <div class="code-content">from synapse_lang.quantum_designer import QuantumSimulator
+
+simulator = QuantumSimulator()
+
+# Simulate and get state vector
+state = simulator.simulate(circuit)
+print("State vector:", state)
+
+# Measure the circuit
+result = simulator.measure(circuit)
+print("Measurement:", result)
+
+# Multiple measurements
+shots = simulator.measure_shots(circuit, num_shots=1000)
+print("Statistics:", shots)</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Type Inference Section -->
+        <section class="api-section" id="type-inference">
+            <h2 class="api-section-title">Type Inference</h2>
+
+            <div class="api-method">
+                <div class="api-method-header" onclick="toggleMethod(this)">
+                    <span class="api-method-badge badge-class">CLASS</span>
+                    <span class="api-method-name">TypeInference</span>
+                    <span class="api-method-return">→ TypeSystem</span>
+                </div>
+                <div class="api-method-body">
+                    <p class="api-description">
+                        Hindley-Milner type inference system extended for scientific computing.
+                        Automatically infers types for variables, functions, and data structures.
+                    </p>
+
+                    <div class="code-example">
+                        <div class="code-header">
+                            <span class="code-language">Python</span>
+                            <div class="code-actions">
+                                <button class="code-button" onclick="copyCode(this)">Copy</button>
+                                <button class="code-button" onclick="runInPlayground(this)">Run</button>
+                            </div>
+                        </div>
+                        <div class="code-content">from synapse_lang.type_inference import TypeInference
+
+type_system = TypeInference()
+
+# Infer types for various values
+examples = {
+    "integer": 42,
+    "float": 3.14,
+    "string": "hello",
+    "list": [1, 2, 3],
+    "matrix": [[1, 2], [3, 4]],
+    "function": lambda x: x * 2,
+    "uncertain": "3.14 ± 0.01"
+}
+
+for name, value in examples.items():
+    inferred = type_system.infer(value)
+    print(f"{name}: {inferred}")</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Collaboration Section -->
+        <section class="api-section" id="collaboration">
+            <h2 class="api-section-title">Real-time Collaboration</h2>
+
+            <div class="api-method">
+                <div class="api-method-header" onclick="toggleMethod(this)">
+                    <span class="api-method-badge badge-class">CLASS</span>
+                    <span class="api-method-name">CollaborationManager</span>
+                    <span class="api-method-return">→ Manager</span>
+                </div>
+                <div class="api-method-body">
+                    <p class="api-description">
+                        Manages real-time collaborative editing sessions using Operational Transformation.
+                    </p>
+
+                    <table class="params-table">
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Returns</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="param-name">create_session</span></td>
+                                <td><span class="param-type">str</span></td>
+                                <td>Creates a new collaboration session</td>
+                            </tr>
+                            <tr>
+                                <td><span class="param-name">join_session</span></td>
+                                <td><span class="param-type">bool</span></td>
+                                <td>Join an existing session</td>
+                            </tr>
+                            <tr>
+                                <td><span class="param-name">apply_operation</span></td>
+                                <td><span class="param-type">bool</span></td>
+                                <td>Apply an edit operation</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Right Sidebar - Table of Contents -->
+    <aside class="docs-toc">
+        <div class="toc-title">On this page</div>
+        <ul class="toc-list">
+            <li class="toc-item">
+                <a href="#quantum" class="toc-link active">Quantum Computing</a>
+            </li>
+            <li class="toc-item">
+                <a href="#quantum-circuit" class="toc-link">QuantumCircuit</a>
+            </li>
+            <li class="toc-item">
+                <a href="#add-gate" class="toc-link">add_gate</a>
+            </li>
+            <li class="toc-item">
+                <a href="#quantum-simulator" class="toc-link">QuantumSimulator</a>
+            </li>
+            <li class="toc-item">
+                <a href="#type-inference" class="toc-link">Type Inference</a>
+            </li>
+            <li class="toc-item">
+                <a href="#collaboration" class="toc-link">Collaboration</a>
+            </li>
+        </ul>
+    </aside>
+</div>
+
+<script>
+function toggleMethod(header) {
+    const body = header.nextElementSibling;
+    const isOpen = body.style.display === 'block';
+    body.style.display = isOpen ? 'none' : 'block';
+}
+
+function copyCode(button) {
+    const codeContent = button.closest('.code-example').querySelector('.code-content');
+    navigator.clipboard.writeText(codeContent.textContent);
+
+    // Feedback
+    button.textContent = 'Copied!';
+    setTimeout(() => {
+        button.textContent = 'Copy';
+    }, 2000);
+}
+
+function runInPlayground(button) {
+    const code = button.closest('.code-example').querySelector('.code-content').textContent;
+    const encoded = btoa(code);
+    window.open(`/playground?code=${encoded}`, '_blank');
+}
+
+function tryAPI(api) {
+    const input = document.getElementById('try-qubits');
+    const value = input.value || '3';
+
+    // Show result
+    alert(`Created QuantumCircuit with ${value} qubits!`);
+}
+
+// Smooth scroll and highlight active section
+document.querySelectorAll('.toc-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = document.querySelector(link.getAttribute('href'));
+        target.scrollIntoView({ behavior: 'smooth' });
+
+        // Update active state
+        document.querySelectorAll('.toc-link').forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+    });
+});
+
+// Intersection Observer for active section
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const id = entry.target.id;
+            document.querySelectorAll('.toc-link').forEach(link => {
+                link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+            });
+        }
+    });
+}, { rootMargin: '-100px 0px -70% 0px' });
+
+document.querySelectorAll('.api-section').forEach(section => {
+    observer.observe(section);
+});
+</script>
+{% endblock %}

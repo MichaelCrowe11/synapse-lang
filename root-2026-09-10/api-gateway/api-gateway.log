@@ -1,0 +1,8 @@
+{"level":"info","message":"\n    ===================================\n    🚀 Synapse API Gateway Started\n    ===================================\n    Port: 4000\n    Environment: development\n    Services: 8\n    Redis: connecting\n    \n    Available endpoints:\n    - Health: http://localhost:4000/health\n    - Services: http://localhost:4000/api/gateway/services\n    - Usage: http://localhost:4000/api/gateway/usage\n    \n    Service routes:\n    - auth: http://localhost:4000/api/gateway/auth\n    - users: http://localhost:4000/api/gateway/users\n    - subscriptions: http://localhost:4000/api/gateway/subscriptions\n    - api-keys: http://localhost:4000/api/gateway/api-keys\n    - stripe: http://localhost:4000/api/gateway/stripe\n    - mcp: http://localhost:4000/api/gateway/mcp\n    - quantum: http://localhost:4000/api/gateway/quantum\n    - ai: http://localhost:4000/api/gateway/ai\n    ===================================\n  ","timestamp":"2025-09-13T22:41:32.228Z"}
+{"level":"warn","message":"Redis error:","timestamp":"2025-09-13T22:41:32.239Z"}
+{"level":"warn","message":"Redis connection failed, using in-memory fallback","timestamp":"2025-09-13T22:41:32.240Z"}
+{"level":"warn","message":"Redis error:","timestamp":"2025-09-13T22:41:32.293Z"}
+{"level":"warn","message":"Redis error:","timestamp":"2025-09-13T22:41:32.406Z"}
+{"level":"warn","message":"Redis error:","timestamp":"2025-09-13T22:41:32.565Z"}
+{"level":"info","message":"::1 - - [13/Sep/2025:22:49:14 +0000] \"GET /health HTTP/1.1\" 200 370 \"-\" \"curl/8.12.1\"","timestamp":"2025-09-13T22:49:14.512Z"}
+{"level":"info","message":"::1 - - [13/Sep/2025:22:50:17 +0000] \"GET /api/gateway/services HTTP/1.1\" 200 1490 \"-\" \"curl/8.12.1\"","timestamp":"2025-09-13T22:50:17.930Z"}

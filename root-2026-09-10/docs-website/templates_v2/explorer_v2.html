@@ -1,0 +1,933 @@
+{% extends "base_v2.html" %}
+
+{% block title %}Package Explorer - Synapse Language{% endblock %}
+
+{% block extra_css %}
+<style>
+    .explorer-container {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 0;
+        height: calc(100vh - 64px);
+        background: var(--bg-secondary);
+    }
+
+    /* Sidebar */
+    .explorer-sidebar {
+        background: var(--bg-primary);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .sidebar-header {
+        padding: 16px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .sidebar-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .sidebar-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .icon-button {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: var(--transition);
+        color: var(--text-secondary);
+    }
+
+    .icon-button:hover {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+    }
+
+    /* File Tree */
+    .file-tree {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px;
+    }
+
+    .tree-item {
+        user-select: none;
+        cursor: pointer;
+    }
+
+    .tree-item-content {
+        display: flex;
+        align-items: center;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: var(--transition);
+        color: var(--text-secondary);
+        font-size: 13px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .tree-item-content:hover {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+
+    .tree-item-content.selected {
+        background: var(--accent);
+        color: white;
+    }
+
+    .tree-icon {
+        width: 16px;
+        height: 16px;
+        margin-right: 8px;
+        flex-shrink: 0;
+    }
+
+    .tree-chevron {
+        width: 16px;
+        height: 16px;
+        margin-right: 4px;
+        transition: transform 0.2s;
+        color: var(--text-tertiary);
+    }
+
+    .tree-chevron.expanded {
+        transform: rotate(90deg);
+    }
+
+    .tree-children {
+        margin-left: 20px;
+        display: none;
+    }
+
+    .tree-children.expanded {
+        display: block;
+    }
+
+    /* File icons */
+    .file-icon-py { color: #3776ab; }
+    .file-icon-js { color: #f7df1e; }
+    .file-icon-json { color: #5a9e4b; }
+    .file-icon-md { color: #083fa1; }
+    .file-icon-yaml { color: #cb171e; }
+    .file-icon-folder { color: #90a4ae; }
+
+    /* Main Content */
+    .explorer-main {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* Tabs */
+    .editor-tabs {
+        display: flex;
+        background: var(--bg-primary);
+        border-bottom: 1px solid var(--border);
+        overflow-x: auto;
+        scrollbar-width: thin;
+    }
+
+    .editor-tab {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        background: none;
+        border: none;
+        border-right: 1px solid var(--border);
+        cursor: pointer;
+        white-space: nowrap;
+        font-size: 13px;
+        color: var(--text-secondary);
+        transition: var(--transition);
+        position: relative;
+    }
+
+    .editor-tab:hover {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+
+    .editor-tab.active {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+
+    .editor-tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--accent);
+    }
+
+    .tab-close {
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: var(--transition);
+    }
+
+    .tab-close:hover {
+        background: var(--bg-tertiary);
+    }
+
+    /* Editor */
+    .editor-container {
+        flex: 1;
+        background: var(--bg-secondary);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .editor-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 24px;
+        background: var(--bg-primary);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--text-secondary);
+    }
+
+    .breadcrumb-separator {
+        color: var(--text-tertiary);
+    }
+
+    .breadcrumb-item {
+        transition: var(--transition);
+    }
+
+    .breadcrumb-item:hover {
+        color: var(--text-primary);
+    }
+
+    .editor-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .editor-content {
+        flex: 1;
+        padding: 24px;
+        overflow: auto;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    /* Code highlighting */
+    .code-block {
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 20px;
+        overflow-x: auto;
+    }
+
+    .line-number {
+        display: inline-block;
+        width: 40px;
+        color: var(--text-tertiary);
+        text-align: right;
+        margin-right: 16px;
+        user-select: none;
+    }
+
+    .code-line {
+        white-space: pre;
+    }
+
+    /* Syntax highlighting */
+    .keyword { color: #c678dd; }
+    .string { color: #98c379; }
+    .comment { color: #5c6370; font-style: italic; }
+    .function { color: #61afef; }
+    .number { color: #d19a66; }
+    .class { color: #e5c07b; }
+
+    /* File Info */
+    .file-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 24px;
+        padding: 24px;
+        background: var(--bg-tertiary);
+        border-radius: 8px;
+        margin-bottom: 24px;
+    }
+
+    .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .info-label {
+        font-size: 12px;
+        color: var(--text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .info-value {
+        font-size: 14px;
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    /* Search Box */
+    .search-box {
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 8px 12px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 13px;
+        color: var(--text-primary);
+        outline: none;
+        transition: var(--transition);
+    }
+
+    .search-input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.1);
+    }
+
+    /* Welcome Screen */
+    .welcome-screen {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        padding: 48px;
+        text-align: center;
+    }
+
+    .welcome-icon {
+        font-size: 64px;
+        margin-bottom: 24px;
+        opacity: 0.5;
+    }
+
+    .welcome-title {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+    }
+
+    .welcome-text {
+        font-size: 14px;
+        max-width: 400px;
+        line-height: 1.6;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .explorer-container {
+            grid-template-columns: 1fr;
+        }
+
+        .explorer-sidebar {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="explorer-container">
+    <!-- Sidebar -->
+    <aside class="explorer-sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-title">EXPLORER</span>
+            <div class="sidebar-actions">
+                <button class="icon-button" title="New File">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 1H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7m-1 0V3L9 1m0 0v4h4"/>
+                    </svg>
+                </button>
+                <button class="icon-button" title="Refresh">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 8a7 7 0 1 1 4 6.33M1 8l3-3m-3 3l3 3"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="search-box">
+            <input type="text" class="search-input" placeholder="Search files..." id="file-search">
+        </div>
+
+        <!-- File Tree -->
+        <div class="file-tree" id="file-tree">
+            <!-- Root -->
+            <div class="tree-item">
+                <div class="tree-item-content" onclick="toggleFolder(this)">
+                    <svg class="tree-chevron expanded" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M6 6L14 10L6 14V6Z"/>
+                    </svg>
+                    <svg class="tree-icon file-icon-folder" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
+                    </svg>
+                    <span>synapse_lang</span>
+                </div>
+                <div class="tree-children expanded">
+                    <!-- Python files -->
+                    <div class="tree-item">
+                        <div class="tree-item-content" onclick="openFile('__init__.py', 'synapse_lang/__init__.py')">
+                            <span style="width: 20px;"></span>
+                            <svg class="tree-icon file-icon-py" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 4.804A3.804 3.804 0 005.196 8.608v1.196h3.804v.608H4.588a3.804 3.804 0 00-3.804 3.804v0a3.804 3.804 0 003.804 3.804h.608v-2.412a3.804 3.804 0 013.804-3.804h3.804a3.804 3.804 0 003.804-3.804V4.804A3.804 3.804 0 0012.804 1H9z"/>
+                            </svg>
+                            <span>__init__.py</span>
+                        </div>
+                    </div>
+
+                    <div class="tree-item">
+                        <div class="tree-item-content" onclick="openFile('quantum_designer.py', 'synapse_lang/quantum_designer.py')">
+                            <span style="width: 20px;"></span>
+                            <svg class="tree-icon file-icon-py" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 4.804A3.804 3.804 0 005.196 8.608v1.196h3.804v.608H4.588a3.804 3.804 0 00-3.804 3.804v0a3.804 3.804 0 003.804 3.804h.608v-2.412a3.804 3.804 0 013.804-3.804h3.804a3.804 3.804 0 003.804-3.804V4.804A3.804 3.804 0 0012.804 1H9z"/>
+                            </svg>
+                            <span>quantum_designer.py</span>
+                        </div>
+                    </div>
+
+                    <div class="tree-item">
+                        <div class="tree-item-content" onclick="openFile('type_inference.py', 'synapse_lang/type_inference.py')">
+                            <span style="width: 20px;"></span>
+                            <svg class="tree-icon file-icon-py" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 4.804A3.804 3.804 0 005.196 8.608v1.196h3.804v.608H4.588a3.804 3.804 0 00-3.804 3.804v0a3.804 3.804 0 003.804 3.804h.608v-2.412a3.804 3.804 0 013.804-3.804h3.804a3.804 3.804 0 003.804-3.804V4.804A3.804 3.804 0 0012.804 1H9z"/>
+                            </svg>
+                            <span>type_inference.py</span>
+                        </div>
+                    </div>
+
+                    <div class="tree-item">
+                        <div class="tree-item-content" onclick="openFile('collaboration.py', 'synapse_lang/collaboration.py')">
+                            <span style="width: 20px;"></span>
+                            <svg class="tree-icon file-icon-py" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 4.804A3.804 3.804 0 005.196 8.608v1.196h3.804v.608H4.588a3.804 3.804 0 00-3.804 3.804v0a3.804 3.804 0 003.804 3.804h.608v-2.412a3.804 3.804 0 013.804-3.804h3.804a3.804 3.804 0 003.804-3.804V4.804A3.804 3.804 0 0012.804 1H9z"/>
+                            </svg>
+                            <span>collaboration.py</span>
+                        </div>
+                    </div>
+
+                    <div class="tree-item">
+                        <div class="tree-item-content" onclick="openFile('distributed.py', 'synapse_lang/distributed.py')">
+                            <span style="width: 20px;"></span>
+                            <svg class="tree-icon file-icon-py" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 4.804A3.804 3.804 0 005.196 8.608v1.196h3.804v.608H4.588a3.804 3.804 0 00-3.804 3.804v0a3.804 3.804 0 003.804 3.804h.608v-2.412a3.804 3.804 0 013.804-3.804h3.804a3.804 3.804 0 003.804-3.804V4.804A3.804 3.804 0 0012.804 1H9z"/>
+                            </svg>
+                            <span>distributed.py</span>
+                        </div>
+                    </div>
+
+                    <div class="tree-item">
+                        <div class="tree-item-content" onclick="openFile('ai_suggestions.py', 'synapse_lang/ai_suggestions.py')">
+                            <span style="width: 20px;"></span>
+                            <svg class="tree-icon file-icon-py" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 4.804A3.804 3.804 0 005.196 8.608v1.196h3.804v.608H4.588a3.804 3.804 0 00-3.804 3.804v0a3.804 3.804 0 003.804 3.804h.608v-2.412a3.804 3.804 0 013.804-3.804h3.804a3.804 3.804 0 003.804-3.804V4.804A3.804 3.804 0 0012.804 1H9z"/>
+                            </svg>
+                            <span>ai_suggestions.py</span>
+                        </div>
+                    </div>
+
+                    <div class="tree-item">
+                        <div class="tree-item-content" onclick="openFile('blockchain.py', 'synapse_lang/blockchain.py')">
+                            <span style="width: 20px;"></span>
+                            <svg class="tree-icon file-icon-py" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 4.804A3.804 3.804 0 005.196 8.608v1.196h3.804v.608H4.588a3.804 3.804 0 00-3.804 3.804v0a3.804 3.804 0 003.804 3.804h.608v-2.412a3.804 3.804 0 013.804-3.804h3.804a3.804 3.804 0 003.804-3.804V4.804A3.804 3.804 0 0012.804 1H9z"/>
+                            </svg>
+                            <span>blockchain.py</span>
+                        </div>
+                    </div>
+
+                    <!-- Tests folder -->
+                    <div class="tree-item">
+                        <div class="tree-item-content" onclick="toggleFolder(this)">
+                            <svg class="tree-chevron" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M6 6L14 10L6 14V6Z"/>
+                            </svg>
+                            <svg class="tree-icon file-icon-folder" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
+                            </svg>
+                            <span>tests</span>
+                        </div>
+                        <div class="tree-children">
+                            <div class="tree-item">
+                                <div class="tree-item-content" onclick="openFile('test_quantum.py', 'tests/test_quantum.py')">
+                                    <span style="width: 40px;"></span>
+                                    <svg class="tree-icon file-icon-py" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9 4.804A3.804 3.804 0 005.196 8.608v1.196h3.804v.608H4.588a3.804 3.804 0 00-3.804 3.804v0a3.804 3.804 0 003.804 3.804h.608v-2.412a3.804 3.804 0 013.804-3.804h3.804a3.804 3.804 0 003.804-3.804V4.804A3.804 3.804 0 0012.804 1H9z"/>
+                                    </svg>
+                                    <span>test_quantum_designer.py</span>
+                                </div>
+                            </div>
+                            <div class="tree-item">
+                                <div class="tree-item-content" onclick="openFile('test_all.py', 'tests/test_all.py')">
+                                    <span style="width: 40px;"></span>
+                                    <svg class="tree-icon file-icon-py" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9 4.804A3.804 3.804 0 005.196 8.608v1.196h3.804v.608H4.588a3.804 3.804 0 00-3.804 3.804v0a3.804 3.804 0 003.804 3.804h.608v-2.412a3.804 3.804 0 013.804-3.804h3.804a3.804 3.804 0 003.804-3.804V4.804A3.804 3.804 0 0012.804 1H9z"/>
+                                    </svg>
+                                    <span>test_all.py</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Config files -->
+            <div class="tree-item">
+                <div class="tree-item-content" onclick="openFile('setup.py', 'setup.py')">
+                    <svg class="tree-icon file-icon-py" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 4.804A3.804 3.804 0 005.196 8.608v1.196h3.804v.608H4.588a3.804 3.804 0 00-3.804 3.804v0a3.804 3.804 0 003.804 3.804h.608v-2.412a3.804 3.804 0 013.804-3.804h3.804a3.804 3.804 0 003.804-3.804V4.804A3.804 3.804 0 0012.804 1H9z"/>
+                    </svg>
+                    <span>setup.py</span>
+                </div>
+            </div>
+
+            <div class="tree-item">
+                <div class="tree-item-content" onclick="openFile('package.json', 'package.json')">
+                    <svg class="tree-icon file-icon-json" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4z"/>
+                    </svg>
+                    <span>package.json</span>
+                </div>
+            </div>
+
+            <div class="tree-item">
+                <div class="tree-item-content" onclick="openFile('README.md', 'README.md')">
+                    <svg class="tree-icon file-icon-md" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4z"/>
+                    </svg>
+                    <span>README.md</span>
+                </div>
+            </div>
+
+            <div class="tree-item">
+                <div class="tree-item-content" onclick="openFile('Dockerfile', 'Dockerfile')">
+                    <svg class="tree-icon" style="color: #0db7ed;" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4z"/>
+                    </svg>
+                    <span>Dockerfile</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="explorer-main">
+        <!-- Tabs -->
+        <div class="editor-tabs" id="editor-tabs">
+            <!-- Tabs will be added dynamically -->
+        </div>
+
+        <!-- Editor -->
+        <div class="editor-container">
+            <div id="welcome" class="welcome-screen">
+                <div class="welcome-icon">📁</div>
+                <h2 class="welcome-title">Package Explorer</h2>
+                <p class="welcome-text">
+                    Browse the Synapse Language source code.
+                    Click on any file in the explorer to view its contents.
+                </p>
+            </div>
+
+            <div id="file-viewer" style="display: none;">
+                <div class="editor-header">
+                    <div class="breadcrumb" id="breadcrumb">
+                        <span class="breadcrumb-item">synapse_lang</span>
+                    </div>
+                    <div class="editor-actions">
+                        <button class="icon-button" title="Copy" onclick="copyFile()">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="5" y="5" width="10" height="10" rx="1"/>
+                                <path d="M3 10V3h7"/>
+                            </svg>
+                        </button>
+                        <button class="icon-button" title="Download" onclick="downloadFile()">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M8 2v10m0 0l-3-3m3 3l3-3M3 14h10"/>
+                            </svg>
+                        </button>
+                        <button class="icon-button" title="Open in GitHub" onclick="openInGitHub()">
+                            <svg width="16" height="16" fill="currentColor">
+                                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="editor-content">
+                    <div class="file-info" id="file-info">
+                        <div class="info-item">
+                            <span class="info-label">File Size</span>
+                            <span class="info-value" id="file-size">--</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Lines</span>
+                            <span class="info-value" id="file-lines">--</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Language</span>
+                            <span class="info-value" id="file-language">--</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Last Modified</span>
+                            <span class="info-value" id="file-modified">--</span>
+                        </div>
+                    </div>
+
+                    <div class="code-block" id="code-content">
+                        <!-- Code content will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+let openTabs = [];
+let activeTab = null;
+let currentFile = null;
+
+// Sample file contents (in production, fetch from API)
+const fileContents = {
+    '__init__.py': `"""
+Synapse Language - Revolutionary Scientific Programming
+Version: 2.3.2
+"""
+
+__version__ = "2.3.2"
+__author__ = "Michael Benjamin Crowe"
+__email__ = "michael@crowelogic.com"
+
+# Import core modules
+from .type_inference import TypeInference
+from .quantum_designer import QuantumCircuit, QuantumSimulator
+from .collaboration import CollaborationManager
+from .distributed import DistributedComputing
+from .ai_suggestions import AISuggestions
+from .blockchain import BlockchainVerifier
+from .visual_programming import VisualProgrammingInterface
+from .mobile_framework import MobileApp
+
+__all__ = [
+    'TypeInference',
+    'QuantumCircuit',
+    'QuantumSimulator',
+    'CollaborationManager',
+    'DistributedComputing',
+    'AISuggestions',
+    'BlockchainVerifier',
+    'VisualProgrammingInterface',
+    'MobileApp'
+]`,
+    'quantum_designer.py': `"""
+Quantum Circuit Designer for Synapse Language
+Visual quantum circuit creation and simulation
+"""
+
+from typing import List, Dict, Optional, Tuple, Any
+import numpy as np
+import cmath
+
+class QuantumCircuit:
+    """Visual quantum circuit builder"""
+
+    def __init__(self, num_qubits: int):
+        self.num_qubits = num_qubits
+        self.gates = []
+        self.measurements = []
+
+    def add_gate(self, gate_name: str, qubits: List[int], params: Optional[List[float]] = None):
+        """Add a quantum gate to the circuit"""
+        if max(qubits) >= self.num_qubits:
+            raise ValueError(f"Qubit index out of range")
+
+        gate = {
+            "name": gate_name,
+            "qubits": qubits,
+            "params": params or []
+        }
+        self.gates.append(gate)
+
+    def measure(self, qubit: int, classical_bit: int):
+        """Add measurement operation"""
+        self.measurements.append((qubit, classical_bit))`,
+    'README.md': `# 🧠 Synapse Language
+
+Revolutionary scientific programming with quantum computing, AI assistance, and blockchain verification.
+
+## Features
+
+- ⚛️ **Quantum Computing** - Visual circuit designer with simulation
+- 🔍 **Type Inference** - Hindley-Milner type system for scientific computing
+- 🤖 **AI Assistance** - Context-aware code suggestions
+- 👥 **Real-time Collaboration** - Operational transformation
+- 🌐 **Distributed Computing** - Built-in MapReduce
+- 🔐 **Blockchain Verification** - Cryptographic code verification
+- 🎨 **Visual Programming** - Node-based interface
+- 📱 **Mobile Framework** - Cross-platform development
+
+## Installation
+
+\`\`\`bash
+pip install synapse_lang
+\`\`\`
+
+## Quick Start
+
+\`\`\`python
+from synapse_lang.quantum_designer import QuantumCircuit, QuantumSimulator
+
+# Create Bell state
+circuit = QuantumCircuit(2)
+circuit.add_gate("H", [0])
+circuit.add_gate("CNOT", [0, 1])
+
+# Simulate
+simulator = QuantumSimulator()
+result = simulator.simulate(circuit)
+print(f"Quantum state: {result}")
+\`\`\``
+};
+
+function toggleFolder(element) {
+    const chevron = element.querySelector('.tree-chevron');
+    const children = element.parentElement.querySelector('.tree-children');
+
+    if (children) {
+        chevron.classList.toggle('expanded');
+        children.classList.toggle('expanded');
+    }
+}
+
+function openFile(filename, filepath) {
+    // Remove previous selection
+    document.querySelectorAll('.tree-item-content').forEach(item => {
+        item.classList.remove('selected');
+    });
+
+    // Select current item
+    event.target.closest('.tree-item-content').classList.add('selected');
+
+    // Hide welcome, show editor
+    document.getElementById('welcome').style.display = 'none';
+    document.getElementById('file-viewer').style.display = 'block';
+
+    // Update breadcrumb
+    const parts = filepath.split('/');
+    const breadcrumb = parts.map((part, index) => {
+        if (index < parts.length - 1) {
+            return `<span class="breadcrumb-item">${part}</span><span class="breadcrumb-separator">/</span>`;
+        }
+        return `<span class="breadcrumb-item" style="color: var(--text-primary);">${part}</span>`;
+    }).join('');
+    document.getElementById('breadcrumb').innerHTML = breadcrumb;
+
+    // Add tab if not already open
+    if (!openTabs.find(t => t.file === filename)) {
+        addTab(filename, filepath);
+    }
+
+    // Set active tab
+    setActiveTab(filename);
+
+    // Load file content
+    loadFileContent(filename);
+
+    currentFile = { name: filename, path: filepath };
+}
+
+function addTab(filename, filepath) {
+    const tab = { file: filename, path: filepath };
+    openTabs.push(tab);
+
+    const tabElement = document.createElement('button');
+    tabElement.className = 'editor-tab';
+    tabElement.innerHTML = `
+        <svg class="tree-icon ${getFileIconClass(filename)}" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9 4.804A3.804 3.804 0 005.196 8.608v1.196h3.804v.608H4.588a3.804 3.804 0 00-3.804 3.804v0a3.804 3.804 0 003.804 3.804h.608v-2.412a3.804 3.804 0 013.804-3.804h3.804a3.804 3.804 0 003.804-3.804V4.804A3.804 3.804 0 0012.804 1H9z"/>
+        </svg>
+        <span>${filename}</span>
+        <div class="tab-close" onclick="closeTab('${filename}', event)">×</div>
+    `;
+    tabElement.onclick = () => setActiveTab(filename);
+
+    document.getElementById('editor-tabs').appendChild(tabElement);
+}
+
+function setActiveTab(filename) {
+    activeTab = filename;
+
+    // Update tab styles
+    document.querySelectorAll('.editor-tab').forEach((tab, index) => {
+        if (openTabs[index] && openTabs[index].file === filename) {
+            tab.classList.add('active');
+        } else {
+            tab.classList.remove('active');
+        }
+    });
+
+    loadFileContent(filename);
+}
+
+function closeTab(filename, event) {
+    event.stopPropagation();
+
+    const index = openTabs.findIndex(t => t.file === filename);
+    if (index > -1) {
+        openTabs.splice(index, 1);
+
+        // Remove tab element
+        const tabs = document.querySelectorAll('.editor-tab');
+        tabs[index].remove();
+
+        // If closing active tab, switch to another
+        if (activeTab === filename) {
+            if (openTabs.length > 0) {
+                setActiveTab(openTabs[0].file);
+            } else {
+                document.getElementById('welcome').style.display = 'flex';
+                document.getElementById('file-viewer').style.display = 'none';
+                activeTab = null;
+            }
+        }
+    }
+}
+
+function loadFileContent(filename) {
+    const content = fileContents[filename.replace('.py', '').replace('.md', '')] || '// File content not available in demo';
+
+    // Syntax highlighting (basic)
+    const lines = content.split('\n');
+    const highlighted = lines.map((line, index) => {
+        const lineNumber = `<span class="line-number">${index + 1}</span>`;
+
+        // Basic syntax highlighting
+        let highlightedLine = line
+            .replace(/"""[^"]*"""/g, '<span class="string">$&</span>')
+            .replace(/'[^']*'/g, '<span class="string">$&</span>')
+            .replace(/"[^"]*"/g, '<span class="string">$&</span>')
+            .replace(/#.*/g, '<span class="comment">$&</span>')
+            .replace(/\b(def|class|import|from|return|if|else|for|while|try|except|with|as|raise|pass|break|continue)\b/g, '<span class="keyword">$&</span>')
+            .replace(/\b(True|False|None)\b/g, '<span class="keyword">$&</span>')
+            .replace(/\b(\d+)\b/g, '<span class="number">$&</span>');
+
+        return `${lineNumber}<span class="code-line">${highlightedLine}</span>`;
+    }).join('\n');
+
+    document.getElementById('code-content').innerHTML = `<pre>${highlighted}</pre>`;
+
+    // Update file info
+    document.getElementById('file-size').textContent = `${(content.length / 1024).toFixed(2)} KB`;
+    document.getElementById('file-lines').textContent = lines.length;
+    document.getElementById('file-language').textContent = getLanguageFromFilename(filename);
+    document.getElementById('file-modified').textContent = '2 days ago';
+}
+
+function getFileIconClass(filename) {
+    if (filename.endsWith('.py')) return 'file-icon-py';
+    if (filename.endsWith('.js')) return 'file-icon-js';
+    if (filename.endsWith('.json')) return 'file-icon-json';
+    if (filename.endsWith('.md')) return 'file-icon-md';
+    if (filename.endsWith('.yaml') || filename.endsWith('.yml')) return 'file-icon-yaml';
+    return '';
+}
+
+function getLanguageFromFilename(filename) {
+    if (filename.endsWith('.py')) return 'Python';
+    if (filename.endsWith('.js')) return 'JavaScript';
+    if (filename.endsWith('.json')) return 'JSON';
+    if (filename.endsWith('.md')) return 'Markdown';
+    if (filename.endsWith('.yaml') || filename.endsWith('.yml')) return 'YAML';
+    return 'Text';
+}
+
+function copyFile() {
+    const content = fileContents[activeTab.replace('.py', '').replace('.md', '')] || '';
+    navigator.clipboard.writeText(content);
+
+    // Show feedback
+    event.target.closest('.icon-button').style.background = 'var(--success)';
+    setTimeout(() => {
+        event.target.closest('.icon-button').style.background = '';
+    }, 1000);
+}
+
+function downloadFile() {
+    if (!currentFile) return;
+
+    const content = fileContents[activeTab.replace('.py', '').replace('.md', '')] || '';
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = currentFile.name;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function openInGitHub() {
+    if (!currentFile) return;
+    window.open(`https://github.com/michaelcrowe11/synapse-lang/blob/main/${currentFile.path}`, '_blank');
+}
+
+// File search
+document.getElementById('file-search')?.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase();
+    document.querySelectorAll('.tree-item-content').forEach(item => {
+        const filename = item.textContent.toLowerCase();
+        if (filename.includes(query)) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

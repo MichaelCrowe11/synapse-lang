@@ -1,0 +1,351 @@
+{
+  "algorithm": "bayesian",
+  "objective": "minimize",
+  "max_trials": 20,
+  "trials_completed": 20,
+  "search_space": {
+    "learning_rate": {
+      "type": "float",
+      "min_val": 0.0001,
+      "max_val": 0.01,
+      "values": null
+    },
+    "batch_size": {
+      "type": "int",
+      "min_val": 16,
+      "max_val": 128,
+      "values": null
+    },
+    "hidden_units": {
+      "type": "int",
+      "min_val": 64,
+      "max_val": 256,
+      "values": null
+    },
+    "num_layers": {
+      "type": "int",
+      "min_val": 2,
+      "max_val": 4,
+      "values": null
+    },
+    "dropout_rate": {
+      "type": "float",
+      "min_val": 0.1,
+      "max_val": 0.5,
+      "values": null
+    },
+    "activation": {
+      "type": "categorical",
+      "min_val": null,
+      "max_val": null,
+      "values": [
+        "relu",
+        "gelu",
+        "swish"
+      ]
+    }
+  },
+  "optimization_history": [
+    {
+      "trial_id": 0,
+      "parameters": {
+        "learning_rate": 0.0037537915941823095,
+        "batch_size": 126,
+        "hidden_units": 69,
+        "num_layers": 4,
+        "dropout_rate": 0.40146657178033374,
+        "activation": "relu"
+      },
+      "objective_value": null,
+      "metrics": {},
+      "duration": null,
+      "status": "failed"
+    },
+    {
+      "trial_id": 1,
+      "parameters": {
+        "learning_rate": 0.006578399518202174,
+        "batch_size": 98,
+        "hidden_units": 172,
+        "num_layers": 4,
+        "dropout_rate": 0.2385708170262166,
+        "activation": "gelu"
+      },
+      "objective_value": null,
+      "metrics": {},
+      "duration": null,
+      "status": "failed"
+    },
+    {
+      "trial_id": 2,
+      "parameters": {
+        "learning_rate": 0.0036938052433017924,
+        "batch_size": 72,
+        "hidden_units": 246,
+        "num_layers": 2,
+        "dropout_rate": 0.27892655619881346,
+        "activation": "gelu"
+      },
+      "objective_value": null,
+      "metrics": {},
+      "duration": null,
+      "status": "failed"
+    },
+    {
+      "trial_id": 3,
+      "parameters": {
+        "learning_rate": 0.0013821620741666797,
+        "batch_size": 39,
+        "hidden_units": 175,
+        "num_layers": 2,
+        "dropout_rate": 0.4381505821248177,
+        "activation": "swish"
+      },
+      "objective_value": null,
+      "metrics": {},
+      "duration": null,
+      "status": "failed"
+    },
+    {
+      "trial_id": 4,
+      "parameters": {
+        "learning_rate": 0.006698928367661089,
+        "batch_size": 19,
+        "hidden_units": 231,
+        "num_layers": 2,
+        "dropout_rate": 0.4572182602694884,
+        "activation": "swish"
+      },
+      "objective_value": null,
+      "metrics": {},
+      "duration": null,
+      "status": "failed"
+    },
+    {
+      "trial_id": 5,
+      "parameters": {
+        "learning_rate": 0.001991358512878506,
+        "batch_size": 121,
+        "hidden_units": 212,
+        "num_layers": 4,
+        "dropout_rate": 0.1870854874875752,
+        "activation": "gelu"
+      },
+      "objective_value": null,
+      "metrics": {},
+      "duration": null,
+      "status": "failed"
+    },
+    {
+      "trial_id": 6,
+      "parameters": {
+        "learning_rate": 0.007214295269892813,
+        "batch_size": 92,
+        "hidden_units": 94,
+        "num_layers": 2,
+        "dropout_rate": 0.44833053152894276,
+        "activation": "relu"
+      },
+      "objective_value": null,
+      "metrics": {},
+      "duration": null,
+      "status": "failed"
+    },
+    {
+      "trial_id": 7,
+      "parameters": {
+        "learning_rate": 0.0017728682786021955,
+        "batch_size": 122,
+        "hidden_units": 233,
+        "num_layers": 4,
+        "dropout_rate": 0.24888587664468279,
+        "activation": "relu"
+      },
+      "objective_value": null,
+      "metrics": {},
+      "duration": null,
+      "status": "failed"
+    },
+    {
+      "trial_id": 8,
+      "parameters": {
+        "learning_rate": 0.0010905526240367466,
+        "batch_size": 28,
+        "hidden_units": 121,
+        "num_layers": 4,
+        "dropout_rate": 0.25569253731201813,
+        "activation": "swish"
+      },
+      "objective_value": null,
+      "metrics": {},
+      "duration": null,
+      "status": "failed"
+    },
+    {
+      "trial_id": 9,
+      "parameters": {
+        "learning_rate": 0.0021087658317517285,
+        "batch_size": 54,
+        "hidden_units": 152,
+        "num_layers": 3,
+        "dropout_rate": 0.4630194976854647,
+        "activation": "relu"
+      },
+      "objective_value": null,
+      "metrics": {},
+      "duration": null,
+      "status": "failed"
+    },
+    {
+      "trial_id": 10,
+      "parameters": {
+        "learning_rate": 0.006065180343785735,
+        "batch_size": 60,
+        "hidden_units": 241,
+        "num_layers": 4,
+        "dropout_rate": 0.10365877286251615,
+        "activation": "swish"
+      },
+      "objective_value": null,
+      "metrics": {},
+      "duration": null,
+      "status": "failed"
+    },
+    {
+      "trial_id": 11,
+      "parameters": {
+        "learning_rate": 0.00020217556504869915,
+        "batch_size": 53,
+        "hidden_units": 192,
+        "num_layers": 4,
+        "dropout_rate": 0.41696353903542926,
+        "activation": "swish"
+      },
+      "objective_value": null,
+      "metrics": {},
+      "duration": null,
+      "status": "failed"
+    },
+    {
+      "trial_id": 12,
+      "parameters": {
+        "learning_rate": 0.008905476254530533,
+        "batch_size": 64,
+        "hidden_units": 214,
+        "num_layers": 4,
+        "dropout_rate": 0.34883021453525864,
+        "activation": "relu"
+      },
+      "objective_value": null,
+      "metrics": {},
+      "duration": null,
+      "status": "failed"
+    },
+    {
+      "trial_id": 13,
+      "parameters": {
+        "learning_rate": 0.0036630062031577045,
+        "batch_size": 124,
+        "hidden_units": 176,
+        "num_layers": 2,
+        "dropout_rate": 0.3261849700764595,
+        "activation": "relu"
+      },
+      "objective_value": null,
+      "metrics": {},
+      "duration": null,
+      "status": "failed"
+    },
+    {
+      "trial_id": 14,
+      "parameters": {
+        "learning_rate": 0.0073328934559903445,
+        "batch_size": 117,
+        "hidden_units": 137,
+        "num_layers": 4,
+        "dropout_rate": 0.26680047428127707,
+        "activation": "swish"
+      },
+      "objective_value": null,
+      "metrics": {},
+      "duration": null,
+      "status": "failed"
+    },
+    {
+      "trial_id": 15,
+      "parameters": {
+        "learning_rate": 0.002451386768528733,
+        "batch_size": 68,
+        "hidden_units": 71,
+        "num_layers": 4,
+        "dropout_rate": 0.26270610724558097,
+        "activation": "relu"
+      },
+      "objective_value": null,
+      "metrics": {},
+      "duration": null,
+      "status": "failed"
+    },
+    {
+      "trial_id": 16,
+      "parameters": {
+        "learning_rate": 0.0002723618636398675,
+        "batch_size": 59,
+        "hidden_units": 114,
+        "num_layers": 4,
+        "dropout_rate": 0.45367267947472767,
+        "activation": "swish"
+      },
+      "objective_value": null,
+      "metrics": {},
+      "duration": null,
+      "status": "failed"
+    },
+    {
+      "trial_id": 17,
+      "parameters": {
+        "learning_rate": 0.0031196378782376672,
+        "batch_size": 62,
+        "hidden_units": 191,
+        "num_layers": 4,
+        "dropout_rate": 0.14221707518690968,
+        "activation": "gelu"
+      },
+      "objective_value": null,
+      "metrics": {},
+      "duration": null,
+      "status": "failed"
+    },
+    {
+      "trial_id": 18,
+      "parameters": {
+        "learning_rate": 0.00030617785027378544,
+        "batch_size": 56,
+        "hidden_units": 215,
+        "num_layers": 3,
+        "dropout_rate": 0.19257118272129592,
+        "activation": "swish"
+      },
+      "objective_value": null,
+      "metrics": {},
+      "duration": null,
+      "status": "failed"
+    },
+    {
+      "trial_id": 19,
+      "parameters": {
+        "learning_rate": 0.003889653403770066,
+        "batch_size": 91,
+        "hidden_units": 247,
+        "num_layers": 3,
+        "dropout_rate": 0.2031187243518521,
+        "activation": "gelu"
+      },
+      "objective_value": null,
+      "metrics": {},
+      "duration": null,
+      "status": "failed"
+    }
+  ],
+  "best_trial": null
+}

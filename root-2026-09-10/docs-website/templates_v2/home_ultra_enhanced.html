@@ -1,0 +1,604 @@
+{% extends "base_enhanced.html" %}
+
+{% block title %}Synapse Language - Quantum Computing for Everyone{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Hero Section - Enhanced Visual Hierarchy */
+    .hero-section {
+        min-height: 85vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 40px 20px;
+        position: relative;
+    }
+
+    .hero-content {
+        max-width: 900px;
+        animation: fadeInUp 1s ease;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(40px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: linear-gradient(135deg, #5B47E0 0%, #7C67EF 100%);
+        color: white;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        border-radius: 50px;
+        margin-bottom: 32px;
+        box-shadow: 0 4px 20px rgba(91, 71, 224, 0.3);
+        animation: pulse 3s ease infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .hero-title {
+        font-size: clamp(48px, 10vw, 86px);
+        font-weight: 900;
+        line-height: 1.1;
+        margin-bottom: 24px;
+        letter-spacing: -0.03em;
+        background: linear-gradient(135deg, #000 0%, #5B47E0 50%, #7C67EF 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        background-size: 200% auto;
+        animation: gradientSlide 6s ease infinite;
+    }
+
+    [data-theme="dark"] .hero-title {
+        background: linear-gradient(135deg, #fff 0%, #a89bff 50%, #7C67EF 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    @keyframes gradientSlide {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+    }
+
+    .hero-subtitle {
+        font-size: clamp(18px, 3vw, 24px);
+        line-height: 1.6;
+        color: #666;
+        margin-bottom: 48px;
+        font-weight: 400;
+    }
+
+    [data-theme="dark"] .hero-subtitle {
+        color: #a0a0a0;
+    }
+
+    .hero-cta {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-bottom: 48px;
+    }
+
+    .cta-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 32px;
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: 12px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .cta-button.primary {
+        background: linear-gradient(135deg, #5B47E0 0%, #7C67EF 100%);
+        color: white;
+        box-shadow: 0 4px 20px rgba(91, 71, 224, 0.4);
+    }
+
+    .cta-button.primary:hover {
+        box-shadow: 0 8px 30px rgba(91, 71, 224, 0.5);
+        transform: translateY(-2px);
+    }
+
+    .cta-button.secondary {
+        background: white;
+        color: #000;
+        border: 2px solid #e0e0e0;
+    }
+
+    [data-theme="dark"] .cta-button.secondary {
+        background: #1a1a1a;
+        color: #fff;
+        border-color: #333;
+    }
+
+    .cta-button.secondary:hover {
+        border-color: #5B47E0;
+        box-shadow: 0 4px 20px rgba(91, 71, 224, 0.2);
+        transform: translateY(-2px);
+    }
+
+    /* Quick Stats */
+    .quick-stats {
+        display: flex;
+        justify-content: center;
+        gap: 48px;
+        flex-wrap: wrap;
+        padding: 24px;
+        opacity: 0.8;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 32px;
+        font-weight: 800;
+        color: #5B47E0;
+        display: block;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #666;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    [data-theme="dark"] .stat-label {
+        color: #a0a0a0;
+    }
+
+    /* Features Section with Better Hierarchy */
+    .features-section {
+        padding: 120px 40px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .section-header {
+        text-align: center;
+        margin-bottom: 80px;
+    }
+
+    .section-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        background: rgba(91, 71, 224, 0.1);
+        color: #5B47E0;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        border-radius: 6px;
+        margin-bottom: 16px;
+    }
+
+    .section-title {
+        font-size: clamp(36px, 6vw, 56px);
+        font-weight: 900;
+        margin-bottom: 16px;
+        color: #000;
+        letter-spacing: -0.02em;
+    }
+
+    [data-theme="dark"] .section-title {
+        color: #fff;
+    }
+
+    .section-description {
+        font-size: 20px;
+        color: #666;
+        max-width: 700px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    [data-theme="dark"] .section-description {
+        color: #a0a0a0;
+    }
+
+    /* Features Grid - Improved Design */
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 32px;
+    }
+
+    .feature-card {
+        background: white;
+        border: 2px solid #f0f0f0;
+        border-radius: 16px;
+        padding: 40px 32px;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    [data-theme="dark"] .feature-card {
+        background: #1a1a1a;
+        border-color: #2a2a2a;
+    }
+
+    .feature-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #5B47E0, #7C67EF);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.4s ease;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-8px);
+        border-color: #5B47E0;
+        box-shadow: 0 20px 60px rgba(91, 71, 224, 0.15);
+    }
+
+    .feature-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .feature-icon {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, #5B47E0 0%, #7C67EF 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 20px rgba(91, 71, 224, 0.3);
+    }
+
+    .feature-title {
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 12px;
+        color: #000;
+    }
+
+    [data-theme="dark"] .feature-title {
+        color: #fff;
+    }
+
+    .feature-description {
+        font-size: 15px;
+        line-height: 1.7;
+        color: #666;
+    }
+
+    [data-theme="dark"] .feature-description {
+        color: #a0a0a0;
+    }
+
+    /* Code Example Section */
+    .code-example-section {
+        padding: 120px 40px;
+        background: #f8f9fa;
+    }
+
+    [data-theme="dark"] .code-example-section {
+        background: #0a0a0a;
+    }
+
+    .code-example-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 60px;
+        align-items: center;
+    }
+
+    .code-example-content h2 {
+        font-size: 42px;
+        font-weight: 900;
+        margin-bottom: 20px;
+        color: #000;
+    }
+
+    [data-theme="dark"] .code-example-content h2 {
+        color: #fff;
+    }
+
+    .code-example-content p {
+        font-size: 18px;
+        color: #666;
+        line-height: 1.7;
+        margin-bottom: 32px;
+    }
+
+    [data-theme="dark"] .code-example-content p {
+        color: #a0a0a0;
+    }
+
+    .code-demo {
+        background: #1e1e1e;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        border: 1px solid #333;
+    }
+
+    .code-demo pre {
+        color: #d4d4d4;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 14px;
+        line-height: 1.6;
+        margin: 0;
+        overflow-x: auto;
+    }
+
+    .code-demo .keyword { color: #569cd6; }
+    .code-demo .string { color: #ce9178; }
+    .code-demo .function { color: #dcdcaa; }
+    .code-demo .comment { color: #6a9955; }
+    .code-demo .number { color: #b5cea8; }
+
+    /* CTA Section */
+    .cta-section {
+        padding: 120px 40px;
+        text-align: center;
+        background: linear-gradient(135deg, #5B47E0 0%, #7C67EF 100%);
+        color: white;
+    }
+
+    .cta-section h2 {
+        font-size: clamp(36px, 6vw, 56px);
+        font-weight: 900;
+        margin-bottom: 20px;
+    }
+
+    .cta-section p {
+        font-size: 20px;
+        opacity: 0.95;
+        margin-bottom: 40px;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .cta-section .cta-button.secondary {
+        background: white;
+        color: #5B47E0;
+        border: none;
+    }
+
+    .cta-section .cta-button.secondary:hover {
+        background: #f0f0f0;
+        transform: translateY(-2px);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .code-example-container {
+            grid-template-columns: 1fr;
+            gap: 40px;
+        }
+
+        .quick-stats {
+            gap: 24px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+        }
+
+        .features-grid {
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="hero-content">
+        <div class="hero-badge">
+            <span>✨</span>
+            <span>v{{ metadata.version }} • PRODUCTION READY</span>
+        </div>
+
+        <h1 class="hero-title">
+            Quantum Computing<br>Made Accessible
+        </h1>
+
+        <p class="hero-subtitle">
+            A powerful scientific computing platform combining quantum circuits,
+            uncertainty quantification, and distributed processing—all in your browser.
+        </p>
+
+        <div class="hero-cta">
+            <a href="/playground" class="cta-button primary">
+                <svg fill="currentColor" viewBox="0 0 16 16" width="20" height="20">
+                    <path d="M5 3l9 5-9 5V3z"/>
+                </svg>
+                Try Playground
+            </a>
+            <a href="/docs" class="cta-button secondary">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                </svg>
+                Read Docs
+            </a>
+        </div>
+
+        <div class="quick-stats">
+            <div class="stat-item">
+                <span class="stat-value">{{ "{:,}".format(metadata.downloads.total) }}</span>
+                <span class="stat-label">Total Downloads</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">{{ "{:,}".format(metadata.stars) }}</span>
+                <span class="stat-label">GitHub Stars</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">{{ metadata.contributors }}</span>
+                <span class="stat-label">Contributors</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section">
+    <div class="section-header">
+        <div class="section-badge">Core Capabilities</div>
+        <h2 class="section-title">Everything You Need</h2>
+        <p class="section-description">
+            Built for researchers, students, and developers working on the frontier
+            of quantum computing and scientific computation.
+        </p>
+    </div>
+
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">⚛️</div>
+            <h3 class="feature-title">Quantum Computing</h3>
+            <p class="feature-description">
+                Native quantum circuit design and simulation with built-in gate operations.
+                Create Bell states, implement Grover's algorithm, and explore quantum teleportation.
+            </p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3 class="feature-title">Uncertainty Quantification</h3>
+            <p class="feature-description">
+                Automatic propagation of measurement errors through complex calculations.
+                Track uncertainty in real-time as your computation progresses.
+            </p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3 class="feature-title">Advanced Type System</h3>
+            <p class="feature-description">
+                Hindley-Milner type inference extended for scientific computing.
+                Catch errors before runtime with intelligent type checking.
+            </p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <h3 class="feature-title">Distributed Processing</h3>
+            <p class="feature-description">
+                Built-in MapReduce framework with automatic parallelization.
+                Scale your computations across multiple cores effortlessly.
+            </p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🔐</div>
+            <h3 class="feature-title">Blockchain Verification</h3>
+            <p class="feature-description">
+                Cryptographic verification of computational results ensures integrity
+                and reproducibility of your scientific work.
+            </p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🌐</div>
+            <h3 class="feature-title">Real-time Collaboration</h3>
+            <p class="feature-description">
+                WebSocket-powered collaborative editing with operational transformation.
+                Work together on quantum algorithms in real-time.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- Code Example Section -->
+<section class="code-example-section">
+    <div class="code-example-container">
+        <div class="code-example-content">
+            <h2>Quantum in 10 Lines</h2>
+            <p>
+                Create a Bell state—maximum quantum entanglement between two qubits—
+                with just a few lines of intuitive Python-like code.
+            </p>
+            <a href="/playground" class="cta-button primary">
+                Try it Live
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                </svg>
+            </a>
+        </div>
+
+        <div class="code-demo">
+            <pre><code><span class="keyword">from</span> synapse_lang <span class="keyword">import</span> QuantumCircuit
+
+<span class="comment"># Create a Bell state</span>
+circuit = <span class="function">QuantumCircuit</span>(<span class="number">2</span>)
+circuit.<span class="function">h</span>(<span class="number">0</span>)        <span class="comment"># Hadamard gate</span>
+circuit.<span class="function">cx</span>(<span class="number">0</span>, <span class="number">1</span>)    <span class="comment"># CNOT gate</span>
+
+<span class="comment"># Measure the result</span>
+result = circuit.<span class="function">measure</span>()
+<span class="function">print</span>(<span class="string">f"Entangled qubits: {result}"</span>)</code></pre>
+        </div>
+    </div>
+</section>
+
+<!-- Final CTA Section -->
+<section class="cta-section">
+    <h2>Ready to Start?</h2>
+    <p>
+        Join thousands of researchers and developers using Synapse Language
+        to push the boundaries of quantum computing.
+    </p>
+    <div class="hero-cta">
+        <a href="/playground" class="cta-button secondary">
+            <svg fill="currentColor" viewBox="0 0 16 16" width="20" height="20">
+                <path d="M5 3l9 5-9 5V3z"/>
+            </svg>
+            Launch Playground
+        </a>
+        <a href="https://github.com/MichaelCrowe11/synapse-lang" class="cta-button secondary">
+            <svg fill="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.840 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.430.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+            Star on GitHub
+        </a>
+    </div>
+</section>
+{% endblock %}

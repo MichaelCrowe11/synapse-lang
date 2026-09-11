@@ -1,0 +1,80 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alert_rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # API Gateway
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api-gateway:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Quantum Executor
+  - job_name: 'quantum-executor'
+    static_configs:
+      - targets: ['quantum-executor:8080']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Package Registry
+  - job_name: 'package-registry'
+    static_configs:
+      - targets: ['package-registry:8001']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  # User Service
+  - job_name: 'user-service'
+    static_configs:
+      - targets: ['user-service:8002']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  # Database Monitoring
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  - job_name: 'mongodb'
+    static_configs:
+      - targets: ['mongodb-exporter:9216']
+
+  # Infrastructure
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  # RabbitMQ
+  - job_name: 'rabbitmq'
+    static_configs:
+      - targets: ['rabbitmq:15692']
+
+  # Custom quantum metrics
+  - job_name: 'quantum-metrics'
+    static_configs:
+      - targets: ['quantum-executor:9090']
+    metrics_path: '/quantum/metrics'
+    scrape_interval: 5s

@@ -1,0 +1,546 @@
+{% extends "base.html" %}
+
+{% block title %}Synapse Playground - Try Online{% endblock %}
+
+{% block extra_css %}
+<style>
+    .playground-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        height: 600px;
+    }
+
+    .editor-panel, .output-panel {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .panel-header {
+        background: var(--dark);
+        color: white;
+        padding: 10px 15px;
+        border-radius: 8px 8px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    #code-editor {
+        flex: 1;
+        font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+        font-size: 14px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 0 0 8px 8px;
+        resize: none;
+        background: #f8f9fa;
+    }
+
+    #output {
+        flex: 1;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 0 0 8px 8px;
+        background: #1e293b;
+        color: #10b981;
+        font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+        font-size: 14px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+    }
+
+    .controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .example-select {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+
+    .run-button {
+        background: var(--success);
+        color: white;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .run-button:hover {
+        background: #059669;
+    }
+
+    .run-button:disabled {
+        background: #94a3b8;
+        cursor: not-allowed;
+    }
+
+    .status-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 5px;
+    }
+
+    .status-ready { background: var(--success); }
+    .status-running { background: var(--warning); animation: pulse 1s infinite; }
+    .status-error { background: #ef4444; }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    @media (max-width: 768px) {
+        .playground-container {
+            grid-template-columns: 1fr;
+            height: auto;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>🧪 Synapse Playground</h1>
+<p>Try Synapse Language features directly in your browser!</p>
+
+<div class="controls">
+    <select id="example-select" class="example-select">
+        <option value="">-- Select Example --</option>
+        <option value="quantum">Quantum Circuit (Bell State)</option>
+        <option value="type">Type Inference</option>
+        <option value="distributed">Distributed MapReduce</option>
+        <option value="blockchain">Blockchain Verification</option>
+        <option value="ai">AI Code Suggestions</option>
+        <option value="collab">Real-time Collaboration</option>
+        <option value="visual">Visual Programming</option>
+        <option value="mobile">Mobile App Framework</option>
+    </select>
+    <button id="run-button" class="run-button">
+        <span class="status-indicator status-ready"></span>
+        Run Code
+    </button>
+    <button id="clear-button" class="btn" style="background: var(--dark);">Clear</button>
+</div>
+
+<div class="playground-container">
+    <div class="editor-panel">
+        <div class="panel-header">
+            <span>📝 Code Editor</span>
+            <span style="font-size: 12px;">Python 3.10 • Synapse v{{ version }}</span>
+        </div>
+        <textarea id="code-editor" placeholder="# Write your Synapse code here...
+from synapse_lang.quantum_designer import QuantumCircuit
+
+circuit = QuantumCircuit(2)
+circuit.add_gate('H', [0])
+circuit.add_gate('CNOT', [0, 1])
+
+print('Bell state created!')"></textarea>
+    </div>
+
+    <div class="output-panel">
+        <div class="panel-header">
+            <span>📊 Output</span>
+            <span id="execution-time" style="font-size: 12px;"></span>
+        </div>
+        <div id="output">Ready to run Synapse code...</div>
+    </div>
+</div>
+
+<div style="margin-top: 30px; padding: 20px; background: var(--light); border-radius: 8px;">
+    <h3>💡 Quick Tips</h3>
+    <ul>
+        <li>Select an example from the dropdown to get started</li>
+        <li>All 8 Synapse features are available in the playground</li>
+        <li>Code runs in a sandboxed environment for security</li>
+        <li>Press Ctrl+Enter to run code quickly</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const examples = {
+    quantum: `from synapse_lang.quantum_designer import QuantumCircuit, QuantumSimulator
+
+# Create a 2-qubit Bell state (maximum entanglement)
+circuit = QuantumCircuit(2)
+circuit.add_gate("H", [0])      # Superposition on qubit 0
+circuit.add_gate("CNOT", [0, 1])  # Entangle qubits
+
+# Simulate the quantum circuit
+simulator = QuantumSimulator()
+state = simulator.simulate(circuit)
+
+print("Bell State Created!")
+print("Quantum state vector:")
+for basis, amplitude in state.items():
+    print(f"  |{basis}⟩: {amplitude}")
+
+# Measure the circuit 10 times
+print("\\nMeasurements (10 shots):")
+for i in range(10):
+    result = simulator.measure(circuit)
+    print(f"  Shot {i+1}: |{result}⟩")`,
+
+    type: `from synapse_lang.type_inference import TypeInference
+import ast
+
+type_system = TypeInference()
+
+# Examples of type inference
+examples = [
+    "x = 42",
+    "y = 3.14",
+    "name = 'Synapse'",
+    "data = [1, 2, 3]",
+    "matrix = [[1, 2], [3, 4]]",
+    "func = lambda x: x * 2"
+]
+
+print("Synapse Type Inference Demo")
+print("="*40)
+
+for code in examples:
+    tree = ast.parse(code)
+    inferred_type = type_system.infer(tree.body[0].value)
+    print(f"Code: {code:30}")
+    print(f"Type: {inferred_type}")
+    print()`,
+
+    distributed: `from synapse_lang.distributed import DistributedComputing
+import asyncio
+
+async def word_count_example():
+    dc = DistributedComputing()
+
+    # Sample documents
+    documents = [
+        "quantum computing is revolutionary",
+        "distributed systems scale infinitely",
+        "quantum algorithms solve complex problems"
+    ]
+
+    # Map function: split into words
+    def map_words(doc):
+        return [(word.lower(), 1) for word in doc.split()]
+
+    # Reduce function: sum counts
+    def reduce_counts(word, counts):
+        return (word, sum(counts))
+
+    # Run MapReduce
+    result = await dc.map_reduce(
+        data=documents,
+        map_func=map_words,
+        reduce_func=reduce_counts
+    )
+
+    print("Distributed Word Count Results:")
+    print("="*40)
+    for word, count in result[:10]:
+        print(f"{word}: {count}")
+
+# Run the async function
+asyncio.run(word_count_example())`,
+
+    blockchain: `from synapse_lang.blockchain import BlockchainVerifier
+
+verifier = BlockchainVerifier()
+
+# Create verified code blocks
+code_blocks = [
+    {
+        "author": "Alice",
+        "code": "def quantum_teleport(qubit): return entangle(qubit)"
+    },
+    {
+        "author": "Bob",
+        "code": "class QuantumProcessor: pass"
+    },
+    {
+        "author": "Charlie",
+        "code": "async def distribute_task(): await compute()"
+    }
+]
+
+print("Blockchain Code Verification")
+print("="*40)
+
+for item in code_blocks:
+    block = verifier.create_block(
+        code=item["code"],
+        author=item["author"]
+    )
+
+    print(f"\\nBlock #{block['index']}")
+    print(f"Author: {block['author']}")
+    print(f"Hash: {block['hash'][:32]}...")
+    print(f"Verified: ✓" if verifier.verify_block(block) else "✗")
+
+print(f"\\nChain Integrity: {'✓ Valid' if verifier.verify_chain() else '✗ Invalid'}")
+print(f"Total Blocks: {len(verifier.chain)}")`,
+
+    ai: `from synapse_lang.ai_suggestions import AISuggestions
+
+ai = AISuggestions()
+
+# Code contexts for AI suggestions
+contexts = [
+    {
+        "code": "def fibonacci(",
+        "cursor": 14,
+        "description": "Function definition"
+    },
+    {
+        "code": "for i in range(",
+        "cursor": 15,
+        "description": "Loop statement"
+    },
+    {
+        "code": "import numpy as np\\narray = np.",
+        "cursor": 29,
+        "description": "NumPy array creation"
+    }
+]
+
+print("AI-Powered Code Suggestions")
+print("="*40)
+
+for ctx in contexts:
+    suggestions = ai.get_suggestions(ctx["code"], ctx["cursor"])
+
+    print(f"\\nContext: {ctx['description']}")
+    print(f"Code: {ctx['code']}")
+    print(f"Suggestions ({len(suggestions)}):")
+
+    for i, suggestion in enumerate(suggestions[:3], 1):
+        print(f"  {i}. {suggestion['text']} (confidence: {suggestion['confidence']:.1%})")`,
+
+    collab: `from synapse_lang.collaboration import CollaborationManager
+
+collab = CollaborationManager()
+
+# Create collaborative editing session
+session_id = collab.create_session("quantum_research")
+
+# Simulate multiple users joining
+users = ["Alice", "Bob", "Charlie"]
+for user in users:
+    collab.join_session(session_id, user)
+    print(f"✓ {user} joined the session")
+
+print("\\nCollaborative Editing Demo")
+print("="*40)
+
+# Simulate concurrent edits
+operations = [
+    {
+        "type": "insert",
+        "position": 0,
+        "text": "Quantum ",
+        "user_id": "Alice"
+    },
+    {
+        "type": "insert",
+        "position": 8,
+        "text": "Circuit ",
+        "user_id": "Bob"
+    },
+    {
+        "type": "insert",
+        "position": 16,
+        "text": "Optimization",
+        "user_id": "Charlie"
+    }
+]
+
+for op in operations:
+    result = collab.apply_operation(session_id, op)
+    print(f"{op['user_id']} inserted: '{op['text']}' at position {op['position']}")
+
+# Get final state
+state = collab.get_session_state(session_id)
+print(f"\\nSession Summary:")
+print(f"  Version: {state['version']}")
+print(f"  Users: {', '.join(state['users'])}")
+print(f"  Operations: {len(state['operations'])")`,
+
+    visual: `from synapse_lang.visual_programming import VisualProgrammingInterface
+
+vpi = VisualProgrammingInterface()
+
+print("Visual Programming Interface Demo")
+print("="*40)
+
+# Create visual nodes
+nodes = [
+    ("Data Input", (0, 0)),
+    ("Quantum Transform", (200, 0)),
+    ("Neural Network", (400, 0)),
+    ("Visualization", (600, 0))
+]
+
+for name, position in nodes:
+    node_id = vpi.create_node(name, position=position)
+    print(f"✓ Created node: {name}")
+
+# Connect nodes to create data flow
+connections = [
+    (vpi.nodes[0], vpi.nodes[1]),
+    (vpi.nodes[1], vpi.nodes[2]),
+    (vpi.nodes[2], vpi.nodes[3])
+]
+
+for source, target in connections:
+    vpi.connect_nodes(source, target)
+    print(f"✓ Connected: {source['type']} → {target['type']}")
+
+# Generate code from visual design
+print("\\nGenerated Code:")
+print("-"*40)
+code = vpi.generate_code()
+print(code)`,
+
+    mobile: `from synapse_lang.mobile_framework import MobileApp
+
+# Create mobile application
+app = MobileApp("QuantumLab", "com.synapse.quantumlab")
+
+print(f"Mobile App: {app.name}")
+print("="*40)
+
+# Add app screens
+screens = [
+    ("HomeScreen", {
+        "title": "Quantum Lab",
+        "components": ["Logo", "MenuButton", "StartButton"]
+    }),
+    ("CircuitDesigner", {
+        "title": "Circuit Designer",
+        "components": ["Canvas", "GateToolbox", "SimulateButton"]
+    }),
+    ("ResultsScreen", {
+        "title": "Results",
+        "components": ["StateVector", "MeasurementGraph", "ExportButton"]
+    })
+]
+
+for name, config in screens:
+    app.add_screen(name, config)
+    print(f"✓ Added screen: {config['title']}")
+    print(f"  Components: {', '.join(config['components'])}")
+
+# Add navigation between screens
+app.add_navigation("HomeScreen", "CircuitDesigner", "start")
+app.add_navigation("CircuitDesigner", "ResultsScreen", "simulate")
+print("\\n✓ Navigation configured")
+
+# Build for platforms
+print("\\nBuilding for platforms:")
+for platform in ["ios", "android", "web"]:
+    build_info = app.build(platform)
+    print(f"  {platform}: {build_info['output']}")`
+};
+
+// Get elements
+const editor = document.getElementById('code-editor');
+const output = document.getElementById('output');
+const runButton = document.getElementById('run-button');
+const clearButton = document.getElementById('clear-button');
+const exampleSelect = document.getElementById('example-select');
+const statusIndicator = runButton.querySelector('.status-indicator');
+const executionTime = document.getElementById('execution-time');
+
+// Load example when selected
+exampleSelect.addEventListener('change', (e) => {
+    const example = examples[e.target.value];
+    if (example) {
+        editor.value = example;
+        output.textContent = 'Ready to run...';
+    }
+});
+
+// Run code
+runButton.addEventListener('click', async () => {
+    const code = editor.value.trim();
+    if (!code) {
+        output.textContent = 'Error: No code to run';
+        output.style.color = '#ef4444';
+        return;
+    }
+
+    // Update UI to running state
+    runButton.disabled = true;
+    statusIndicator.className = 'status-indicator status-running';
+    output.textContent = 'Running...';
+    output.style.color = '#f59e0b';
+
+    const startTime = performance.now();
+
+    try {
+        const response = await fetch('/api/run', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ code })
+        });
+
+        const result = await response.json();
+        const endTime = performance.now();
+        const duration = ((endTime - startTime) / 1000).toFixed(2);
+
+        if (result.success) {
+            output.textContent = result.output;
+            output.style.color = '#10b981';
+            executionTime.textContent = `Execution time: ${duration}s`;
+            statusIndicator.className = 'status-indicator status-ready';
+        } else {
+            output.textContent = `Error: ${result.error || 'Unknown error'}`;
+            output.style.color = '#ef4444';
+            statusIndicator.className = 'status-indicator status-error';
+        }
+    } catch (error) {
+        output.textContent = `Network Error: ${error.message}`;
+        output.style.color = '#ef4444';
+        statusIndicator.className = 'status-indicator status-error';
+    } finally {
+        runButton.disabled = false;
+    }
+});
+
+// Clear editor and output
+clearButton.addEventListener('click', () => {
+    editor.value = '';
+    output.textContent = 'Ready to run Synapse code...';
+    output.style.color = '#10b981';
+    executionTime.textContent = '';
+    exampleSelect.value = '';
+});
+
+// Keyboard shortcut (Ctrl+Enter to run)
+editor.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        runButton.click();
+    }
+});
+
+// Load quantum example by default
+window.addEventListener('load', () => {
+    exampleSelect.value = 'quantum';
+    editor.value = examples.quantum;
+});
+</script>
+{% endblock %}

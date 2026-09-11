@@ -1,0 +1,8 @@
+[console_scripts]
+qflow = qubit_flow_lang:placeholder
+qnet = quantum_net_lang:placeholder
+synapse = synapse_lang.cli:main
+synapse-bench = synapse_lang.benchmark:main
+synapse-cloud = synapse_lang.cloud.cli:main
+synapse-deploy = synapse_lang.cloud.deploy:main
+synapse-repl = synapse_lang.repl:main

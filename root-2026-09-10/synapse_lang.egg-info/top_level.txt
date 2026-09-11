@@ -1,0 +1,10 @@
+quantum_net_lang
+qubit_flow_lang
+synapse
+synapse_ast
+synapse_interpreter
+synapse_jit
+synapse_lang
+synapse_parser
+synapse_repl
+synapse_scientific
