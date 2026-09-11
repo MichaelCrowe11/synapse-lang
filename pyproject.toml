@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "synapse_lang"  # PEP 625 compliant naming
-version = "2.4.1"
+version = "2.4.2"
 description = "An interpreted language for uncertainty-aware scientific computing, with built-in quantum circuit simulation and parallel blocks"
 readme = "README.md"
 requires-python = ">=3.10"

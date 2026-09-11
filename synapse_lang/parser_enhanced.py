@@ -1707,12 +1707,16 @@ class EnhancedParser:
         if self.check(TokenType.NUMBER):
             num_tok = self.advance()
 
-            # Check for uncertainty
-            if self.check(TokenType.PLUS_MINUS):
+            # An uncertain literal: 3 ± 0.2, 3 +/- 0.2 or 3 +- 0.2. Until 2.4.2 only
+            # +/- was recognised here, so `x = 3 ± 0.2` silently dropped the
+            # uncertainty, and the node built was a parser-local class the
+            # interpreter did not evaluate, so `x = 3 +/- 0.2` produced nothing.
+            if self.check(TokenType.PLUS_MINUS) or self.check(TokenType.UNCERTAINTY_OP):
                 self.advance()
                 unc_tok = self.consume(TokenType.NUMBER, "Expected uncertainty value")
-                return UncertaintyNode(float(num_tok.value), float(unc_tok.value),
-                                     None, num_tok.line, num_tok.column)
+                from .synapse_ast import UncertainNode
+                return UncertainNode(float(num_tok.value), float(unc_tok.value),
+                                     num_tok.line, num_tok.column)
 
             return NumberNode(float(num_tok.value), num_tok.line, num_tok.column)
 

@@ -31,7 +31,7 @@ else:
 
 setup(
     name="synapse_lang",  # PEP 625 compliant naming (underscore instead of hyphen)
-    version="2.4.1",
+    version="2.4.2",
     author="Michael Benjamin Crowe",
     license="Proprietary",
     license_files=["LICENSE"],
